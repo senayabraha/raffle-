@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const primaryNav = [
   { to: "/en/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/en/dashboard/live", label: "Live Raffles", icon: Ticket, badge: "3" },
+  { to: "/en/dashboard/live", label: "Live Raffles", icon: Ticket },
   { to: "/en/dashboard/create", label: "Create Raffle", icon: PlusCircle },
   { to: "/en/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/en/dashboard/payouts", label: "Payouts", icon: Wallet },

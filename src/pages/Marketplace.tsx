@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { fetchPublicRaffles } from "@/lib/raffles";
 import {
-  marketplaceRaffles,
   categories,
   sortOptions,
   type MarketplaceRaffle,
@@ -18,23 +17,21 @@ export default function Marketplace() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("All");
   const [sort, setSort] = useState<SortKey>("ending");
-  const [dbRaffles, setDbRaffles] = useState<MarketplaceRaffle[]>([]);
+  const [allRaffles, setAllRaffles] = useState<MarketplaceRaffle[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load live raffles created by real hosts; show them ahead of the demo set.
+  // Load live, public raffles created by real hosts.
   useEffect(() => {
     let active = true;
     fetchPublicRaffles().then((rows) => {
-      if (active) setDbRaffles(rows);
+      if (!active) return;
+      setAllRaffles(rows);
+      setLoading(false);
     });
     return () => {
       active = false;
     };
   }, []);
-
-  const allRaffles = useMemo(
-    () => [...dbRaffles, ...marketplaceRaffles],
-    [dbRaffles],
-  );
 
   const results = useMemo(() => {
     let list = allRaffles.filter((r) => {
@@ -142,7 +139,13 @@ export default function Marketplace() {
       </div>
 
       {/* Grid */}
-      {results.length > 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 gap-5 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="glass h-72 animate-pulse" />
+          ))}
+        </div>
+      ) : results.length > 0 ? (
         <motion.div
           layout
           className="grid grid-cols-1 gap-5 pb-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -168,19 +171,27 @@ export default function Marketplace() {
           <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
             <PackageOpen strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">No raffles found</p>
-          <p className="max-w-xs text-sm text-zinc-500">
-            Try a different search term or clear your filters to see everything.
+          <p className="text-base font-semibold text-white">
+            {query || category !== "All"
+              ? "No raffles found"
+              : "No live raffles yet"}
           </p>
-          <button
-            onClick={() => {
-              setQuery("");
-              setCategory("All");
-            }}
-            className="mt-1 text-sm font-medium text-accent-soft transition-colors hover:text-white"
-          >
-            Clear filters
-          </button>
+          <p className="max-w-xs text-sm text-zinc-500">
+            {query || category !== "All"
+              ? "Try a different search term or clear your filters to see everything."
+              : "Check back soon — new prize competitions appear here as hosts launch them."}
+          </p>
+          {(query || category !== "All") && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setCategory("All");
+              }}
+              className="mt-1 text-sm font-medium text-accent-soft transition-colors hover:text-white"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       )}
     </PublicShell>

@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { type MarketplaceRaffle } from "@/data/marketplace";
 import { useAuth } from "@/lib/auth";
-import { isDbRaffle, purchaseTickets } from "@/lib/raffles";
+import { purchaseTickets } from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
 const quickPicks = [1, 5, 10, 25];
@@ -34,7 +34,6 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   const { user } = useAuth();
   const [qty, setQty] = useState(5);
   const [promo, setPromo] = useState("");
-  const [applied, setApplied] = useState<number | null>(null);
   const [entered, setEntered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,26 +44,10 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   );
 
   const subtotal = qty * raffle.ticketPrice;
-  const discount = applied ? subtotal * applied : 0;
-  const total = subtotal - discount;
-
-  const realRaffle = isDbRaffle(raffle.id);
-
-  function applyPromo() {
-    const code = promo.trim().toUpperCase();
-    // Demo codes
-    if (code === "LAUNCH20") setApplied(0.2);
-    else if (code === "SAVE10") setApplied(0.1);
-    else setApplied(0);
-  }
+  const total = subtotal;
 
   async function enter() {
     setError(null);
-    // Demo raffles just play the confirmation animation.
-    if (!realRaffle) {
-      setEntered(true);
-      return;
-    }
     if (!user) {
       navigate("/en/login");
       return;
@@ -151,45 +134,26 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
 
       {/* Promo */}
       <div className="mt-5">
-        <label className="text-xs font-medium text-zinc-400">Promo code</label>
-        <div className="mt-2 flex gap-2">
-          <div className="relative flex-1">
-            <Tag
-              strokeWidth={1.5}
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-            />
-            <input
-              value={promo}
-              onChange={(e) => {
-                setPromo(e.target.value);
-                setApplied(null);
-              }}
-              placeholder="e.g. LAUNCH20"
-              disabled={closed}
-              className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-sm uppercase text-zinc-200 placeholder:normal-case placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50 disabled:opacity-40"
-            />
-          </div>
-          <Button variant="secondary" size="md" onClick={applyPromo} disabled={closed}>
-            Apply
-          </Button>
+        <label className="text-xs font-medium text-zinc-400">
+          Promo code{" "}
+          <span className="font-normal text-zinc-600">(optional)</span>
+        </label>
+        <div className="relative mt-2">
+          <Tag
+            strokeWidth={1.5}
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+          />
+          <input
+            value={promo}
+            onChange={(e) => setPromo(e.target.value)}
+            placeholder="Enter a code"
+            disabled={closed}
+            className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-sm uppercase text-zinc-200 placeholder:normal-case placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50 disabled:opacity-40"
+          />
         </div>
-        <AnimatePresence>
-          {applied !== null && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className={cn(
-                "mt-2 text-xs font-medium",
-                applied > 0 ? "text-emerald-300" : "text-rose-300",
-              )}
-            >
-              {applied > 0
-                ? `Code applied — ${Math.round(applied * 100)}% off!`
-                : "That code isn't valid. Try LAUNCH20."}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        <p className="mt-2 text-xs text-zinc-500">
+          Any discount is applied securely at checkout.
+        </p>
       </div>
 
       {/* Totals */}
@@ -200,12 +164,6 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
           </span>
           <span className="tabular-nums">{formatCurrency(subtotal)}</span>
         </div>
-        {discount > 0 && (
-          <div className="flex justify-between text-emerald-300">
-            <span>Promo discount</span>
-            <span className="tabular-nums">−{formatCurrency(discount)}</span>
-          </div>
-        )}
         <div className="flex items-center justify-between pt-1 text-base font-bold text-white">
           <span>Total</span>
           <span className="tabular-nums">{formatCurrency(total)}</span>
@@ -260,7 +218,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         </AnimatePresence>
       </Button>
 
-      {entered && realRaffle && (
+      {entered && (
         <a
           href="/en/tickets"
           className="mt-3 block text-center text-xs font-medium text-accent-soft transition-colors hover:text-white"

@@ -1,24 +1,26 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck, TrendingUp, Sparkles, Clock } from "lucide-react";
+import {
+  ShieldCheck,
+  Sparkles,
+  Clock,
+  Trophy,
+  Ticket,
+  Zap,
+  Percent,
+} from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { SalesChart } from "@/components/dashboard/SalesChart";
-import { TrafficDonut } from "@/components/dashboard/TrafficDonut";
 import { LiveRaffles } from "@/components/dashboard/LiveRaffles";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CardHeader } from "@/components/dashboard/CardHeader";
-import { topStats, salesSeries } from "@/data/mock";
-
-// Per-stat sparkline variants derived from the base series
-const sparkVariants = [
-  salesSeries,
-  salesSeries.map((v) => v * 0.8 + 60),
-  [1, 2, 2, 3, 3, 3, 3],
-  salesSeries.map((v) => (v % 100) / 12 + 4),
-];
+import { useAuth } from "@/lib/auth";
+import { fetchHostOverview, type HostOverview } from "@/lib/raffles";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -29,7 +31,72 @@ const fadeUp = {
   }),
 };
 
+const todayLabel = new Date().toLocaleDateString("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 export default function Dashboard() {
+  const { user, profile } = useAuth();
+  const [data, setData] = useState<HostOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetchHostOverview(user.id).then((d) => {
+      if (!active) return;
+      setData(d);
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const firstName =
+    profile?.full_name?.trim().split(/\s+/)[0] ??
+    user?.email?.split("@")[0] ??
+    "there";
+
+  const totals = data?.totals;
+  const salesSeries = data?.salesSeries ?? new Array(14).fill(0);
+  const hasSales = salesSeries.some((v) => v > 0);
+
+  const stats = [
+    {
+      key: "revenue",
+      label: "Escrowed Revenue",
+      value: totals?.revenue ?? 0,
+      prefix: "£",
+      icon: Trophy,
+      decimals: 0,
+    },
+    {
+      key: "tickets",
+      label: "Tickets Sold",
+      value: totals?.ticketsSold ?? 0,
+      icon: Ticket,
+      decimals: 0,
+    },
+    {
+      key: "live",
+      label: "Live Raffles",
+      value: totals?.liveCount ?? 0,
+      icon: Zap,
+      decimals: 0,
+    },
+    {
+      key: "sell",
+      label: "Avg. Sell-through",
+      value: totals?.sellThrough ?? 0,
+      suffix: "%",
+      icon: Percent,
+      decimals: 1,
+    },
+  ];
+
   return (
     <AppShell>
       {/* Greeting header */}
@@ -45,16 +112,18 @@ export default function Dashboard() {
             <Badge tone="accent" dot>
               Live now
             </Badge>
-            <span className="text-xs text-zinc-500">Monday, 23 June</span>
+            <span className="text-xs text-zinc-500">{todayLabel}</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tightest text-white sm:text-[2.5rem] sm:leading-[1.05]">
             Welcome back,{" "}
-            <span className="text-gradient">Jordan</span>
+            <span className="text-gradient capitalize">{firstName}</span>
           </h1>
           <p className="mt-2 max-w-md text-sm text-zinc-400">
-            Your raffles sold{" "}
-            <span className="font-semibold text-zinc-200">2,140 tickets</span>{" "}
-            in the last 24 hours. Everything is on track.
+            {loading
+              ? "Loading your latest numbers…"
+              : totals && totals.ticketsSold > 0
+                ? `You've sold ${totals.ticketsSold.toLocaleString()} tickets across ${data?.raffles.length} ${data?.raffles.length === 1 ? "raffle" : "raffles"}.`
+                : "Create your first raffle to start selling tickets and tracking sales."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -62,17 +131,19 @@ export default function Dashboard() {
             <Clock strokeWidth={1.5} className="h-[18px] w-[18px]" />
             Last 14 days
           </Button>
-          <Button variant="primary" size="md">
-            <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            Create raffle
-          </Button>
+          <Link to="/en/dashboard/create">
+            <Button variant="primary" size="md">
+              <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
+              Create raffle
+            </Button>
+          </Link>
         </div>
       </motion.div>
 
       {/* ---- Bento grid ---- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Row 1 — stat cards */}
-        {topStats.map((s, i) => (
+        {stats.map((s, i) => (
           <motion.div
             key={s.key}
             custom={i + 1}
@@ -85,15 +156,15 @@ export default function Dashboard() {
               value={s.value}
               prefix={s.prefix}
               suffix={s.suffix}
-              delta={s.delta}
+              delta={0}
               icon={s.icon}
-              series={sparkVariants[i]}
-              decimals={s.suffix === "%" ? 1 : 0}
+              series={salesSeries}
+              decimals={s.decimals}
             />
           </motion.div>
         ))}
 
-        {/* Row 2 — sales chart (wide) + traffic donut */}
+        {/* Row 2 — sales chart (wide) */}
         <motion.div
           custom={5}
           variants={fadeUp}
@@ -104,78 +175,32 @@ export default function Dashboard() {
           <SpotlightCard className="h-full p-6" lift={false}>
             <CardHeader
               title="Ticket sales"
-              subtitle="Daily volume across all live raffles"
-              action={
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  +24.6%
-                </span>
-              }
+              subtitle="Daily volume across all your raffles"
             />
-            <SalesChart />
-            <div className="mt-3 flex justify-between text-[10px] text-zinc-600">
-              <span>Jun 10</span>
-              <span>Jun 16</span>
-              <span>Jun 23</span>
-            </div>
-          </SpotlightCard>
-        </motion.div>
-
-        <motion.div
-          custom={6}
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="sm:col-span-2 xl:col-span-1"
-        >
-          <SpotlightCard className="h-full p-6" lift={false}>
-            <CardHeader title="Traffic sources" subtitle="Where entrants come from" />
-            <TrafficDonut />
-          </SpotlightCard>
-        </motion.div>
-
-        {/* Row 3 — live raffles (wide) + activity feed */}
-        <motion.div
-          custom={7}
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="sm:col-span-2 xl:col-span-2"
-        >
-          <SpotlightCard className="h-full p-6" lift={false}>
-            <CardHeader
-              title="Your live raffles"
-              subtitle="Real-time sales & escrow"
-              action={
-                <Button variant="ghost" size="sm">
-                  View all
-                </Button>
-              }
-            />
-            <LiveRaffles />
-          </SpotlightCard>
-        </motion.div>
-
-        <motion.div
-          custom={8}
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="sm:col-span-2 xl:col-span-1"
-        >
-          <SpotlightCard className="h-full p-6" lift={false}>
-            <CardHeader
-              title="Live activity"
-              subtitle="Entries as they happen"
-              action={<Badge tone="live" dot>Live</Badge>}
-            />
-            <ActivityFeed />
+            {hasSales ? (
+              <>
+                <SalesChart series={salesSeries} />
+                <div className="mt-3 text-right text-[10px] text-zinc-600">
+                  Last 14 days
+                </div>
+              </>
+            ) : (
+              <div className="flex h-44 flex-col items-center justify-center gap-2 text-center">
+                <p className="text-sm font-medium text-zinc-300">
+                  No sales in the last 14 days
+                </p>
+                <p className="max-w-xs text-xs text-zinc-500">
+                  Ticket sales will chart here once entrants start joining your
+                  raffles.
+                </p>
+              </div>
+            )}
           </SpotlightCard>
         </motion.div>
 
         {/* Guarantee / escrow card */}
         <motion.div
-          custom={9}
+          custom={6}
           variants={fadeUp}
           initial="hidden"
           animate="show"
@@ -200,6 +225,47 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </motion.div>
+
+        {/* Row 3 — live raffles (wide) + activity feed */}
+        <motion.div
+          custom={7}
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          className="sm:col-span-2 xl:col-span-2"
+        >
+          <SpotlightCard className="h-full p-6" lift={false}>
+            <CardHeader
+              title="Your raffles"
+              subtitle="Real-time sales & escrow"
+              action={
+                <Link to="/en/dashboard/create">
+                  <Button variant="ghost" size="sm">
+                    New raffle
+                  </Button>
+                </Link>
+              }
+            />
+            <LiveRaffles raffles={data?.raffles ?? []} />
+          </SpotlightCard>
+        </motion.div>
+
+        <motion.div
+          custom={8}
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          className="sm:col-span-2 xl:col-span-2"
+        >
+          <SpotlightCard className="h-full p-6" lift={false}>
+            <CardHeader
+              title="Live activity"
+              subtitle="Entries as they happen"
+              action={<Badge tone="live" dot>Live</Badge>}
+            />
+            <ActivityFeed items={data?.activity ?? []} />
+          </SpotlightCard>
         </motion.div>
       </div>
     </AppShell>

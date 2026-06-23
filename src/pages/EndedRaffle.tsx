@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -13,9 +13,8 @@ import {
   Clock,
   Hash,
   Fingerprint,
-  Mail,
   MapPin,
-  Watch,
+  Award,
   PartyPopper,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -23,30 +22,15 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CountdownPills } from "@/components/ui/Countdown";
+import { useAuth } from "@/lib/auth";
+import {
+  fetchHostEndedRaffle,
+  type EndedRaffleSummary,
+} from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
 type Flow = "pending" | "confirmed" | "revoked" | "withdrawn";
 type Decision = "advertised" | "modified" | "revoke";
-
-// Ended raffle being confirmed (Rolex Submariner)
-const raffle = {
-  title: "Rolex Submariner — Date 41mm",
-  drawnAt: "22 June 2026, 18:00 BST",
-  sold: 8000,
-  price: 12,
-};
-const gross = raffle.sold * raffle.price;
-const commission = gross * 0.1;
-const hostNet = gross - commission;
-const guaranteePayout = gross * 0.75;
-
-const winner = {
-  name: "Sofia L.",
-  initials: "SL",
-  ticket: 4172,
-  email: "sofia.l@example.com",
-  region: "Manchester, UK",
-};
 
 const decisions: {
   key: Decision;
@@ -79,18 +63,88 @@ const decisions: {
 ];
 
 export default function EndedRaffle() {
+  const { user } = useAuth();
+  const [raffle, setRaffle] = useState<EndedRaffleSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const [flow, setFlow] = useState<Flow>("pending");
   const [choice, setChoice] = useState<Decision>("advertised");
 
-  // 7-day confirmation deadline (≈ 6d 4h left for the demo)
+  // 7-day confirmation deadline from now.
   const deadline = useMemo(
-    () => new Date(Date.now() + (6 * 24 + 4) * 3_600_000).toISOString(),
+    () => new Date(Date.now() + 7 * 24 * 3_600_000).toISOString(),
     [],
   );
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetchHostEndedRaffle(user.id).then((r) => {
+      if (!active) return;
+      setRaffle(r);
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   function submitDecision() {
     setFlow(choice === "revoke" ? "revoked" : "confirmed");
   }
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[50vh] place-items-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!raffle) {
+    return (
+      <AppShell>
+        <Link
+          to="/en/dashboard"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+        >
+          <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
+          Back to dashboard
+        </Link>
+        <div className="glass flex flex-col items-center justify-center gap-3 py-24 text-center">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+            <Award strokeWidth={1.5} className="h-7 w-7" />
+          </div>
+          <p className="text-base font-semibold text-white">No completed draws yet</p>
+          <p className="max-w-sm text-sm text-zinc-500">
+            When one of your raffles ends and a winner is drawn, you'll confirm
+            delivery and release your funds from here.
+          </p>
+          <Link to="/en/dashboard/create" className="mt-1">
+            <Button variant="primary" size="md">
+              Create a raffle
+            </Button>
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const gross = raffle.sold * raffle.ticketPrice;
+  const commission = gross * 0.1;
+  const hostNet = gross - commission;
+  const guaranteePayout = gross * 0.75;
+  const winner = raffle.winner;
+  const drawnAt = raffle.drawDate
+    ? new Date(raffle.drawDate).toLocaleString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
   return (
     <AppShell>
@@ -104,13 +158,13 @@ export default function EndedRaffle() {
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
-          <Watch strokeWidth={1.5} className="h-5 w-5" />
+          <Trophy strokeWidth={1.5} className="h-5 w-5" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tightest text-white sm:text-3xl">
             {raffle.title}
           </h1>
-          <p className="text-sm text-zinc-500">Draw completed {raffle.drawnAt}</p>
+          <p className="text-sm text-zinc-500">Draw completed {drawnAt}</p>
         </div>
         <Badge tone="neutral" className="ml-auto">
           Ended
@@ -127,7 +181,7 @@ export default function EndedRaffle() {
               <div className="relative flex items-center gap-4">
                 <div className="relative">
                   <span className="grid h-16 w-16 place-items-center rounded-2xl bg-accent-gradient text-xl font-bold text-white shadow-accent-glow">
-                    {winner.initials}
+                    {winner?.initials ?? "—"}
                   </span>
                   <span className="absolute -bottom-1.5 -right-1.5 grid h-7 w-7 place-items-center rounded-full border-2 border-obsidian bg-amber-400 text-obsidian">
                     <Trophy strokeWidth={2} className="h-3.5 w-3.5" />
@@ -135,31 +189,29 @@ export default function EndedRaffle() {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wider text-accent-soft">
-                    Winner selected
+                    {winner ? "Winner selected" : "Winner pending"}
                   </p>
                   <p className="text-xl font-bold tracking-tight text-white">
-                    {winner.name}
+                    {winner?.name ?? "Being drawn"}
                   </p>
-                  <p className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
-                    <Hash className="h-3.5 w-3.5" />
-                    Winning ticket #{winner.ticket.toLocaleString()}
-                  </p>
+                  {winner?.ticket != null && (
+                    <p className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
+                      <Hash className="h-3.5 w-3.5" />
+                      Winning ticket #{winner.ticket.toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-px bg-white/[0.06] sm:grid-cols-2">
-              <div className="flex items-center gap-3 bg-obsidian/40 p-4 text-sm">
-                <Mail strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
-                <span className="text-zinc-300">{winner.email}</span>
-              </div>
+            {winner?.region && (
               <div className="flex items-center gap-3 bg-obsidian/40 p-4 text-sm">
                 <MapPin strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
                 <span className="text-zinc-300">{winner.region}</span>
               </div>
-            </div>
+            )}
           </SpotlightCard>
 
-          {/* RNG audit log */}
+          {/* Draw audit log */}
           <SpotlightCard className="p-6" lift={false}>
             <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
               <Fingerprint strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
@@ -172,10 +224,14 @@ export default function EndedRaffle() {
             <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10 font-mono text-xs">
               {[
                 ["method", "CSPRNG · crypto.getRandomValues"],
-                ["seed_hash", "9f2c…a17b (SHA-256, sealed pre-draw)"],
                 ["entries", raffle.sold.toLocaleString()],
-                ["drawn_index", winner.ticket.toLocaleString()],
-                ["timestamp", "2026-06-22T17:00:00Z"],
+                ["drawn_ticket", winner?.ticket?.toLocaleString() ?? "pending"],
+                [
+                  "timestamp",
+                  raffle.drawDate
+                    ? new Date(raffle.drawDate).toISOString()
+                    : "pending",
+                ],
               ].map(([k, v]) => (
                 <div
                   key={k}

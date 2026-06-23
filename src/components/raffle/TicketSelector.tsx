@@ -1,8 +1,21 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus, Tag, Check, Ticket, ShieldCheck, Gift } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  Tag,
+  Check,
+  Ticket,
+  ShieldCheck,
+  Gift,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { type MarketplaceRaffle } from "@/data/marketplace";
+import { useAuth } from "@/lib/auth";
+import { isDbRaffle, purchaseTickets } from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
 const quickPicks = [1, 5, 10, 25];
@@ -17,10 +30,14 @@ function freeTicketsFor(qty: number, bundles: MarketplaceRaffle["bundles"]) {
 }
 
 export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [qty, setQty] = useState(5);
   const [promo, setPromo] = useState("");
   const [applied, setApplied] = useState<number | null>(null);
   const [entered, setEntered] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const free = useMemo(
     () => freeTicketsFor(qty, raffle.bundles),
@@ -31,12 +48,36 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   const discount = applied ? subtotal * applied : 0;
   const total = subtotal - discount;
 
+  const realRaffle = isDbRaffle(raffle.id);
+
   function applyPromo() {
     const code = promo.trim().toUpperCase();
     // Demo codes
     if (code === "LAUNCH20") setApplied(0.2);
     else if (code === "SAVE10") setApplied(0.1);
     else setApplied(0);
+  }
+
+  async function enter() {
+    setError(null);
+    // Demo raffles just play the confirmation animation.
+    if (!realRaffle) {
+      setEntered(true);
+      return;
+    }
+    if (!user) {
+      navigate("/en/login");
+      return;
+    }
+    setLoading(true);
+    try {
+      await purchaseTickets(raffle.id, qty, promo);
+      setEntered(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not complete your entry.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const closed = raffle.status !== "live";
@@ -171,16 +212,32 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         </div>
       </div>
 
+      {error && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-200">
+          <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* CTA */}
       <Button
         variant="primary"
         size="lg"
-        onClick={() => setEntered(true)}
-        disabled={closed || entered}
+        onClick={enter}
+        disabled={closed || entered || loading}
         className="mt-4 w-full"
       >
         <AnimatePresence mode="wait" initial={false}>
-          {entered ? (
+          {loading ? (
+            <motion.span
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="inline-flex items-center gap-2"
+            >
+              <Loader2 className="h-5 w-5 animate-spin" /> Securing your tickets…
+            </motion.span>
+          ) : entered ? (
             <motion.span
               key="done"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -202,6 +259,15 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
           )}
         </AnimatePresence>
       </Button>
+
+      {entered && realRaffle && (
+        <a
+          href="/en/tickets"
+          className="mt-3 block text-center text-xs font-medium text-accent-soft transition-colors hover:text-white"
+        >
+          View in My Tickets →
+        </a>
+      )}
 
       <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-zinc-500">
         <ShieldCheck strokeWidth={1.5} className="h-3.5 w-3.5 text-emerald-400" />

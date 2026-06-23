@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/lib/auth";
 
 const links: { label: string; href?: string; to?: string }[] = [
   { label: "How it works", href: "/en#how" },
@@ -10,6 +11,7 @@ const links: { label: string; href?: string; to?: string }[] = [
 ];
 
 export function MarketingNav() {
+  const { session } = useAuth();
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-4">
       <nav className="glass flex w-full max-w-5xl items-center justify-between rounded-2xl px-4 py-2.5 sm:px-5">
@@ -45,16 +47,34 @@ export function MarketingNav() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/en/login">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-              Log in
-            </Button>
-          </Link>
-          <Link to="/en/register">
-            <Button variant="primary" size="sm">
-              Host a raffle
-            </Button>
-          </Link>
+          {session ? (
+            <>
+              <Link to="/en/tickets">
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  <Ticket strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                  My tickets
+                </Button>
+              </Link>
+              <Link to="/en/dashboard">
+                <Button variant="primary" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/en/login">
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/en/register">
+                <Button variant="primary" size="sm">
+                  Host a raffle
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </header>

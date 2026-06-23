@@ -15,7 +15,11 @@ import {
   Check,
   Sparkles,
   PartyPopper,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { createRaffle } from "@/lib/raffles";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
@@ -47,9 +51,13 @@ const steps: WizardStep[] = [
 const prizeCategories = categories.filter((c) => c !== "All");
 
 export default function CreateRaffle() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<RaffleDraft>(initialDraft);
   const [published, setPublished] = useState(false);
+  const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [dir, setDir] = useState(1);
 
   const set = (patch: Partial<RaffleDraft>) =>
@@ -58,9 +66,27 @@ export default function CreateRaffle() {
   const canAdvance = step !== 0 || draft.title.trim().length > 2;
   const isLast = step === steps.length - 1;
 
+  async function publish() {
+    if (!user) {
+      setError("Your session expired — please log in again.");
+      return;
+    }
+    setError(null);
+    setPublishing(true);
+    try {
+      const { slug } = await createRaffle(draft, user.id);
+      setPublishedSlug(slug);
+      setPublished(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not publish your raffle.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   function next() {
     if (isLast) {
-      setPublished(true);
+      void publish();
       return;
     }
     setDir(1);
@@ -71,7 +97,7 @@ export default function CreateRaffle() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  if (published) return <PublishedScreen draft={draft} />;
+  if (published) return <PublishedScreen draft={draft} slug={publishedSlug} />;
 
   return (
     <AppShell>
@@ -131,13 +157,20 @@ export default function CreateRaffle() {
               </motion.div>
             </AnimatePresence>
 
+            {error && (
+              <div className="mt-6 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+                <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
             {/* Nav */}
             <div className="mt-8 flex items-center justify-between border-t border-white/[0.06] pt-5">
               <Button
                 variant="ghost"
                 size="md"
                 onClick={back}
-                disabled={step === 0}
+                disabled={step === 0 || publishing}
                 className={cn(step === 0 && "invisible")}
               >
                 <ArrowLeft strokeWidth={1.5} className="h-[18px] w-[18px]" />
@@ -146,8 +179,18 @@ export default function CreateRaffle() {
               <span className="hidden text-xs text-zinc-500 sm:block">
                 Step {step + 1} of {steps.length}
               </span>
-              <Button variant="primary" size="md" onClick={next} disabled={!canAdvance}>
-                {isLast ? (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={next}
+                disabled={!canAdvance || publishing}
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                    Publishing…
+                  </>
+                ) : isLast ? (
                   <>
                     <Rocket strokeWidth={1.5} className="h-[18px] w-[18px]" />
                     Publish raffle
@@ -597,7 +640,8 @@ function Row({ label, value, muted }: { label: string; value: string; muted?: bo
 }
 
 /* ---------------- Published success ---------------- */
-function PublishedScreen({ draft }: { draft: RaffleDraft }) {
+function PublishedScreen({ draft, slug }: { draft: RaffleDraft; slug: string | null }) {
+  const marketplaceTarget = slug ? `/en/raffle/${slug}` : "/en/public-raffles/live";
   return (
     <AppShell>
       <div className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center text-center">
@@ -627,10 +671,10 @@ function PublishedScreen({ draft }: { draft: RaffleDraft }) {
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link to="/en/public-raffles/live">
+            <Link to={marketplaceTarget}>
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
                 <Sparkles strokeWidth={1.5} className="h-5 w-5" />
-                View on marketplace
+                View your raffle
               </Button>
             </Link>
             <Link to="/en/dashboard">

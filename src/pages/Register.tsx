@@ -8,23 +8,76 @@ import {
   Loader2,
   Sparkles,
   Ticket,
+  AlertCircle,
+  MailCheck,
 } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { GoogleButton } from "@/components/auth/OAuthButton";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Segmented } from "@/components/ui/Form";
+import { supabase } from "@/lib/supabase";
 
 export default function Register() {
   const navigate = useNavigate();
   const [role, setRole] = useState<"host" | "entrant">("host");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checkEmail, setCheckEmail] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    setTimeout(
-      () => navigate(role === "host" ? "/en/dashboard" : "/en/public-raffles/live"),
-      900,
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName, role } },
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+    // If email confirmation is enabled there's no session yet.
+    if (data.session) {
+      navigate(role === "host" ? "/en/dashboard" : "/en/public-raffles/live");
+    } else {
+      setCheckEmail(true);
+      setLoading(false);
+    }
+  }
+
+  async function google() {
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/en/dashboard` },
+    });
+    if (error) setError(error.message);
+  }
+
+  if (checkEmail) {
+    return (
+      <AuthLayout title="Check your inbox" subtitle="One quick step to finish up.">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient shadow-accent-glow">
+            <MailCheck strokeWidth={1.5} className="h-7 w-7 text-white" />
+          </span>
+          <p className="text-sm leading-relaxed text-zinc-300">
+            We sent a confirmation link to{" "}
+            <span className="font-semibold text-white">{email}</span>. Click it to
+            activate your account, then log in.
+          </p>
+          <Link to="/en/login" className="w-full">
+            <Button variant="secondary" size="lg" className="w-full">
+              Go to login
+            </Button>
+          </Link>
+        </div>
+      </AuthLayout>
     );
   }
 
@@ -33,13 +86,20 @@ export default function Register() {
       title="Create your account"
       subtitle="Start hosting in minutes — no setup fees, ever."
     >
-      <GoogleButton label="Sign up with Google" />
+      <GoogleButton label="Sign up with Google" onClick={google} />
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-600">
         <span className="h-px flex-1 divider-faded" />
         or
         <span className="h-px flex-1 divider-faded" />
       </div>
+
+      {error && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+          <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       <form onSubmit={submit} className="space-y-4">
         <Field label="I want to">
@@ -59,7 +119,14 @@ export default function Register() {
               strokeWidth={1.5}
               className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
             />
-            <Input id="name" required placeholder="Jordan Miller" className="pl-11" />
+            <Input
+              id="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Jordan Miller"
+              className="pl-11"
+            />
           </div>
         </Field>
 
@@ -73,6 +140,8 @@ export default function Register() {
               id="email"
               type="email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="pl-11"
             />
@@ -90,6 +159,8 @@ export default function Register() {
               type="password"
               required
               minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="pl-11"
             />

@@ -1,8 +1,15 @@
 /** Google sign-in button with the official multi-color glyph. */
-export function GoogleButton({ label }: { label: string }) {
+export function GoogleButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="focus-ring flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-sm font-medium text-zinc-100 transition-all duration-300 ease-premium hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.99]"
     >
       <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" aria-hidden>

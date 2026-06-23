@@ -1,16 +1,35 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowUpRight, Ticket } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { raffles } from "@/data/mock";
+import type { HostRaffleSummary } from "@/lib/raffles";
 import { formatCurrency, formatCompact, cn } from "@/lib/utils";
 
-const statusMeta = {
-  live: { tone: "live" as const, label: "Live", dot: true },
-  draw_pending: { tone: "warning" as const, label: "Draw pending", dot: false },
-  ended: { tone: "neutral" as const, label: "Ended", dot: false },
+const statusMeta: Record<
+  HostRaffleSummary["status"],
+  { tone: "live" | "warning" | "neutral"; label: string; dot: boolean }
+> = {
+  live: { tone: "live", label: "Live", dot: true },
+  draft: { tone: "warning", label: "Draft", dot: false },
+  ended: { tone: "neutral", label: "Ended", dot: false },
+  cancelled: { tone: "neutral", label: "Cancelled", dot: false },
 };
 
-export function LiveRaffles() {
+export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
+  if (raffles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <Ticket strokeWidth={1.5} className="h-5 w-5" />
+        </div>
+        <p className="text-sm font-medium text-zinc-300">No raffles yet</p>
+        <p className="max-w-[14rem] text-xs text-zinc-500">
+          Create your first raffle to start tracking live sales and escrow here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <ul className="space-y-2.5">
       {raffles.map((r, i) => {
@@ -24,8 +43,8 @@ export function LiveRaffles() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
           >
-            <a
-              href="#"
+            <Link
+              to={`/en/raffle/${r.slug}`}
               className="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-all duration-300 ease-premium hover:border-white/15 hover:bg-white/[0.05]"
             >
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
@@ -70,7 +89,7 @@ export function LiveRaffles() {
                 strokeWidth={1.5}
                 className="h-4 w-4 shrink-0 text-zinc-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-soft"
               />
-            </a>
+            </Link>
           </motion.li>
         );
       })}

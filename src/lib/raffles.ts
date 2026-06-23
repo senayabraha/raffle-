@@ -124,14 +124,6 @@ export async function fetchRaffleBySlug(
   return mapRaffleRow(data as unknown as RaffleRowWithHost);
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** True when a raffle id is a real database row (vs. a demo/mock raffle). */
-export function isDbRaffle(id: string) {
-  return UUID_RE.test(id);
-}
-
 export interface PurchaseResult {
   payment_id: string;
   paid: number;
@@ -219,6 +211,182 @@ export async function fetchMyTickets(userId: string): Promise<MyTicketGroup[]> {
     g.numbers.push(row.ticket_number);
   }
   return [...groups.values()];
+}
+
+export interface HostRaffleSummary {
+  id: string;
+  slug: string;
+  title: string;
+  status: "draft" | "live" | "ended" | "cancelled";
+  icon: LucideIcon;
+  sold: number;
+  cap: number;
+  ticketPrice: number;
+  revenue: number;
+}
+
+export interface HostActivityItem {
+  id: string;
+  raffleTitle: string;
+  entryType: string;
+  createdAt: string;
+}
+
+export interface HostOverview {
+  raffles: HostRaffleSummary[];
+  totals: {
+    revenue: number;
+    ticketsSold: number;
+    liveCount: number;
+    sellThrough: number;
+  };
+  /** Tickets sold per day over the last 14 days. */
+  salesSeries: number[];
+  activity: HostActivityItem[];
+}
+
+/** Aggregates a host's own raffles and recent ticket activity for the dashboard. */
+export async function fetchHostOverview(hostId: string): Promise<HostOverview> {
+  const { data: raffleRows } = await supabase
+    .from("raffles")
+    .select(
+      "id, slug, title, category, status, ticket_price, ticket_cap, tickets_sold_count",
+    )
+    .eq("host_id", hostId)
+    .order("created_at", { ascending: false });
+
+  const raffles: HostRaffleSummary[] = (raffleRows ?? []).map((r) => {
+    const style = (r.category && categoryStyle[r.category]) || fallbackStyle;
+    const sold = r.tickets_sold_count;
+    const price = Number(r.ticket_price);
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      status: r.status,
+      icon: style.icon,
+      sold,
+      cap: r.ticket_cap ?? Math.max(sold, 1),
+      ticketPrice: price,
+      revenue: sold * price,
+    };
+  });
+
+  const totals = {
+    revenue: raffles.reduce((s, r) => s + r.revenue, 0),
+    ticketsSold: raffles.reduce((s, r) => s + r.sold, 0),
+    liveCount: raffles.filter((r) => r.status === "live").length,
+    sellThrough: raffles.length
+      ? (raffles.reduce((s, r) => s + Math.min(r.sold / r.cap, 1), 0) /
+          raffles.length) *
+        100
+      : 0,
+  };
+
+  // Build a 14-day sales series and a recent-activity list from real tickets.
+  const salesSeries = new Array(14).fill(0) as number[];
+  let activity: HostActivityItem[] = [];
+  const ids = raffles.map((r) => r.id);
+
+  if (ids.length) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 13);
+
+    const { data: ticketRows } = await supabase
+      .from("tickets")
+      .select("id, created_at, entry_type, raffle_id")
+      .in("raffle_id", ids)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (ticketRows) {
+      const titleById = new Map(raffles.map((r) => [r.id, r.title]));
+      for (const t of ticketRows) {
+        const day = Math.floor(
+          (new Date(t.created_at).setHours(0, 0, 0, 0) - start.getTime()) /
+            86_400_000,
+        );
+        if (day >= 0 && day < 14) salesSeries[day] += 1;
+      }
+      activity = ticketRows.slice(0, 6).map((t) => ({
+        id: t.id,
+        raffleTitle: titleById.get(t.raffle_id) ?? "A raffle",
+        entryType: t.entry_type,
+        createdAt: t.created_at,
+      }));
+    }
+  }
+
+  return { raffles, totals, salesSeries, activity };
+}
+
+export interface EndedRaffleSummary {
+  title: string;
+  category: string;
+  sold: number;
+  ticketPrice: number;
+  drawDate: string | null;
+  winner: {
+    name: string;
+    initials: string;
+    ticket: number | null;
+    region: string | null;
+  } | null;
+}
+
+/** Loads a host's most recently ended raffle, with winner details when available. */
+export async function fetchHostEndedRaffle(
+  hostId: string,
+): Promise<EndedRaffleSummary | null> {
+  const { data: raffle } = await supabase
+    .from("raffles")
+    .select("id, title, category, ticket_price, tickets_sold_count, draw_date")
+    .eq("host_id", hostId)
+    .eq("status", "ended")
+    .order("draw_date", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!raffle) return null;
+
+  let winner: EndedRaffleSummary["winner"] = null;
+  const { data: winnerRow } = await supabase
+    .from("winners")
+    .select(
+      "winner:profiles!winners_winner_id_fkey(full_name), ticket:tickets!winners_ticket_id_fkey(ticket_number, geo_region)",
+    )
+    .eq("raffle_id", raffle.id)
+    .maybeSingle();
+
+  if (winnerRow) {
+    const w = winnerRow as unknown as {
+      winner: { full_name: string | null } | null;
+      ticket: { ticket_number: number; geo_region: string | null } | null;
+    };
+    const name = w.winner?.full_name?.trim() || "Winner";
+    winner = {
+      name,
+      initials:
+        name
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0])
+          .join("")
+          .toUpperCase() || "W",
+      ticket: w.ticket?.ticket_number ?? null,
+      region: w.ticket?.geo_region ?? null,
+    };
+  }
+
+  return {
+    title: raffle.title,
+    category: raffle.category ?? "Other",
+    sold: raffle.tickets_sold_count,
+    ticketPrice: Number(raffle.ticket_price),
+    drawDate: raffle.draw_date,
+    winner,
+  };
 }
 
 /** Persists a wizard draft as a live raffle owned by the given host. */

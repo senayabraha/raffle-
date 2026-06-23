@@ -50,9 +50,9 @@ src/
     layout/        AppShell, Sidebar, Topbar, MarketingNav
     ui/            Button, Badge, Skeleton, SpotlightCard, AuroraBackground,
                    AnimatedNumber, Sparkline
-    dashboard/     StatCard, SalesChart, TrafficDonut, LiveRaffles, ActivityFeed
+    dashboard/     StatCard, SalesChart, LiveRaffles, ActivityFeed
   pages/           Landing, Dashboard
-  data/mock.ts     Mock raffles / activity / stats
+  lib/raffles.ts   Supabase-backed raffle / dashboard data access
   lib/utils.ts     cn(), currency & compact formatters
 ```
 

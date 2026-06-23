@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   Star,
   ShieldCheck,
-  Users,
   Trophy,
   ArrowLeft,
   Share2,
@@ -20,18 +19,9 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
-import { getRaffleBySlug, type MarketplaceRaffle } from "@/data/marketplace";
+import { type MarketplaceRaffle } from "@/data/marketplace";
 import { fetchRaffleBySlug } from "@/lib/raffles";
 import { formatCompact, cn } from "@/lib/utils";
-
-const entrants = [
-  { initials: "AR", name: "Amelia R.", tickets: 25, time: "2m ago" },
-  { initials: "DK", name: "Daniel K.", tickets: 5, time: "8m ago" },
-  { initials: "PS", name: "Priya S.", tickets: 10, time: "14m ago" },
-  { initials: "MT", name: "Marcus T.", tickets: 3, time: "21m ago" },
-  { initials: "SL", name: "Sofia L.", tickets: 50, time: "33m ago" },
-  { initials: "JW", name: "James W.", tickets: 2, time: "47m ago" },
-];
 
 const shareLinks = [
   { icon: Twitter, label: "X" },
@@ -42,15 +32,14 @@ const shareLinks = [
 
 export default function RaffleDetail() {
   const { slug } = useParams();
-  const mockRaffle = slug ? getRaffleBySlug(slug) : undefined;
   const [raffle, setRaffle] = useState<MarketplaceRaffle | null | undefined>(
-    mockRaffle,
+    undefined,
   );
-  const [resolving, setResolving] = useState(!mockRaffle);
+  const [resolving, setResolving] = useState(true);
 
-  // If it's not one of the demo raffles, look it up in the database.
+  // Resolve the raffle from the database by slug.
   useEffect(() => {
-    if (mockRaffle || !slug) return;
+    if (!slug) return;
     let active = true;
     setResolving(true);
     fetchRaffleBySlug(slug).then((row) => {
@@ -61,7 +50,7 @@ export default function RaffleDetail() {
     return () => {
       active = false;
     };
-  }, [slug, mockRaffle]);
+  }, [slug]);
 
   if (resolving) {
     return (
@@ -161,41 +150,6 @@ export default function RaffleDetail() {
                 ))}
               </div>
             )}
-          </SpotlightCard>
-
-          {/* Live entrants */}
-          <SpotlightCard className="p-6" lift={false}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
-                <Users strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
-                Recent entrants
-              </h2>
-              <Badge tone="live" dot>
-                Live
-              </Badge>
-            </div>
-            <ul className="space-y-1">
-              {entrants.map((e, i) => (
-                <motion.li
-                  key={e.initials}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.06 }}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-white/[0.03]"
-                >
-                  <span className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-[10px] font-bold text-accent-soft">
-                    {e.initials}
-                  </span>
-                  <span className="flex-1 text-sm text-zinc-200">{e.name}</span>
-                  <span className="text-xs text-zinc-400">
-                    {e.tickets} {e.tickets === 1 ? "ticket" : "tickets"}
-                  </span>
-                  <span className="w-16 text-right text-[11px] text-zinc-600">
-                    {e.time}
-                  </span>
-                </motion.li>
-              ))}
-            </ul>
           </SpotlightCard>
         </motion.div>
 

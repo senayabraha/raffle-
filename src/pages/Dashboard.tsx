@@ -1,5 +1,17 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck, TrendingUp, Sparkles, Clock } from "lucide-react";
+import {
+  ShieldCheck,
+  TrendingUp,
+  Sparkles,
+  Clock,
+  Trophy,
+  Ticket as TicketIcon,
+  Radio,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
@@ -11,6 +23,9 @@ import { LiveRaffles } from "@/components/dashboard/LiveRaffles";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { topStats, salesSeries } from "@/data/mock";
+import { useAuth } from "@/lib/auth";
+import { fetchHostDashboard, type DashboardData } from "@/lib/dashboard";
+import { formatCompact } from "@/lib/utils";
 
 // Per-stat sparkline variants derived from the base series
 const sparkVariants = [
@@ -19,6 +34,18 @@ const sparkVariants = [
   [1, 2, 2, 3, 3, 3, 3],
   salesSeries.map((v) => (v % 100) / 12 + 4),
 ];
+
+interface StatDef {
+  key: string;
+  label: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  delta: number;
+  icon: LucideIcon;
+  series: number[];
+  decimals?: number;
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -30,6 +57,45 @@ const fadeUp = {
 };
 
 export default function Dashboard() {
+  const { user, profile } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetchHostDashboard(user.id).then((d) => {
+      if (active) setData(d);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const live = data?.hasData ? data : null;
+  const firstName = (profile?.full_name ?? user?.email?.split("@")[0] ?? "host")
+    .split(/\s+/)[0]
+    .replace(/^./, (c) => c.toUpperCase());
+
+  // Stat cards: live figures when the host has raffles, else the mock showcase.
+  const stats: StatDef[] = live
+    ? [
+        { key: "revenue", label: "Escrowed Revenue", value: live.revenue, prefix: "£", delta: 0, icon: Trophy, series: sparkVariants[0] },
+        { key: "tickets", label: "Tickets Sold", value: live.ticketsSold, delta: 0, icon: TicketIcon, series: live.salesSeries },
+        { key: "live", label: "Live Raffles", value: live.liveRaffles, delta: 0, icon: Radio, series: [1, 1, 2, 2, 2, 3, 3] },
+        { key: "entrants", label: "Entrants", value: live.entrants, delta: 0, icon: Users, series: sparkVariants[3] },
+      ]
+    : topStats.map((s, i) => ({
+        ...s,
+        series: sparkVariants[i],
+        decimals: s.suffix === "%" ? 1 : 0,
+      }));
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
     <AppShell>
       {/* Greeting header */}
@@ -45,16 +111,31 @@ export default function Dashboard() {
             <Badge tone="accent" dot>
               Live now
             </Badge>
-            <span className="text-xs text-zinc-500">Monday, 23 June</span>
+            <span className="text-xs text-zinc-500">{today}</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tightest text-white sm:text-[2.5rem] sm:leading-[1.05]">
-            Welcome back,{" "}
-            <span className="text-gradient">Jordan</span>
+            Welcome back, <span className="text-gradient">{firstName}</span>
           </h1>
           <p className="mt-2 max-w-md text-sm text-zinc-400">
-            Your raffles sold{" "}
-            <span className="font-semibold text-zinc-200">2,140 tickets</span>{" "}
-            in the last 24 hours. Everything is on track.
+            {live ? (
+              live.liveRaffles > 0 ? (
+                <>
+                  You have{" "}
+                  <span className="font-semibold text-zinc-200">
+                    {live.liveRaffles} live{" "}
+                    {live.liveRaffles === 1 ? "raffle" : "raffles"}
+                  </span>{" "}
+                  and {formatCompact(live.ticketsSold)} tickets sold so far.
+                </>
+              ) : (
+                <>Your raffles have ended — review your results below.</>
+              )
+            ) : (
+              <>
+                Welcome to your studio. Create your first raffle to start selling
+                tickets.
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -62,17 +143,19 @@ export default function Dashboard() {
             <Clock strokeWidth={1.5} className="h-[18px] w-[18px]" />
             Last 14 days
           </Button>
-          <Button variant="primary" size="md">
-            <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            Create raffle
-          </Button>
+          <Link to="/en/dashboard/create">
+            <Button variant="primary" size="md">
+              <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
+              Create raffle
+            </Button>
+          </Link>
         </div>
       </motion.div>
 
       {/* ---- Bento grid ---- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Row 1 — stat cards */}
-        {topStats.map((s, i) => (
+        {stats.map((s, i) => (
           <motion.div
             key={s.key}
             custom={i + 1}
@@ -87,8 +170,8 @@ export default function Dashboard() {
               suffix={s.suffix}
               delta={s.delta}
               icon={s.icon}
-              series={sparkVariants[i]}
-              decimals={s.suffix === "%" ? 1 : 0}
+              series={s.series}
+              decimals={s.decimals ?? 0}
             />
           </motion.div>
         ))}
@@ -106,13 +189,17 @@ export default function Dashboard() {
               title="Ticket sales"
               subtitle="Daily volume across all live raffles"
               action={
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  +24.6%
-                </span>
+                !live ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    +24.6%
+                  </span>
+                ) : (
+                  <span className="text-xs text-zinc-500">Last 14 days</span>
+                )
               }
             />
-            <SalesChart />
+            <SalesChart data={live ? live.salesSeries : undefined} />
             <div className="mt-3 flex justify-between text-[10px] text-zinc-600">
               <span>Jun 10</span>
               <span>Jun 16</span>
@@ -129,8 +216,15 @@ export default function Dashboard() {
           className="sm:col-span-2 xl:col-span-1"
         >
           <SpotlightCard className="h-full p-6" lift={false}>
-            <CardHeader title="Traffic sources" subtitle="Where entrants come from" />
-            <TrafficDonut />
+            <CardHeader
+              title={live ? "Entry types" : "Traffic sources"}
+              subtitle={live ? "How entrants joined" : "Where entrants come from"}
+            />
+            <TrafficDonut
+              data={live ? live.entryBreakdown : undefined}
+              centerValue={live ? formatCompact(live.ticketsSold) : undefined}
+              centerLabel={live ? "entries" : "visits"}
+            />
           </SpotlightCard>
         </motion.div>
 
@@ -152,7 +246,7 @@ export default function Dashboard() {
                 </Button>
               }
             />
-            <LiveRaffles />
+            <LiveRaffles items={live ? live.liveRafflesList : undefined} />
           </SpotlightCard>
         </motion.div>
 
@@ -169,7 +263,7 @@ export default function Dashboard() {
               subtitle="Entries as they happen"
               action={<Badge tone="live" dot>Live</Badge>}
             />
-            <ActivityFeed />
+            <ActivityFeed items={live ? live.activity : undefined} />
           </SpotlightCard>
         </motion.div>
 

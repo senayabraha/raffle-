@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { raffles } from "@/data/mock";
+import { raffles as mockRaffles } from "@/data/mock";
 import { formatCurrency, formatCompact, cn } from "@/lib/utils";
 
 const statusMeta = {
@@ -10,10 +11,22 @@ const statusMeta = {
   ended: { tone: "neutral" as const, label: "Ended", dot: false },
 };
 
-export function LiveRaffles() {
+interface LiveRaffleItem {
+  id: string;
+  slug?: string;
+  title: string;
+  icon: LucideIcon;
+  status: "live" | "draw_pending" | "ended";
+  sold: number;
+  cap: number;
+  revenue: number;
+}
+
+export function LiveRaffles({ items }: { items?: LiveRaffleItem[] }) {
+  const list: LiveRaffleItem[] = items ?? mockRaffles;
   return (
     <ul className="space-y-2.5">
-      {raffles.map((r, i) => {
+      {list.map((r, i) => {
         const meta = statusMeta[r.status];
         const pct = Math.min((r.sold / r.cap) * 100, 100);
         const Icon = r.icon;
@@ -25,7 +38,7 @@ export function LiveRaffles() {
             transition={{ duration: 0.45, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
           >
             <a
-              href="#"
+              href={r.slug ? `/en/raffle/${r.slug}` : "#"}
               className="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-all duration-300 ease-premium hover:border-white/15 hover:bg-white/[0.05]"
             >
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">

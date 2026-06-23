@@ -1,11 +1,29 @@
 import { motion } from "framer-motion";
-import { activity } from "@/data/mock";
+import { activity as mockActivity } from "@/data/mock";
 import { formatCurrency } from "@/lib/utils";
 
-export function ActivityFeed() {
+interface ActivityItem {
+  id: string;
+  name: string;
+  initials: string;
+  action: string;
+  detail: string;
+  time: string;
+  amount?: number;
+}
+
+export function ActivityFeed({ items }: { items?: ActivityItem[] }) {
+  const list: ActivityItem[] = items ?? mockActivity;
+  if (list.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center text-center text-sm text-zinc-500">
+        No activity yet — share your raffle to drive entries.
+      </div>
+    );
+  }
   return (
     <ul className="space-y-1">
-      {activity.map((a, i) => (
+      {list.map((a, i) => (
         <motion.li
           key={a.id}
           initial={{ opacity: 0, x: 8 }}

@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
-import { salesSeries } from "@/data/mock";
+import { salesSeries as mockSeries } from "@/data/mock";
 
 /** Animated bar chart of daily ticket sales over the last 14 days. */
-export function SalesChart() {
-  const max = Math.max(...salesSeries);
+export function SalesChart({ data }: { data?: number[] }) {
+  const series = data ?? mockSeries;
+  const max = Math.max(...series, 1);
 
   return (
     <div className="flex h-44 items-end gap-1.5 sm:gap-2.5">
-      {salesSeries.map((v, i) => {
+      {series.map((v, i) => {
         const height = (v / max) * 100;
         const isPeak = v === max;
         return (

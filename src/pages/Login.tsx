@@ -1,35 +1,58 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { GoogleButton } from "@/components/auth/OAuthButton";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Form";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    // Simulate auth, then enter the dashboard.
-    setTimeout(() => navigate("/en/dashboard"), 900);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+    navigate("/en/dashboard");
+  }
+
+  async function google() {
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/en/dashboard` },
+    });
+    if (error) setError(error.message);
   }
 
   return (
-    <AuthLayout
-      title="Welcome back"
-      subtitle="Log in to manage your raffles and payouts."
-    >
-      <GoogleButton label="Continue with Google" />
+    <AuthLayout title="Welcome back" subtitle="Log in to manage your raffles and payouts.">
+      <GoogleButton label="Continue with Google" onClick={google} />
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-600">
         <span className="h-px flex-1 divider-faded" />
         or
         <span className="h-px flex-1 divider-faded" />
       </div>
+
+      {error && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+          <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       <form onSubmit={submit} className="space-y-4">
         <Field label="Email" htmlFor="email">
@@ -42,6 +65,8 @@ export default function Login() {
               id="email"
               type="email"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="pl-11"
             />
@@ -58,6 +83,8 @@ export default function Login() {
               id="password"
               type={showPw ? "text" : "password"}
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="px-11"
             />

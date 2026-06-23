@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -19,7 +20,8 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
-import { getRaffleBySlug } from "@/data/marketplace";
+import { getRaffleBySlug, type MarketplaceRaffle } from "@/data/marketplace";
+import { fetchRaffleBySlug } from "@/lib/raffles";
 import { formatCompact, cn } from "@/lib/utils";
 
 const entrants = [
@@ -40,7 +42,36 @@ const shareLinks = [
 
 export default function RaffleDetail() {
   const { slug } = useParams();
-  const raffle = slug ? getRaffleBySlug(slug) : undefined;
+  const mockRaffle = slug ? getRaffleBySlug(slug) : undefined;
+  const [raffle, setRaffle] = useState<MarketplaceRaffle | null | undefined>(
+    mockRaffle,
+  );
+  const [resolving, setResolving] = useState(!mockRaffle);
+
+  // If it's not one of the demo raffles, look it up in the database.
+  useEffect(() => {
+    if (mockRaffle || !slug) return;
+    let active = true;
+    setResolving(true);
+    fetchRaffleBySlug(slug).then((row) => {
+      if (!active) return;
+      setRaffle(row);
+      setResolving(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [slug, mockRaffle]);
+
+  if (resolving) {
+    return (
+      <PublicShell>
+        <div className="grid min-h-[50vh] place-items-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+        </div>
+      </PublicShell>
+    );
+  }
 
   if (!raffle) return <Navigate to="/en/public-raffles/live" replace />;
 

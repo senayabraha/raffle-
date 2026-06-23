@@ -1,7 +1,31 @@
-import { Search, Bell, PlusCircle, ChevronDown } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Bell, PlusCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/lib/auth";
+
+function initialsOf(name?: string | null, email?: string | null) {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+  }
+  return (email?.[0] ?? "U").toUpperCase();
+}
 
 export function Topbar() {
+  const navigate = useNavigate();
+  const { profile, user, signOut } = useAuth();
+
+  const displayName =
+    profile?.full_name ?? user?.email?.split("@")[0] ?? "Account";
+  const tier = profile?.subscription_tier
+    ? `${profile.subscription_tier[0].toUpperCase()}${profile.subscription_tier.slice(1)} host`
+    : "Host";
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/en");
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-obsidian/70 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-4 px-5 sm:px-8">
@@ -22,10 +46,12 @@ export function Topbar() {
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
-          <Button variant="primary" size="sm" className="hidden sm:inline-flex">
-            <PlusCircle strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            New raffle
-          </Button>
+          <Link to="/en/dashboard/create" className="hidden sm:inline-flex">
+            <Button variant="primary" size="sm">
+              <PlusCircle strokeWidth={1.5} className="h-[18px] w-[18px]" />
+              New raffle
+            </Button>
+          </Link>
 
           <button className="focus-ring relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
             <Bell strokeWidth={1.5} className="h-[18px] w-[18px]" />
@@ -33,16 +59,24 @@ export function Topbar() {
           </button>
 
           {/* Profile */}
-          <button className="focus-ring flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-2.5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
+          <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-2 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient text-xs font-bold text-white">
-              JM
+              {initialsOf(profile?.full_name, user?.email)}
             </span>
             <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-xs font-semibold text-white">Jordan M.</span>
-              <span className="block text-[10px] text-zinc-500">Premium host</span>
+              <span className="block max-w-[7rem] truncate text-xs font-semibold capitalize text-white">
+                {displayName}
+              </span>
+              <span className="block text-[10px] text-zinc-500">{tier}</span>
             </span>
-            <ChevronDown strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
-          </button>
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="focus-ring ml-0.5 grid h-7 w-7 place-items-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-rose-300"
+            >
+              <LogOut strokeWidth={1.5} className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

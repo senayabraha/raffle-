@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, PackageOpen } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { RaffleCard } from "@/components/marketplace/RaffleCard";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
+import { fetchPublicRaffles } from "@/lib/raffles";
 import {
   marketplaceRaffles,
   categories,
   sortOptions,
+  type MarketplaceRaffle,
   type SortKey,
 } from "@/data/marketplace";
 
@@ -16,9 +18,26 @@ export default function Marketplace() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("All");
   const [sort, setSort] = useState<SortKey>("ending");
+  const [dbRaffles, setDbRaffles] = useState<MarketplaceRaffle[]>([]);
+
+  // Load live raffles created by real hosts; show them ahead of the demo set.
+  useEffect(() => {
+    let active = true;
+    fetchPublicRaffles().then((rows) => {
+      if (active) setDbRaffles(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const allRaffles = useMemo(
+    () => [...dbRaffles, ...marketplaceRaffles],
+    [dbRaffles],
+  );
 
   const results = useMemo(() => {
-    let list = marketplaceRaffles.filter((r) => {
+    let list = allRaffles.filter((r) => {
       const matchesCat = category === "All" || r.category === category;
       const q = query.trim().toLowerCase();
       const matchesQuery =
@@ -42,7 +61,7 @@ export default function Marketplace() {
       }
     });
     return list;
-  }, [query, category, sort]);
+  }, [allRaffles, query, category, sort]);
 
   return (
     <PublicShell>
@@ -54,8 +73,8 @@ export default function Marketplace() {
         className="mb-8"
       >
         <Badge tone="accent" dot>
-          {marketplaceRaffles.filter((r) => r.status === "live").length} live
-          draws right now
+          {allRaffles.filter((r) => r.status === "live").length} live draws right
+          now
         </Badge>
         <h1 className="mt-4 text-4xl font-bold tracking-tightest text-white sm:text-5xl">
           Browse the <span className="text-gradient">marketplace</span>

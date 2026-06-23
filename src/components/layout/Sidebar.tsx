@@ -3,9 +3,6 @@ import {
   LayoutDashboard,
   Ticket,
   PlusCircle,
-  BarChart3,
-  Wallet,
-  Megaphone,
   Globe,
   Settings,
   LifeBuoy,
@@ -15,11 +12,7 @@ import { cn } from "@/lib/utils";
 
 const primaryNav = [
   { to: "/en/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/en/dashboard/live", label: "Live Raffles", icon: Ticket },
   { to: "/en/dashboard/create", label: "Create Raffle", icon: PlusCircle },
-  { to: "/en/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/en/dashboard/payouts", label: "Payouts", icon: Wallet },
-  { to: "/en/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
 ];
 
 const secondaryNav = [

@@ -64,10 +64,12 @@ export default {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        // Translate-only drift: avoids animating `scale`, which would force the
+        // compositor to re-rasterize the large blurred blobs every frame.
         aurora: {
-          "0%, 100%": { transform: "translate(0px, 0px) scale(1)" },
-          "33%": { transform: "translate(40px, -30px) scale(1.1)" },
-          "66%": { transform: "translate(-30px, 20px) scale(0.95)" },
+          "0%, 100%": { transform: "translate(0px, 0px)" },
+          "33%": { transform: "translate(40px, -30px)" },
+          "66%": { transform: "translate(-30px, 20px)" },
         },
         "pulse-ring": {
           "0%": { boxShadow: "0 0 0 0 rgba(139,92,246,0.45)" },

@@ -1,0 +1,212 @@
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Minus, Plus, Tag, Check, Ticket, ShieldCheck, Gift } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { type MarketplaceRaffle } from "@/data/marketplace";
+import { formatCurrency, cn } from "@/lib/utils";
+
+const quickPicks = [1, 5, 10, 25];
+
+/** Returns bonus free tickets for a paid quantity, using the best bundle. */
+function freeTicketsFor(qty: number, bundles: MarketplaceRaffle["bundles"]) {
+  let free = 0;
+  for (const b of bundles) {
+    if (qty >= b.qty) free = Math.max(free, Math.floor(qty / b.qty) * b.free);
+  }
+  return free;
+}
+
+export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
+  const [qty, setQty] = useState(5);
+  const [promo, setPromo] = useState("");
+  const [applied, setApplied] = useState<number | null>(null);
+  const [entered, setEntered] = useState(false);
+
+  const free = useMemo(
+    () => freeTicketsFor(qty, raffle.bundles),
+    [qty, raffle.bundles],
+  );
+
+  const subtotal = qty * raffle.ticketPrice;
+  const discount = applied ? subtotal * applied : 0;
+  const total = subtotal - discount;
+
+  function applyPromo() {
+    const code = promo.trim().toUpperCase();
+    // Demo codes
+    if (code === "LAUNCH20") setApplied(0.2);
+    else if (code === "SAVE10") setApplied(0.1);
+    else setApplied(0);
+  }
+
+  const closed = raffle.status !== "live";
+
+  return (
+    <div className="glass-strong p-5">
+      <div className="flex items-baseline justify-between">
+        <div>
+          <p className="text-xs text-zinc-500">Ticket price</p>
+          <p className="text-2xl font-bold tracking-tight text-white">
+            {formatCurrency(raffle.ticketPrice)}
+          </p>
+        </div>
+        {raffle.bundles.length > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent-soft">
+            <Gift className="h-3.5 w-3.5" />
+            Buy {raffle.bundles[0].qty} get {raffle.bundles[0].free} free
+          </span>
+        )}
+      </div>
+
+      {/* Quantity stepper */}
+      <div className="mt-5">
+        <label className="text-xs font-medium text-zinc-400">Quantity</label>
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            disabled={closed}
+            className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-95 disabled:opacity-40"
+          >
+            <Minus strokeWidth={1.5} className="h-[18px] w-[18px]" />
+          </button>
+          <div className="flex h-11 flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-lg font-bold tabular-nums text-white">
+            {qty}
+          </div>
+          <button
+            onClick={() => setQty((q) => q + 1)}
+            disabled={closed}
+            className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-95 disabled:opacity-40"
+          >
+            <Plus strokeWidth={1.5} className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+
+        {/* Quick picks */}
+        <div className="mt-2.5 grid grid-cols-4 gap-2">
+          {quickPicks.map((n) => (
+            <button
+              key={n}
+              onClick={() => setQty(n)}
+              disabled={closed}
+              className={cn(
+                "focus-ring rounded-lg border py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-40",
+                qty === n
+                  ? "border-accent/50 bg-accent/15 text-white"
+                  : "border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-100",
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        {free > 0 && (
+          <p className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+            <Gift className="h-3.5 w-3.5" />
+            +{free} free bonus {free === 1 ? "ticket" : "tickets"} included
+          </p>
+        )}
+      </div>
+
+      {/* Promo */}
+      <div className="mt-5">
+        <label className="text-xs font-medium text-zinc-400">Promo code</label>
+        <div className="mt-2 flex gap-2">
+          <div className="relative flex-1">
+            <Tag
+              strokeWidth={1.5}
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+            />
+            <input
+              value={promo}
+              onChange={(e) => {
+                setPromo(e.target.value);
+                setApplied(null);
+              }}
+              placeholder="e.g. LAUNCH20"
+              disabled={closed}
+              className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-sm uppercase text-zinc-200 placeholder:normal-case placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50 disabled:opacity-40"
+            />
+          </div>
+          <Button variant="secondary" size="md" onClick={applyPromo} disabled={closed}>
+            Apply
+          </Button>
+        </div>
+        <AnimatePresence>
+          {applied !== null && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className={cn(
+                "mt-2 text-xs font-medium",
+                applied > 0 ? "text-emerald-300" : "text-rose-300",
+              )}
+            >
+              {applied > 0
+                ? `Code applied — ${Math.round(applied * 100)}% off!`
+                : "That code isn't valid. Try LAUNCH20."}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Totals */}
+      <div className="mt-5 space-y-1.5 border-t border-white/[0.06] pt-4 text-sm">
+        <div className="flex justify-between text-zinc-400">
+          <span>
+            {qty} {qty === 1 ? "ticket" : "tickets"}
+          </span>
+          <span className="tabular-nums">{formatCurrency(subtotal)}</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-emerald-300">
+            <span>Promo discount</span>
+            <span className="tabular-nums">−{formatCurrency(discount)}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between pt-1 text-base font-bold text-white">
+          <span>Total</span>
+          <span className="tabular-nums">{formatCurrency(total)}</span>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <Button
+        variant="primary"
+        size="lg"
+        onClick={() => setEntered(true)}
+        disabled={closed || entered}
+        className="mt-4 w-full"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {entered ? (
+            <motion.span
+              key="done"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-2"
+            >
+              <Check strokeWidth={2} className="h-5 w-5" /> You're in — good luck!
+            </motion.span>
+          ) : (
+            <motion.span
+              key="enter"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="inline-flex items-center gap-2"
+            >
+              <Ticket strokeWidth={1.5} className="h-5 w-5" />
+              {closed ? "Entries closed" : `Enter raffle · ${formatCurrency(total)}`}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </Button>
+
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+        <ShieldCheck strokeWidth={1.5} className="h-3.5 w-3.5 text-emerald-400" />
+        Protected by the Raffall Guarantee · Free postal entry available
+      </p>
+    </div>
+  );
+}

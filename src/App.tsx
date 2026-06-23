@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
+import CreateRaffle from "@/pages/CreateRaffle";
 import Marketplace from "@/pages/Marketplace";
 import RaffleDetail from "@/pages/RaffleDetail";
 
@@ -10,7 +11,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/en" replace />} />
         <Route path="/en" element={<Landing />} />
-        {/* All authenticated host routes render the dashboard view for now */}
+        {/* Host dashboard */}
+        <Route path="/en/dashboard/create" element={<CreateRaffle />} />
+        {/* All other authenticated host routes render the dashboard view for now */}
         <Route path="/en/dashboard/*" element={<Dashboard />} />
         {/* Public marketplace */}
         <Route path="/en/public-raffles/live" element={<Marketplace />} />

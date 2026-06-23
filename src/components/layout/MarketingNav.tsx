@@ -45,12 +45,12 @@ export function MarketingNav() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/en/dashboard">
+          <Link to="/en/login">
             <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
               Log in
             </Button>
           </Link>
-          <Link to="/en/dashboard">
+          <Link to="/en/register">
             <Button variant="primary" size="sm">
               Host a raffle
             </Button>

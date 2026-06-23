@@ -101,12 +101,12 @@ export default function Landing() {
               Start hosting free
             </Button>
           </Link>
-          <a href="#marketplace">
+          <Link to="/en/public-raffles/live">
             <Button variant="secondary" size="lg" className="w-full sm:w-auto">
               Browse raffles
               <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
             </Button>
-          </a>
+          </Link>
         </motion.div>
 
         {/* Trust row */}

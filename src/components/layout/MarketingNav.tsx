@@ -2,11 +2,11 @@ import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-const links = [
-  { label: "How it works", href: "#how" },
-  { label: "Marketplace", href: "#marketplace" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Hosts", href: "#hosts" },
+const links: { label: string; href?: string; to?: string }[] = [
+  { label: "How it works", href: "/en#how" },
+  { label: "Marketplace", to: "/en/public-raffles/live" },
+  { label: "Pricing", href: "/en#pricing" },
+  { label: "Hosts", to: "/en/dashboard" },
 ];
 
 export function MarketingNav() {
@@ -23,15 +23,25 @@ export function MarketingNav() {
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
-          {links.map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors duration-300 hover:text-white"
-            >
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            l.to ? (
+              <Link
+                key={l.label}
+                to={l.to}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors duration-300 hover:text-white"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.label}
+                href={l.href}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors duration-300 hover:text-white"
+              >
+                {l.label}
+              </a>
+            ),
+          )}
         </div>
 
         <div className="flex items-center gap-2">

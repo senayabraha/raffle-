@@ -419,7 +419,12 @@ export type Database = {
       }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      purchase_tickets: {
+        Args: { p_raffle_id: string; p_qty: number; p_promo?: string | null }
+        Returns: Json
+      }
+    }
     Enums: {
       campaign_status: "draft" | "sent" | "scheduled"
       discount_type: "percent" | "fixed" | "free_tickets"

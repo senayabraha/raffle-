@@ -9,6 +9,7 @@ import Marketplace from "@/pages/Marketplace";
 import RaffleDetail from "@/pages/RaffleDetail";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import MyTickets from "@/pages/MyTickets";
 
 /** Gates authenticated routes; redirects to login once we know there's no session. */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -56,6 +57,15 @@ export default function App() {
             element={
               <RequireAuth>
                 <Dashboard />
+              </RequireAuth>
+            }
+          />
+          {/* Entrant */}
+          <Route
+            path="/en/tickets"
+            element={
+              <RequireAuth>
+                <MyTickets />
               </RequireAuth>
             }
           />

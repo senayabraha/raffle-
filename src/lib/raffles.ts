@@ -124,6 +124,103 @@ export async function fetchRaffleBySlug(
   return mapRaffleRow(data as unknown as RaffleRowWithHost);
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True when a raffle id is a real database row (vs. a demo/mock raffle). */
+export function isDbRaffle(id: string) {
+  return UUID_RE.test(id);
+}
+
+export interface PurchaseResult {
+  payment_id: string;
+  paid: number;
+  free: number;
+  total: number;
+  amount: number;
+  first_ticket: number;
+  last_ticket: number;
+}
+
+/** Buys tickets for a raffle via the atomic purchase_tickets RPC. */
+export async function purchaseTickets(
+  raffleId: string,
+  qty: number,
+  promo?: string,
+): Promise<PurchaseResult> {
+  const { data, error } = await supabase.rpc("purchase_tickets", {
+    p_raffle_id: raffleId,
+    p_qty: qty,
+    p_promo: promo && promo.trim() ? promo.trim() : null,
+  });
+  if (error) throw error;
+  return data as unknown as PurchaseResult;
+}
+
+export interface MyTicketGroup {
+  raffleId: string;
+  slug: string;
+  title: string;
+  category: string;
+  status: "live" | "ended" | "draw_pending";
+  drawDate: string | null;
+  ticketPrice: number;
+  count: number;
+  freeCount: number;
+  numbers: number[];
+}
+
+/** Returns the signed-in entrant's tickets grouped by raffle. */
+export async function fetchMyTickets(userId: string): Promise<MyTicketGroup[]> {
+  const { data, error } = await supabase
+    .from("tickets")
+    .select(
+      "ticket_number, entry_type, raffle:raffles!tickets_raffle_id_fkey(id, slug, title, category, status, draw_date, ticket_price)",
+    )
+    .eq("entrant_id", userId)
+    .order("ticket_number", { ascending: true });
+
+  if (error || !data) return [];
+
+  const groups = new Map<string, MyTicketGroup>();
+  for (const row of data as unknown as Array<{
+    ticket_number: number;
+    entry_type: string;
+    raffle: {
+      id: string;
+      slug: string;
+      title: string;
+      category: string | null;
+      status: string;
+      draw_date: string | null;
+      ticket_price: number;
+    } | null;
+  }>) {
+    const r = row.raffle;
+    if (!r) continue;
+    let g = groups.get(r.id);
+    if (!g) {
+      g = {
+        raffleId: r.id,
+        slug: r.slug,
+        title: r.title,
+        category: r.category ?? "Other",
+        status: r.status === "ended" ? "ended" : "live",
+        drawDate: r.draw_date,
+        ticketPrice: Number(r.ticket_price),
+        count: 0,
+        freeCount: 0,
+        numbers: [],
+      };
+      groups.set(r.id, g);
+    }
+    g.count += 1;
+    if (row.entry_type !== "paid") g.freeCount += 1;
+    g.numbers.push(row.ticket_number);
+  }
+  return [...groups.values()];
+}
+
 /** Persists a wizard draft as a live raffle owned by the given host. */
 export async function createRaffle(draft: RaffleDraft, hostId: string) {
   const slug = slugify(draft.title);

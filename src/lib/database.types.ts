@@ -108,6 +108,42 @@ export type Database = {
         }
         Relationships: []
       }
+      draw_audit: {
+        Row: {
+          created_at: string
+          drawn_index: number | null
+          drawn_ticket_number: number | null
+          entries: number
+          id: string
+          method: string
+          raffle_id: string
+          seed: string
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          drawn_index?: number | null
+          drawn_ticket_number?: number | null
+          entries: number
+          id?: string
+          method?: string
+          raffle_id: string
+          seed: string
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          drawn_index?: number | null
+          drawn_ticket_number?: number | null
+          entries?: number
+          id?: string
+          method?: string
+          raffle_id?: string
+          seed?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           affiliate_share: number
@@ -422,6 +458,14 @@ export type Database = {
     Functions: {
       purchase_tickets: {
         Args: { p_raffle_id: string; p_qty: number; p_promo?: string | null }
+        Returns: Json
+      }
+      confirm_prize: {
+        Args: { p_raffle_id: string; p_decision: string }
+        Returns: Json
+      }
+      withdraw_revenue: {
+        Args: { p_raffle_id: string }
         Returns: Json
       }
     }

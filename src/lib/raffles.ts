@@ -221,6 +221,148 @@ export async function fetchMyTickets(userId: string): Promise<MyTicketGroup[]> {
   return [...groups.values()];
 }
 
+export interface EndedRaffleDetail {
+  id: string;
+  title: string;
+  drawnAt: string | null;
+  sold: number;
+  price: number;
+  prizeStatus: "pending" | "confirmed" | "revoked" | "disputed";
+  revenueReleased: boolean;
+  gross: number;
+  commission: number;
+  hostNet: number;
+  winner: {
+    name: string;
+    initials: string;
+    ticket: number | null;
+    email: string;
+    region: string;
+  } | null;
+  audit: {
+    method: string;
+    seed: string;
+    entries: number;
+    drawnIndex: number | null;
+    drawnTicket: number | null;
+    timestamp: string;
+  } | null;
+}
+
+function initialsFromName(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0])
+      .join("")
+      .toUpperCase() || "??"
+  );
+}
+
+/** Loads the host's most recent ended raffle with winner, audit and revenue. */
+export async function fetchEndedRaffleForHost(
+  hostId: string,
+): Promise<EndedRaffleDetail | null> {
+  const { data: raffle } = await supabase
+    .from("raffles")
+    .select(
+      "id, title, draw_date, tickets_sold_count, ticket_price, prize_status, revenue_released_at",
+    )
+    .eq("host_id", hostId)
+    .eq("status", "ended")
+    .order("draw_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!raffle) return null;
+
+  const [{ data: winnerRow }, { data: auditRow }, { data: payments }] =
+    await Promise.all([
+      supabase
+        .from("winners")
+        .select(
+          "ticket:tickets!winners_ticket_id_fkey(ticket_number, geo_region), profile:profiles!winners_winner_id_fkey(full_name, email)",
+        )
+        .eq("raffle_id", raffle.id)
+        .maybeSingle(),
+      supabase
+        .from("draw_audit")
+        .select("method, seed, entries, drawn_index, drawn_ticket_number, created_at")
+        .eq("raffle_id", raffle.id)
+        .maybeSingle(),
+      supabase
+        .from("payments")
+        .select("amount_gross, platform_commission, host_net")
+        .eq("raffle_id", raffle.id),
+    ]);
+
+  const gross = (payments ?? []).reduce((s, p) => s + Number(p.amount_gross), 0);
+  const commission = (payments ?? []).reduce(
+    (s, p) => s + Number(p.platform_commission),
+    0,
+  );
+  const hostNet = (payments ?? []).reduce((s, p) => s + Number(p.host_net), 0);
+
+  const wr = winnerRow as
+    | {
+        ticket: { ticket_number: number; geo_region: string | null } | null;
+        profile: { full_name: string | null; email: string | null } | null;
+      }
+    | null;
+
+  const winnerName = wr?.profile?.full_name?.trim() || "Awaiting entrant";
+
+  return {
+    id: raffle.id,
+    title: raffle.title,
+    drawnAt: raffle.draw_date,
+    sold: raffle.tickets_sold_count,
+    price: Number(raffle.ticket_price),
+    prizeStatus: raffle.prize_status,
+    revenueReleased: raffle.revenue_released_at != null,
+    gross,
+    commission,
+    hostNet,
+    winner: wr
+      ? {
+          name: winnerName,
+          initials: initialsFromName(winnerName),
+          ticket: wr.ticket?.ticket_number ?? null,
+          email: wr.profile?.email ?? "—",
+          region: wr.ticket?.geo_region ?? "—",
+        }
+      : null,
+    audit: auditRow
+      ? {
+          method: auditRow.method,
+          seed: auditRow.seed,
+          entries: auditRow.entries,
+          drawnIndex: auditRow.drawn_index,
+          drawnTicket: auditRow.drawn_ticket_number,
+          timestamp: auditRow.created_at,
+        }
+      : null,
+  };
+}
+
+export async function confirmPrize(raffleId: string, decision: string) {
+  const { data, error } = await supabase.rpc("confirm_prize", {
+    p_raffle_id: raffleId,
+    p_decision: decision,
+  });
+  if (error) throw error;
+  return data as unknown as { prize_status: string; compensation?: number };
+}
+
+export async function withdrawRevenue(raffleId: string) {
+  const { data, error } = await supabase.rpc("withdraw_revenue", {
+    p_raffle_id: raffleId,
+  });
+  if (error) throw error;
+  return data as unknown as { amount: number };
+}
+
 /** Persists a wizard draft as a live raffle owned by the given host. */
 export async function createRaffle(draft: RaffleDraft, hostId: string) {
   const slug = slugify(draft.title);

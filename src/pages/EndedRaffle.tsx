@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -17,36 +17,26 @@ import {
   MapPin,
   Watch,
   PartyPopper,
+  Inbox,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CountdownPills } from "@/components/ui/Countdown";
+import { useAuth } from "@/lib/auth";
+import {
+  fetchEndedRaffleForHost,
+  confirmPrize,
+  withdrawRevenue,
+  type EndedRaffleDetail,
+} from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
 type Flow = "pending" | "confirmed" | "revoked" | "withdrawn";
 type Decision = "advertised" | "modified" | "revoke";
-
-// Ended raffle being confirmed (Rolex Submariner)
-const raffle = {
-  title: "Rolex Submariner — Date 41mm",
-  drawnAt: "22 June 2026, 18:00 BST",
-  sold: 8000,
-  price: 12,
-};
-const gross = raffle.sold * raffle.price;
-const commission = gross * 0.1;
-const hostNet = gross - commission;
-const guaranteePayout = gross * 0.75;
-
-const winner = {
-  name: "Sofia L.",
-  initials: "SL",
-  ticket: 4172,
-  email: "sofia.l@example.com",
-  region: "Manchester, UK",
-};
 
 const decisions: {
   key: Decision;
@@ -78,19 +68,123 @@ const decisions: {
   },
 ];
 
+function flowFrom(d: EndedRaffleDetail): Flow {
+  if (d.revenueReleased) return "withdrawn";
+  if (d.prizeStatus === "confirmed") return "confirmed";
+  if (d.prizeStatus === "revoked") return "revoked";
+  return "pending";
+}
+
 export default function EndedRaffle() {
+  const { user } = useAuth();
+  const [detail, setDetail] = useState<EndedRaffleDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [flow, setFlow] = useState<Flow>("pending");
   const [choice, setChoice] = useState<Decision>("advertised");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 7-day confirmation deadline (≈ 6d 4h left for the demo)
-  const deadline = useMemo(
-    () => new Date(Date.now() + (6 * 24 + 4) * 3_600_000).toISOString(),
-    [],
-  );
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetchEndedRaffleForHost(user.id).then((d) => {
+      if (!active) return;
+      setDetail(d);
+      if (d) setFlow(flowFrom(d));
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
-  function submitDecision() {
-    setFlow(choice === "revoke" ? "revoked" : "confirmed");
+  // Host must confirm within 7 days of the draw.
+  const deadline = useMemo(() => {
+    const base = detail?.drawnAt ? new Date(detail.drawnAt).getTime() : Date.now();
+    return new Date(base + 7 * 86_400_000).toISOString();
+  }, [detail]);
+
+  async function submitDecision() {
+    if (!detail) return;
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await confirmPrize(detail.id, choice);
+      setFlow(res.prize_status === "revoked" ? "revoked" : "confirmed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not submit your decision.");
+    } finally {
+      setBusy(false);
+    }
   }
+
+  async function withdraw() {
+    if (!detail) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await withdrawRevenue(detail.id);
+      setFlow("withdrawn");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not process withdrawal.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[50vh] place-items-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <AppShell>
+        <div className="mx-auto flex min-h-[55vh] max-w-md flex-col items-center justify-center text-center">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+            <Inbox strokeWidth={1.5} className="h-8 w-8" />
+          </div>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">
+            No ended raffles yet
+          </h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            When one of your raffles reaches its draw date or sells out, the
+            automated draw fires and the winner appears here for confirmation.
+          </p>
+          <Link to="/en/dashboard" className="mt-6">
+            <Button variant="secondary" size="md">
+              <ArrowLeft strokeWidth={1.5} className="h-[18px] w-[18px]" />
+              Back to dashboard
+            </Button>
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const guaranteePayout = detail.gross * 0.75;
+  const drawnLabel = detail.drawnAt
+    ? new Date(detail.drawnAt).toLocaleString("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "recently";
+
+  const auditRows: [string, string][] = detail.audit
+    ? [
+        ["method", detail.audit.method],
+        ["seed", `${detail.audit.seed.slice(0, 16)}… (sealed)`],
+        ["entries", detail.audit.entries.toLocaleString()],
+        ["drawn_index", detail.audit.drawnIndex?.toLocaleString() ?? "—"],
+        ["drawn_ticket", detail.audit.drawnTicket?.toLocaleString() ?? "—"],
+        ["timestamp", new Date(detail.audit.timestamp).toISOString()],
+      ]
+    : [];
 
   return (
     <AppShell>
@@ -108,9 +202,9 @@ export default function EndedRaffle() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tightest text-white sm:text-3xl">
-            {raffle.title}
+            {detail.title}
           </h1>
-          <p className="text-sm text-zinc-500">Draw completed {raffle.drawnAt}</p>
+          <p className="text-sm text-zinc-500">Draw completed {drawnLabel}</p>
         </div>
         <Badge tone="neutral" className="ml-auto">
           Ended
@@ -120,14 +214,13 @@ export default function EndedRaffle() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left: winner + audit */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Winner */}
           <SpotlightCard className="overflow-hidden" lift={false}>
             <div className="relative border-b border-white/[0.06] bg-gradient-to-br from-accent/15 via-transparent to-transparent p-6">
               <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-accent/25 blur-3xl" />
               <div className="relative flex items-center gap-4">
                 <div className="relative">
                   <span className="grid h-16 w-16 place-items-center rounded-2xl bg-accent-gradient text-xl font-bold text-white shadow-accent-glow">
-                    {winner.initials}
+                    {detail.winner?.initials ?? "—"}
                   </span>
                   <span className="absolute -bottom-1.5 -right-1.5 grid h-7 w-7 place-items-center rounded-full border-2 border-obsidian bg-amber-400 text-obsidian">
                     <Trophy strokeWidth={2} className="h-3.5 w-3.5" />
@@ -138,11 +231,13 @@ export default function EndedRaffle() {
                     Winner selected
                   </p>
                   <p className="text-xl font-bold tracking-tight text-white">
-                    {winner.name}
+                    {detail.winner?.name ?? "No entrants"}
                   </p>
                   <p className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
                     <Hash className="h-3.5 w-3.5" />
-                    Winning ticket #{winner.ticket.toLocaleString()}
+                    {detail.winner?.ticket != null
+                      ? `Winning ticket #${detail.winner.ticket.toLocaleString()}`
+                      : "—"}
                   </p>
                 </div>
               </div>
@@ -150,16 +245,15 @@ export default function EndedRaffle() {
             <div className="grid grid-cols-1 gap-px bg-white/[0.06] sm:grid-cols-2">
               <div className="flex items-center gap-3 bg-obsidian/40 p-4 text-sm">
                 <Mail strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
-                <span className="text-zinc-300">{winner.email}</span>
+                <span className="text-zinc-300">{detail.winner?.email ?? "—"}</span>
               </div>
               <div className="flex items-center gap-3 bg-obsidian/40 p-4 text-sm">
                 <MapPin strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
-                <span className="text-zinc-300">{winner.region}</span>
+                <span className="text-zinc-300">{detail.winner?.region ?? "—"}</span>
               </div>
             </div>
           </SpotlightCard>
 
-          {/* RNG audit log */}
           <SpotlightCard className="p-6" lift={false}>
             <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
               <Fingerprint strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
@@ -169,50 +263,53 @@ export default function EndedRaffle() {
               Every draw is logged for dispute evidence — the outcome can't be
               altered by anyone.
             </p>
-            <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10 font-mono text-xs">
-              {[
-                ["method", "CSPRNG · crypto.getRandomValues"],
-                ["seed_hash", "9f2c…a17b (SHA-256, sealed pre-draw)"],
-                ["entries", raffle.sold.toLocaleString()],
-                ["drawn_index", winner.ticket.toLocaleString()],
-                ["timestamp", "2026-06-22T17:00:00Z"],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-center justify-between gap-4 bg-white/[0.02] px-4 py-2.5"
-                >
-                  <dt className="text-zinc-500">{k}</dt>
-                  <dd className="truncate text-zinc-300">{v}</dd>
-                </div>
-              ))}
-            </dl>
+            {auditRows.length > 0 ? (
+              <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10 font-mono text-xs">
+                {auditRows.map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-4 bg-white/[0.02] px-4 py-2.5"
+                  >
+                    <dt className="text-zinc-500">{k}</dt>
+                    <dd className="truncate text-zinc-300">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-4 text-sm text-zinc-500">No audit record found.</p>
+            )}
           </SpotlightCard>
         </div>
 
         {/* Right: action panel */}
         <div className="lg:col-span-1">
           <div className="space-y-4 lg:sticky lg:top-24">
-            {/* Revenue summary */}
             <div className="glass-strong p-5">
               <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Revenue (in escrow)
               </p>
               <p className="mt-1 text-3xl font-bold tracking-tight text-white">
-                {formatCurrency(flow === "revoked" ? 0 : hostNet)}
+                {formatCurrency(flow === "revoked" ? 0 : detail.hostNet)}
               </p>
               <dl className="mt-4 space-y-1.5 border-t border-white/[0.06] pt-3 text-sm">
                 <div className="flex justify-between text-zinc-400">
                   <span>Gross sales</span>
-                  <span className="tabular-nums">{formatCurrency(gross)}</span>
+                  <span className="tabular-nums">{formatCurrency(detail.gross)}</span>
                 </div>
                 <div className="flex justify-between text-zinc-400">
-                  <span>Commission (10%)</span>
-                  <span className="tabular-nums">−{formatCurrency(commission)}</span>
+                  <span>Commission</span>
+                  <span className="tabular-nums">−{formatCurrency(detail.commission)}</span>
                 </div>
               </dl>
             </div>
 
-            {/* Stateful action card */}
+            {error && (
+              <div className="flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+                <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
             <AnimatePresence mode="wait">
               {flow === "pending" && (
                 <motion.div
@@ -281,9 +378,16 @@ export default function EndedRaffle() {
                     variant="primary"
                     size="lg"
                     onClick={submitDecision}
+                    disabled={busy}
                     className="mt-4 w-full"
                   >
-                    Submit decision
+                    {busy ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" /> Submitting…
+                      </>
+                    ) : (
+                      "Submit decision"
+                    )}
                   </Button>
                 </motion.div>
               )}
@@ -306,11 +410,20 @@ export default function EndedRaffle() {
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={() => setFlow("withdrawn")}
+                    onClick={withdraw}
+                    disabled={busy}
                     className="mt-4 w-full"
                   >
-                    <Wallet strokeWidth={1.5} className="h-5 w-5" />
-                    Withdraw {formatCurrency(hostNet)}
+                    {busy ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" /> Processing…
+                      </>
+                    ) : (
+                      <>
+                        <Wallet strokeWidth={1.5} className="h-5 w-5" />
+                        Withdraw {formatCurrency(detail.hostNet)}
+                      </>
+                    )}
                   </Button>
                 </motion.div>
               )}
@@ -327,7 +440,8 @@ export default function EndedRaffle() {
                   </div>
                   <p className="mt-4 font-semibold text-white">Payout on its way</p>
                   <p className="mt-1.5 text-sm text-zinc-400">
-                    {formatCurrency(hostNet)} is being transferred to your account.
+                    {formatCurrency(detail.hostNet)} is being transferred to your
+                    account.
                   </p>
                 </motion.div>
               )}
@@ -356,7 +470,6 @@ export default function EndedRaffle() {
               )}
             </AnimatePresence>
 
-            {/* Guarantee footnote */}
             <div className="glass flex items-start gap-3 p-4">
               <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
               <p className="text-xs leading-relaxed text-zinc-400">

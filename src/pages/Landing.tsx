@@ -176,12 +176,20 @@ export default function Landing() {
               Start free with commission as low as 8%. No setup fees, no
               monthly minimum.
             </p>
-            <Link to="/en/dashboard" className="mt-8 inline-block">
-              <Button variant="primary" size="lg">
-                Open your dashboard
-                <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
-              </Button>
-            </Link>
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link to="/en/dashboard" className="inline-block">
+                <Button variant="primary" size="lg">
+                  Open your dashboard
+                  <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                </Button>
+              </Link>
+              <Link
+                to="/en/pricing"
+                className="text-sm font-medium text-accent-soft transition-colors hover:text-white"
+              >
+                See how commission works →
+              </Link>
+            </div>
           </div>
         </div>
       </section>

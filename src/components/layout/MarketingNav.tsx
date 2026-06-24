@@ -7,7 +7,7 @@ import { useDrawer } from "@/lib/drawer";
 const baseLinks: { label: string; href?: string; to?: string }[] = [
   { label: "How it works", href: "/en#how" },
   { label: "Marketplace", to: "/en/public-raffles/live" },
-  { label: "Pricing", href: "/en#pricing" },
+  { label: "Pricing", to: "/en/pricing" },
 ];
 
 export function MarketingNav() {

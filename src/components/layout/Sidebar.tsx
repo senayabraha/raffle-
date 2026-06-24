@@ -111,21 +111,21 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Upgrade card */}
+      {/* Pricing card */}
       <div className="mt-auto">
         <div className="glass relative overflow-hidden p-4">
           <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-accent/30 blur-2xl" />
           <p className="text-sm font-semibold tracking-tight text-white">
-            Go Pro
+            Commission, not subscriptions
           </p>
           <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-            Unlock 10 live raffles, auto-translate & 50% off feature fees.
+            No monthly fees — we only earn when your raffle does.
           </p>
           <Link
-            to="/en/account"
+            to="/en/pricing"
             className="mt-3 block w-full rounded-lg bg-accent-gradient px-3 py-2 text-center text-xs font-semibold text-white shadow-accent-glow transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
           >
-            Upgrade plan
+            See pricing
           </Link>
         </div>
       </div>

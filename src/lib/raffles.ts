@@ -387,6 +387,86 @@ export async function fetchHostEndedRaffle(
   };
 }
 
+export interface PublicWinner {
+  id: string;
+  raffleSlug: string;
+  raffleTitle: string;
+  category: string;
+  ticketPrice: number;
+  drawDate: string | null;
+  winnerName: string;
+  winnerInitials: string;
+  ticketNumber: number | null;
+}
+
+type WinnerRowWithRaffle = {
+  id: string;
+  winner: { full_name: string | null } | { full_name: string | null }[] | null;
+  ticket: { ticket_number: number } | { ticket_number: number }[] | null;
+  raffle:
+    | {
+        slug: string;
+        title: string;
+        category: string | null;
+        ticket_price: number;
+        draw_date: string | null;
+        visibility: "public" | "private";
+        status: string;
+      }
+    | {
+        slug: string;
+        title: string;
+        category: string | null;
+        ticket_price: number;
+        draw_date: string | null;
+        visibility: "public" | "private";
+        status: string;
+      }[]
+    | null;
+};
+
+/** Fetches winners of ended, public raffles for the public Winners page. */
+export async function fetchPublicWinners(): Promise<PublicWinner[]> {
+  const { data, error } = await supabase
+    .from("winners")
+    .select(
+      "id, winner:profiles!winners_winner_id_fkey(full_name), ticket:tickets!winners_ticket_id_fkey(ticket_number), raffle:raffles!winners_raffle_id_fkey(slug, title, category, ticket_price, draw_date, visibility, status)",
+    )
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return (data as unknown as WinnerRowWithRaffle[])
+    .map((row) => {
+      const raffle = Array.isArray(row.raffle) ? row.raffle[0] : row.raffle;
+      const winner = Array.isArray(row.winner) ? row.winner[0] : row.winner;
+      const ticket = Array.isArray(row.ticket) ? row.ticket[0] : row.ticket;
+      if (!raffle || raffle.visibility !== "public" || raffle.status !== "ended") return null;
+
+      const name = winner?.full_name?.trim() || "A Raffall entrant";
+      const initials =
+        name
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0])
+          .join("")
+          .toUpperCase() || "W";
+
+      return {
+        id: row.id,
+        raffleSlug: raffle.slug,
+        raffleTitle: raffle.title,
+        category: raffle.category ?? "Other",
+        ticketPrice: Number(raffle.ticket_price),
+        drawDate: raffle.draw_date,
+        winnerName: name,
+        winnerInitials: initials,
+        ticketNumber: ticket?.ticket_number ?? null,
+      };
+    })
+    .filter((w): w is PublicWinner => w !== null);
+}
+
 /** Persists a wizard draft as a live raffle owned by the given host. */
 export async function createRaffle(draft: RaffleDraft, hostId: string) {
   const slug = slugify(draft.title);

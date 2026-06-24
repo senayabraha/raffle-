@@ -20,6 +20,9 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const CreateRaffle = lazy(() => import("@/pages/CreateRaffle"));
 const EndedRaffle = lazy(() => import("@/pages/EndedRaffle"));
 const Marketplace = lazy(() => import("@/pages/Marketplace"));
+const Winners = lazy(() => import("@/pages/Winners"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Account = lazy(() => import("@/pages/Account"));
 const RaffleDetail = lazy(() => import("@/pages/RaffleDetail"));
 const Login = lazy(() => import("@/pages/Login"));
 const HostLogin = lazy(() => import("@/pages/HostLogin"));
@@ -135,12 +138,12 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            {/* Account & support (authenticated, placeholder until built) */}
+            {/* Account & support */}
             <Route
               path="/en/account"
               element={
                 <RequireAuth>
-                  <ComingSoon title="Settings" />
+                  <Account />
                 </RequireAuth>
               }
             />
@@ -172,7 +175,8 @@ export default function App() {
             <Route path="/en/contact" element={<Legal title="Contact" />} />
             {/* Public marketplace */}
             <Route path="/en/public-raffles/live" element={<Marketplace />} />
-            <Route path="/en/public-raffles/ended" element={<Marketplace />} />
+            <Route path="/en/public-raffles/ended" element={<Winners />} />
+            <Route path="/en/pricing" element={<Pricing />} />
             <Route path="/en/raffle/:slug" element={<RaffleDetail />} />
             <Route path="*" element={<Navigate to="/en" replace />} />
           </Routes>

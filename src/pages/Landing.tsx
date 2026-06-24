@@ -233,9 +233,9 @@ export default function Landing() {
             <span>© 2026</span>
           </div>
           <div className="flex gap-5">
-            <a href="#" className="transition-colors hover:text-white">Terms & fees</a>
-            <a href="#" className="transition-colors hover:text-white">Privacy</a>
-            <a href="#" className="transition-colors hover:text-white">Contact</a>
+            <Link to="/en/terms" className="transition-colors hover:text-white">Terms & fees</Link>
+            <Link to="/en/privacy" className="transition-colors hover:text-white">Privacy</Link>
+            <Link to="/en/contact" className="transition-colors hover:text-white">Contact</Link>
           </div>
         </div>
       </footer>

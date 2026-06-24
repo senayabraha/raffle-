@@ -13,6 +13,7 @@ import {
   Link2,
   Heart,
   Gift,
+  Check,
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -23,19 +24,39 @@ import { type MarketplaceRaffle } from "@/data/marketplace";
 import { fetchRaffleBySlug } from "@/lib/raffles";
 import { formatCompact, cn } from "@/lib/utils";
 
-const shareLinks = [
-  { icon: Twitter, label: "X" },
-  { icon: Facebook, label: "Facebook" },
-  { icon: Send, label: "Telegram" },
-  { icon: Link2, label: "Copy link" },
-];
-
 export default function RaffleDetail() {
   const { slug } = useParams();
   const [raffle, setRaffle] = useState<MarketplaceRaffle | null | undefined>(
     undefined,
   );
   const [resolving, setResolving] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+
+  function shareTo(network: "x" | "facebook" | "telegram") {
+    const text = raffle ? `Check out "${raffle.title}" on Raffall` : "Check out this raffle on Raffall";
+    const urls: Record<typeof network, string> = {
+      x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`,
+    };
+    window.open(urls[network], "_blank", "noopener,noreferrer");
+  }
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const shareLinks = [
+    { icon: Twitter, label: "X", onClick: () => shareTo("x") },
+    { icon: Facebook, label: "Facebook", onClick: () => shareTo("facebook") },
+    { icon: Send, label: "Telegram", onClick: () => shareTo("telegram") },
+    { icon: copied ? Check : Link2, label: copied ? "Copied!" : "Copy link", onClick: copyLink },
+  ];
 
   // Resolve the raffle from the database by slug.
   useEffect(() => {
@@ -208,7 +229,9 @@ export default function RaffleDetail() {
                 {shareLinks.map((s) => (
                   <button
                     key={s.label}
+                    type="button"
                     title={s.label}
+                    onClick={s.onClick}
                     className="focus-ring grid h-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:text-accent-soft active:scale-95"
                   >
                     <s.icon strokeWidth={1.5} className="h-[18px] w-[18px]" />

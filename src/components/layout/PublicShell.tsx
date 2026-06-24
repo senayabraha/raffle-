@@ -23,9 +23,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <span>© 2026</span>
           </Link>
           <div className="flex gap-5">
-            <a href="#" className="transition-colors hover:text-white">Terms &amp; fees</a>
-            <a href="#" className="transition-colors hover:text-white">Privacy</a>
-            <a href="#" className="transition-colors hover:text-white">Contact</a>
+            <Link to="/en/terms" className="transition-colors hover:text-white">Terms &amp; fees</Link>
+            <Link to="/en/privacy" className="transition-colors hover:text-white">Privacy</Link>
+            <Link to="/en/contact" className="transition-colors hover:text-white">Contact</Link>
           </div>
         </div>
       </footer>

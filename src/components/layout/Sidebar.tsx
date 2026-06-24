@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Ticket,
@@ -114,9 +114,12 @@ export function Sidebar() {
           <p className="mt-1 text-xs leading-relaxed text-zinc-400">
             Unlock 10 live raffles, auto-translate & 50% off feature fees.
           </p>
-          <button className="mt-3 w-full rounded-lg bg-accent-gradient px-3 py-2 text-xs font-semibold text-white shadow-accent-glow transition-all duration-300 hover:brightness-110 active:scale-[0.97]">
+          <Link
+            to="/en/account"
+            className="mt-3 block w-full rounded-lg bg-accent-gradient px-3 py-2 text-center text-xs font-semibold text-white shadow-accent-glow transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
+          >
             Upgrade plan
-          </button>
+          </Link>
         </div>
       </div>
     </aside>

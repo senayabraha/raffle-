@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -17,6 +17,7 @@ import {
   PartyPopper,
   Loader2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { createRaffle } from "@/lib/raffles";
@@ -59,9 +60,24 @@ export default function CreateRaffle() {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dir, setDir] = useState(1);
+  const [images, setImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (patch: Partial<RaffleDraft>) =>
     setDraft((d) => ({ ...d, ...patch }));
+
+  function addImages(files: FileList | null) {
+    if (!files) return;
+    const urls = Array.from(files)
+      .slice(0, Math.max(0, 6 - images.length))
+      .map((f) => URL.createObjectURL(f));
+    setImages((prev) => [...prev, ...urls].slice(0, 6));
+  }
+
+  function removeImage(url: string) {
+    setImages((prev) => prev.filter((u) => u !== url));
+    URL.revokeObjectURL(url);
+  }
 
   const canAdvance = step !== 0 || draft.title.trim().length > 2;
   const isLast = step === steps.length - 1;
@@ -152,7 +168,15 @@ export default function CreateRaffle() {
               >
                 <StepHeader index={step} />
                 <div className="mt-6 space-y-6">
-                  <StepBody step={step} draft={draft} set={set} />
+                  <StepBody
+                    step={step}
+                    draft={draft}
+                    set={set}
+                    images={images}
+                    fileInputRef={fileInputRef}
+                    onAddImages={addImages}
+                    onRemoveImage={removeImage}
+                  />
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -247,10 +271,18 @@ function StepBody({
   step,
   draft,
   set,
+  images,
+  fileInputRef,
+  onAddImages,
+  onRemoveImage,
 }: {
   step: number;
   draft: RaffleDraft;
   set: (p: Partial<RaffleDraft>) => void;
+  images: string[];
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onAddImages: (files: FileList | null) => void;
+  onRemoveImage: (url: string) => void;
 }) {
   switch (step) {
     case 0:
@@ -290,19 +322,50 @@ function StepBody({
               ))}
             </div>
           </Field>
-          <Field label="Prize images" hint="Up to 6">
+          <Field label="Prize images" hint={`${images.length}/6`}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                onAddImages(e.target.files);
+                e.target.value = "";
+              }}
+            />
             <button
               type="button"
-              className="focus-ring group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04]"
+              disabled={images.length >= 6}
+              onClick={() => fileInputRef.current?.click()}
+              className="focus-ring group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
                 <UploadCloud strokeWidth={1.5} className="h-5 w-5" />
               </span>
               <span className="text-sm font-medium text-zinc-200">
-                Drop images or click to upload
+                {images.length >= 6 ? "Maximum 6 images added" : "Click to upload"}
               </span>
               <span className="text-xs text-zinc-500">PNG or JPG, up to 8MB each</span>
             </button>
+
+            {images.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {images.map((url) => (
+                  <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => onRemoveImage(url)}
+                      aria-label="Remove image"
+                      className="focus-ring absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <X strokeWidth={2} className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </Field>
         </>
       );

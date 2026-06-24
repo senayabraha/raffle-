@@ -14,6 +14,8 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +37,24 @@ export default function Login() {
       options: { redirectTo: `${window.location.origin}/en/dashboard` },
     });
     if (error) setError(error.message);
+  }
+
+  async function forgotPassword() {
+    if (!email.trim()) {
+      setError("Enter your email above first, then click \"Forgot password?\".");
+      return;
+    }
+    setError(null);
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/en/login`,
+    });
+    setResetting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setResetSent(true);
   }
 
   return (
@@ -111,10 +131,21 @@ export default function Login() {
             />
             Remember me
           </label>
-          <a href="#" className="font-medium text-accent-soft transition-colors hover:text-white">
-            Forgot password?
-          </a>
+          <button
+            type="button"
+            onClick={forgotPassword}
+            disabled={resetting}
+            className="font-medium text-accent-soft transition-colors hover:text-white disabled:opacity-60"
+          >
+            {resetting ? "Sending…" : "Forgot password?"}
+          </button>
         </div>
+
+        {resetSent && (
+          <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+            Check {email} for a link to reset your password.
+          </p>
+        )}
 
         <Button type="submit" variant="primary" size="lg" disabled={loading} className="w-full">
           {loading ? (

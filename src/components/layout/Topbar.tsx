@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Bell, PlusCircle, LogOut } from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Search, Bell, PlusCircle, LogOut, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 
@@ -53,10 +54,29 @@ export function Topbar() {
             </Button>
           </Link>
 
-          <button className="focus-ring relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
-            <Bell strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-obsidian" />
-          </button>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="focus-ring relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
+                <Bell strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-obsidian" />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                align="end"
+                sideOffset={10}
+                className="glass-strong z-50 w-72 rounded-xl border border-white/10 p-4 text-sm shadow-glass"
+              >
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                  <BellOff strokeWidth={1.5} className="h-5 w-5 text-zinc-500" />
+                  <p className="font-medium text-zinc-200">No notifications yet</p>
+                  <p className="text-xs text-zinc-500">
+                    We'll let you know about entries, payouts and draws here.
+                  </p>
+                </div>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
 
           {/* Profile */}
           <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-2 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">

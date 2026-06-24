@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Star, Clock, Flame, Heart } from "lucide-react";
+import { Clock, Flame, Heart } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { CountdownInline } from "@/components/ui/Countdown";
@@ -73,10 +73,6 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
               {raffle.hostInitials}
             </span>
             <span className="truncate">{raffle.host}</span>
-            <span className="inline-flex items-center gap-0.5 text-zinc-500">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              {raffle.rating.toFixed(1)}
-            </span>
           </div>
 
           {/* Progress */}

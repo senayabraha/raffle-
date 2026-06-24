@@ -59,8 +59,9 @@ async function sendReceiptEmail(
   result: Record<string, unknown>,
 ) {
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendKey) {
-    console.warn("RESEND_API_KEY not set; skipping confirmation email.");
+  const resendFrom = Deno.env.get("RESEND_FROM_EMAIL");
+  if (!resendKey || !resendFrom) {
+    console.warn("RESEND_API_KEY or RESEND_FROM_EMAIL not set; skipping confirmation email.");
     return;
   }
 
@@ -89,7 +90,7 @@ async function sendReceiptEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Raffall <onboarding@resend.dev>",
+      from: resendFrom,
       to: contact.email,
       subject: `You're in! Your tickets for ${raffle?.title ?? "the raffle"}`,
       html: `

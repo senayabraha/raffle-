@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Star,
   ShieldCheck,
   Trophy,
   ArrowLeft,
@@ -142,10 +141,6 @@ export default function RaffleDetail() {
               </span>
               <div className="text-sm">
                 <p className="font-semibold text-white">{raffle.host}</p>
-                <p className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  {raffle.rating.toFixed(1)} · Verified {raffle.hostType} host
-                </p>
               </div>
             </div>
           </div>

@@ -322,26 +322,38 @@ export async function fetchHostOverview(hostId: string): Promise<HostOverview> {
 }
 
 export interface EndedRaffleSummary {
+  id: string;
   title: string;
   category: string;
   sold: number;
   ticketPrice: number;
   drawDate: string | null;
+  prizeStatus: "pending" | "confirmed" | "revoked" | "disputed";
+  revenueReleasedAt: string | null;
   winner: {
     name: string;
     initials: string;
     ticket: number | null;
     region: string | null;
   } | null;
+  audit: {
+    method: string;
+    seed: string;
+    entries: number;
+    drawnTicketNumber: number | null;
+    createdAt: string;
+  } | null;
 }
 
-/** Loads a host's most recently ended raffle, with winner details when available. */
+/** Loads a host's most recently ended raffle, with winner and audit details when available. */
 export async function fetchHostEndedRaffle(
   hostId: string,
 ): Promise<EndedRaffleSummary | null> {
   const { data: raffle } = await supabase
     .from("raffles")
-    .select("id, title, category, ticket_price, tickets_sold_count, draw_date")
+    .select(
+      "id, title, category, ticket_price, tickets_sold_count, draw_date, prize_status, revenue_released_at",
+    )
     .eq("host_id", hostId)
     .eq("status", "ended")
     .order("draw_date", { ascending: false, nullsFirst: false })
@@ -379,14 +391,59 @@ export async function fetchHostEndedRaffle(
     };
   }
 
+  const { data: auditRow } = await supabase
+    .from("draw_audit")
+    .select("method, seed, entries, drawn_ticket_number, created_at")
+    .eq("raffle_id", raffle.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const audit = auditRow
+    ? {
+        method: auditRow.method,
+        seed: auditRow.seed,
+        entries: auditRow.entries,
+        drawnTicketNumber: auditRow.drawn_ticket_number,
+        createdAt: auditRow.created_at,
+      }
+    : null;
+
   return {
+    id: raffle.id,
     title: raffle.title,
     category: raffle.category ?? "Other",
     sold: raffle.tickets_sold_count,
     ticketPrice: Number(raffle.ticket_price),
     drawDate: raffle.draw_date,
+    prizeStatus: raffle.prize_status,
+    revenueReleasedAt: raffle.revenue_released_at,
     winner,
+    audit,
   };
+}
+
+/** Host confirms the prize was delivered, or revokes it (triggering the guarantee payout). */
+export async function confirmPrize(
+  raffleId: string,
+  decision: "advertised" | "modified" | "revoke",
+): Promise<{ prizeStatus: string; compensation?: number }> {
+  const { data, error } = await supabase.rpc("confirm_prize", {
+    p_raffle_id: raffleId,
+    p_decision: decision,
+  });
+  if (error) throw error;
+  const result = data as { prize_status: string; compensation?: number };
+  return { prizeStatus: result.prize_status, compensation: result.compensation };
+}
+
+/** Host withdraws their net revenue once the prize is confirmed. */
+export async function withdrawRevenue(raffleId: string): Promise<{ amount: number }> {
+  const { data, error } = await supabase.rpc("withdraw_revenue", {
+    p_raffle_id: raffleId,
+  });
+  if (error) throw error;
+  return { amount: (data as { amount: number }).amount };
 }
 
 export interface PublicWinner {

@@ -216,8 +216,9 @@ export default function Dashboard() {
                 Raffall Guarantee
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
-                Funds are held in escrow until the winner confirms receipt. Draws
-                are automated and fully auditable.
+                You have 7 days after a draw to confirm prize delivery. Miss
+                the window and the guarantee pays the winner 75% of gross
+                revenue — you forfeit the rest.
               </p>
               <div className="mt-4 flex items-center gap-2 text-xs text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse-ring" />

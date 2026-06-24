@@ -127,10 +127,10 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="md">
+          <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-zinc-400">
             <Clock strokeWidth={1.5} className="h-[18px] w-[18px]" />
             Last 14 days
-          </Button>
+          </span>
           <Link to="/en/dashboard/create">
             <Button variant="primary" size="md">
               <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />

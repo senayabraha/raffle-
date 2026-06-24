@@ -20,6 +20,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
 const MyTickets = lazy(() => import("@/pages/MyTickets"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
+const Legal = lazy(() => import("@/pages/Legal"));
 
 /** Centered spinner shown while a lazy route chunk or the session loads. */
 function FullPageSpinner() {
@@ -123,6 +124,10 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            {/* Legal / marketing footer */}
+            <Route path="/en/terms" element={<Legal title="Terms & fees" />} />
+            <Route path="/en/privacy" element={<Legal title="Privacy" />} />
+            <Route path="/en/contact" element={<Legal title="Contact" />} />
             {/* Public marketplace */}
             <Route path="/en/public-raffles/live" element={<Marketplace />} />
             <Route path="/en/public-raffles/ended" element={<Marketplace />} />

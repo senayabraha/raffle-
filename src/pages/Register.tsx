@@ -174,8 +174,8 @@ export default function Register() {
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/[0.03] accent-[#8b5cf6]"
           />
           I'm 18 or over and agree to the{" "}
-          <a href="#" className="text-accent-soft hover:text-white">Terms</a> &amp;{" "}
-          <a href="#" className="text-accent-soft hover:text-white">Privacy Policy</a>.
+          <Link to="/en/terms" className="text-accent-soft hover:text-white">Terms</Link> &amp;{" "}
+          <Link to="/en/privacy" className="text-accent-soft hover:text-white">Privacy Policy</Link>.
         </label>
 
         <Button type="submit" variant="primary" size="lg" disabled={loading} className="w-full">

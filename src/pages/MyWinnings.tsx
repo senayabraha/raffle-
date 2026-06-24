@@ -9,16 +9,12 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { fetchMyWinnings, respondToWin, type MyWinning } from "@/lib/raffles";
 
-const statusBadge: Record<MyWinning["prizeStatus"], { tone: "warning" | "live" | "info" | "neutral"; label: string }> = {
+const statusBadge: Record<MyWinning["prizeStatus"], { tone: "warning" | "live" | "info"; label: string }> = {
   awaiting_claim: { tone: "warning", label: "Awaiting your response" },
   claimed: { tone: "info", label: "Claimed" },
   accepted: { tone: "live", label: "Accepted" },
   disputed: { tone: "info", label: "Disputed" },
-  compensated: { tone: "neutral", label: "Compensated" },
 };
-
-const compensatedNote =
-  "The host didn't confirm delivery within their 7-day window, so the Raffall Guarantee paid you 75% of gross ticket revenue automatically.";
 
 export default function MyWinnings() {
   const { user } = useAuth();
@@ -154,12 +150,6 @@ export default function MyWinnings() {
                       )}
                     </div>
                   </div>
-
-                  {w.prizeStatus === "compensated" && (
-                    <p className="mt-4 border-t border-white/[0.06] pt-3 text-xs leading-relaxed text-zinc-500">
-                      {compensatedNote}
-                    </p>
-                  )}
 
                   {canRespond && (
                     <div className="mt-4 flex gap-2 border-t border-white/[0.06] pt-3">

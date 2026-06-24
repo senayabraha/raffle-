@@ -21,8 +21,6 @@ export interface MarketplaceRaffle {
   cap: number;
   /** ISO date string for the draw. */
   drawDate: string;
-  featured: boolean;
-  charityPercent: number;
   bundles: { qty: number; free: number }[];
 }
 

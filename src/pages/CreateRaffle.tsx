@@ -9,7 +9,6 @@ import {
   PackageCheck,
   Globe,
   Lock,
-  Megaphone,
   Rocket,
   Check,
   Sparkles,
@@ -42,9 +41,8 @@ const steps: WizardStep[] = [
   { id: 1, title: "Prize details", desc: "What you're giving away" },
   { id: 2, title: "Ticket settings", desc: "Price, cap & bundles" },
   { id: 3, title: "Draw settings", desc: "When the winner is picked" },
-  { id: 4, title: "Boost", desc: "Featured listing" },
-  { id: 5, title: "Visibility", desc: "Public or private" },
-  { id: 6, title: "Review", desc: "Check & publish" },
+  { id: 4, title: "Visibility", desc: "Public or private" },
+  { id: 5, title: "Review", desc: "Check & publish" },
 ];
 
 const prizeCategories = categories.filter((c) => c !== "All");
@@ -261,7 +259,6 @@ const headings = [
   { title: "Tell us about the prize", sub: "A clear title and great description sell tickets." },
   { title: "Set your ticket pricing", sub: "Choose a price, a cap, and optional bundle deals." },
   { title: "Decide how the draw ends", sub: "On a fixed date or automatically when sold out." },
-  { title: "Boost your raffle", sub: "Optionally feature it at the top of the marketplace." },
   { title: "Choose who can see it", sub: "List on the public marketplace or share privately." },
   { title: "Review & publish", sub: "Everything look good? Send it live." },
 ];
@@ -487,22 +484,6 @@ function StepBody({
 
     case 3:
       return (
-        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-accent-soft">
-              <Megaphone strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            </span>
-            <div>
-              <p className="text-sm font-medium text-zinc-200">Featured listing</p>
-              <p className="text-xs text-zinc-500">Top of the marketplace · +£29</p>
-            </div>
-          </div>
-          <Switch checked={draft.featured} onChange={(v) => set({ featured: v })} />
-        </div>
-      );
-
-    case 4:
-      return (
         <Field label="Visibility">
           <Segmented
             value={draft.visibility}
@@ -525,7 +506,7 @@ function StepBody({
         </Field>
       );
 
-    case 5:
+    case 4:
       return <ReviewStep draft={draft} />;
 
     default:
@@ -558,7 +539,6 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
           ? new Date(draft.drawDate).toLocaleString("en-GB")
           : "No date set",
     ],
-    ["Featured", draft.featured ? "Yes (+£29)" : "No"],
     ["Visibility", draft.visibility === "public" ? "Public marketplace" : "Private link"],
   ];
 

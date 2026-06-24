@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { QRCodeCanvas } from "qrcode.react";
 import {
   ShieldCheck,
   Trophy,
@@ -10,13 +11,13 @@ import {
   Facebook,
   Send,
   Link2,
-  Heart,
   Gift,
   Check,
+  QrCode,
+  Download,
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
-import { Badge } from "@/components/ui/Badge";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
 import { type MarketplaceRaffle } from "@/data/marketplace";
@@ -30,6 +31,8 @@ export default function RaffleDetail() {
   );
   const [resolving, setResolving] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   const shareUrl =
     typeof window !== "undefined" ? window.location.href : "";
@@ -48,6 +51,15 @@ export default function RaffleDetail() {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function downloadQr() {
+    const canvas = qrRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = `${raffle?.slug ?? "raffle"}-qr.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   }
 
   const shareLinks = [
@@ -124,18 +136,6 @@ export default function RaffleDetail() {
                 className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-xl"
               />
             )}
-            <div className="absolute inset-x-4 top-4 flex gap-1.5">
-              {raffle.featured && (
-                <Badge tone="accent" className="backdrop-blur-md">
-                  Featured
-                </Badge>
-              )}
-              {raffle.charityPercent > 0 && (
-                <Badge tone="info" className="backdrop-blur-md">
-                  <Heart className="h-3 w-3" /> {raffle.charityPercent}% to charity
-                </Badge>
-              )}
-            </div>
           </div>
 
           {/* Title + host */}
@@ -226,10 +226,10 @@ export default function RaffleDetail() {
             <div className="glass p-5">
               <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
                 <Share2 strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
-                Share &amp; earn a free ticket
+                Share this raffle
               </p>
               <p className="mt-1 text-xs text-zinc-500">
-                Get 1 bonus entry when a friend joins via your link.
+                Send your link or scan the QR code to enter from any device.
               </p>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {shareLinks.map((s) => (
@@ -244,6 +244,32 @@ export default function RaffleDetail() {
                   </button>
                 ))}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowQr((v) => !v)}
+                className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-medium text-zinc-300 transition-all duration-300 hover:border-accent/40 hover:text-accent-soft"
+              >
+                <QrCode strokeWidth={1.5} className="h-4 w-4" />
+                {showQr ? "Hide QR code" : "Show QR code"}
+              </button>
+
+              {showQr && (
+                <div
+                  ref={qrRef}
+                  className="mt-3 flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white p-4"
+                >
+                  <QRCodeCanvas value={shareUrl} size={160} includeMargin />
+                  <button
+                    type="button"
+                    onClick={downloadQr}
+                    className="focus-ring inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 transition-colors hover:text-obsidian"
+                  >
+                    <Download strokeWidth={1.5} className="h-3.5 w-3.5" />
+                    Download
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Guarantee */}

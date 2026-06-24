@@ -24,7 +24,7 @@ const steps = [
   {
     icon: Share2,
     title: "Share",
-    body: "Get a unique link, QR codes and referral tools. Free tickets reward your fans for sharing.",
+    body: "Get a unique link and a scannable QR code to share anywhere — online or in print.",
   },
   {
     icon: Trophy,

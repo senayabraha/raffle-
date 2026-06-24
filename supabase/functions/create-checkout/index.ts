@@ -21,7 +21,6 @@ interface CheckoutBody {
   raffleId: string;
   raffleSlug: string;
   qty: number;
-  promo?: string;
   provider: "chapa" | "telebirr";
   fullName: string;
   phone: string;
@@ -40,7 +39,7 @@ Deno.serve(async (req) => {
     return json({ error: "Invalid request body." }, 400);
   }
 
-  const { raffleId, raffleSlug, qty, promo, provider, fullName, phone, email, city } = body;
+  const { raffleId, raffleSlug, qty, provider, fullName, phone, email, city } = body;
 
   if (!raffleId || !qty || !provider || !fullName || !phone || !email || !city) {
     return json({ error: "Missing required checkout fields." }, 400);
@@ -58,7 +57,6 @@ Deno.serve(async (req) => {
   const { data: rpcData, error: rpcError } = await supabase.rpc("create_pending_checkout", {
     p_raffle_id: raffleId,
     p_qty: qty,
-    p_promo: promo ?? null,
     p_provider: provider,
     p_full_name: fullName,
     p_phone: phone,

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Flame, Heart } from "lucide-react";
+import { Clock } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Badge } from "@/components/ui/Badge";
 import { CountdownInline } from "@/components/ui/Countdown";
@@ -40,19 +40,7 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
           )}
 
           {/* Top badges */}
-          <div className="absolute inset-x-3 top-3 flex items-start justify-between">
-            <div className="flex gap-1.5">
-              {raffle.featured && (
-                <Badge tone="accent" className="backdrop-blur-md">
-                  <Flame className="h-3 w-3" /> Featured
-                </Badge>
-              )}
-              {raffle.charityPercent > 0 && (
-                <Badge tone="info" className="backdrop-blur-md">
-                  <Heart className="h-3 w-3" /> {raffle.charityPercent}% charity
-                </Badge>
-              )}
-            </div>
+          <div className="absolute inset-x-3 top-3 flex items-start justify-end">
             {raffle.status === "live" ? (
               <Badge tone="live" dot className="backdrop-blur-md">
                 Live

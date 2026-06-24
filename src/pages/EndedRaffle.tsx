@@ -7,15 +7,11 @@ import {
   CheckCircle2,
   PackageCheck,
   PencilLine,
-  ShieldX,
-  ShieldCheck,
-  Wallet,
   Clock,
   Hash,
   Fingerprint,
   MapPin,
   Award,
-  PartyPopper,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -26,19 +22,15 @@ import { useAuth } from "@/lib/auth";
 import {
   fetchHostEndedRaffle,
   confirmPrize,
-  withdrawRevenue,
   type EndedRaffleSummary,
 } from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
-type Flow = "pending" | "confirmed" | "revoked" | "withdrawn";
-type Decision = "advertised" | "modified" | "revoke";
+type Flow = "pending" | "confirmed";
+type Decision = "advertised" | "modified";
 
 function flowFromRaffle(raffle: EndedRaffleSummary): Flow {
-  if (raffle.prizeStatus === "revoked") return "revoked";
-  if (raffle.revenueReleasedAt) return "withdrawn";
-  if (raffle.prizeStatus === "confirmed") return "confirmed";
-  return "pending";
+  return raffle.prizeStatus === "confirmed" ? "confirmed" : "pending";
 }
 
 const decisions: {
@@ -46,7 +38,7 @@ const decisions: {
   label: string;
   desc: string;
   icon: typeof PackageCheck;
-  tone: "ok" | "warn" | "danger";
+  tone: "ok" | "warn";
 }[] = [
   {
     key: "advertised",
@@ -61,13 +53,6 @@ const decisions: {
     desc: "A change was agreed with the winner.",
     icon: PencilLine,
     tone: "warn",
-  },
-  {
-    key: "revoke",
-    label: "Revoke prize",
-    desc: "Triggers the Raffall Guarantee — you forfeit revenue.",
-    icon: ShieldX,
-    tone: "danger",
   },
 ];
 
@@ -106,21 +91,7 @@ export default function EndedRaffle() {
     setActionError(null);
     try {
       await confirmPrize(raffle.id, choice);
-      setFlow(choice === "revoke" ? "revoked" : "confirmed");
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function submitWithdraw() {
-    if (!raffle || submitting) return;
-    setSubmitting(true);
-    setActionError(null);
-    try {
-      await withdrawRevenue(raffle.id);
-      setFlow("withdrawn");
+      setFlow("confirmed");
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -155,7 +126,7 @@ export default function EndedRaffle() {
           <p className="text-base font-semibold text-white">No completed draws yet</p>
           <p className="max-w-sm text-sm text-zinc-500">
             When one of your raffles ends and a winner is drawn, you'll confirm
-            delivery and release your funds from here.
+            delivery from here.
           </p>
           <Link to="/en/dashboard/create" className="mt-1">
             <Button variant="primary" size="md">
@@ -170,7 +141,6 @@ export default function EndedRaffle() {
   const gross = raffle.sold * raffle.ticketPrice;
   const commission = gross * 0.1;
   const hostNet = gross - commission;
-  const guaranteePayout = gross * 0.75;
   const winner = raffle.winner;
   const drawnAt = raffle.drawDate
     ? new Date(raffle.drawDate).toLocaleString("en-GB", {
@@ -291,10 +261,10 @@ export default function EndedRaffle() {
             {/* Revenue summary */}
             <div className="glass-strong p-5">
               <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                Revenue (in escrow)
+                Revenue
               </p>
               <p className="mt-1 text-3xl font-bold tracking-tight text-white">
-                {formatCurrency(flow === "revoked" ? 0 : hostNet)}
+                {formatCurrency(hostNet)}
               </p>
               <dl className="mt-4 space-y-1.5 border-t border-white/[0.06] pt-3 text-sm">
                 <div className="flex justify-between text-zinc-400">
@@ -324,9 +294,7 @@ export default function EndedRaffle() {
                   </p>
                   <CountdownPills drawDate={deadline} />
                   <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    Confirm the prize was delivered to release your funds. If
-                    this 7-day window expires, the Raffall Guarantee pays the
-                    winner 75% of gross revenue automatically.
+                    Confirm how the prize was delivered to the winner.
                   </p>
 
                   <div className="mt-5 space-y-2">
@@ -340,11 +308,9 @@ export default function EndedRaffle() {
                           className={cn(
                             "focus-ring flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all duration-300 ease-premium",
                             active
-                              ? d.tone === "danger"
-                                ? "border-rose-400/50 bg-rose-400/10"
-                                : d.tone === "warn"
-                                  ? "border-amber-400/50 bg-amber-400/10"
-                                  : "border-emerald-400/50 bg-emerald-400/10"
+                              ? d.tone === "warn"
+                                ? "border-amber-400/50 bg-amber-400/10"
+                                : "border-emerald-400/50 bg-emerald-400/10"
                               : "border-white/10 bg-white/[0.02] hover:border-white/20",
                           )}
                         >
@@ -353,11 +319,9 @@ export default function EndedRaffle() {
                             className={cn(
                               "mt-0.5 h-[18px] w-[18px] shrink-0",
                               active
-                                ? d.tone === "danger"
-                                  ? "text-rose-300"
-                                  : d.tone === "warn"
-                                    ? "text-amber-300"
-                                    : "text-emerald-300"
+                                ? d.tone === "warn"
+                                  ? "text-amber-300"
+                                  : "text-emerald-300"
                                 : "text-zinc-400",
                             )}
                           />
@@ -402,76 +366,11 @@ export default function EndedRaffle() {
                     <span className="font-semibold">Prize confirmed</span>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                    Your revenue is unlocked. Withdraw to your connected payout
-                    account — funds typically arrive same-day.
-                  </p>
-                  {actionError && (
-                    <p className="mt-3 text-xs text-rose-300">{actionError}</p>
-                  )}
-
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={submitWithdraw}
-                    disabled={submitting}
-                    className="mt-4 w-full"
-                  >
-                    <Wallet strokeWidth={1.5} className="h-5 w-5" />
-                    {submitting ? "Withdrawing…" : `Withdraw ${formatCurrency(hostNet)}`}
-                  </Button>
-                </motion.div>
-              )}
-
-              {flow === "withdrawn" && (
-                <motion.div
-                  key="withdrawn"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="glass-strong p-6 text-center"
-                >
-                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient shadow-accent-glow">
-                    <PartyPopper strokeWidth={1.5} className="h-7 w-7 text-white" />
-                  </div>
-                  <p className="mt-4 font-semibold text-white">Payout on its way</p>
-                  <p className="mt-1.5 text-sm text-zinc-400">
-                    {formatCurrency(hostNet)} is being transferred to your account.
-                  </p>
-                </motion.div>
-              )}
-
-              {flow === "revoked" && (
-                <motion.div
-                  key="revoked"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass-strong border-rose-400/20 p-5"
-                >
-                  <div className="flex items-center gap-2.5 text-rose-300">
-                    <ShieldX strokeWidth={1.5} className="h-5 w-5" />
-                    <span className="font-semibold">Prize revoked</span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                    The Raffall Guarantee has been triggered. The winner will
-                    receive{" "}
-                    <span className="font-semibold text-zinc-200">
-                      {formatCurrency(guaranteePayout)}
-                    </span>{" "}
-                    (75% of gross), paid by the platform. You forfeit this
-                    raffle's revenue.
+                    Delivery has been confirmed for this raffle.
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Guarantee footnote */}
-            <div className="glass flex items-start gap-3 p-4">
-              <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-              <p className="text-xs leading-relaxed text-zinc-400">
-                Funds stay in escrow for 7 days while you confirm delivery. If
-                you miss that window, the winner is paid 75% of gross revenue
-                automatically — this protects both you and your winner.
-              </p>
-            </div>
           </div>
         </div>
       </div>

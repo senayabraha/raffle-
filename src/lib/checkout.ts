@@ -6,7 +6,6 @@ export interface StartCheckoutInput {
   raffleId: string;
   raffleSlug: string;
   qty: number;
-  promo?: string;
   provider: PaymentProvider;
   fullName: string;
   phone: string;

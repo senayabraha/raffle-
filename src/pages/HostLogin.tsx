@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { GoogleButton } from "@/components/auth/OAuthButton";
@@ -7,35 +7,25 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Form";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { safeRedirectPath } from "@/lib/utils";
 
-const ENTRANT_HOME = "/en/public-raffles/live";
+const HOST_HOME = "/en/dashboard";
 const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
 
 /**
- * Public Entrant login. Logging in here always keeps the session in the
- * entrant flow — even if the account also has Host privileges — so anyone
- * mid-checkout lands back where they were instead of being bounced to the
- * Host dashboard. See HostLogin.tsx for the dedicated Host portal.
+ * Dedicated Host Management login portal. This is the ONLY surface that may
+ * land a session on the Host dashboard — signing in from the public Entrant
+ * login (Login.tsx) never does, regardless of the account's role. There is
+ * deliberately no `redirectTo` support here: a Host-context session always
+ * goes to the dashboard.
  */
-export default function Login() {
+export default function HostLogin() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { setLoginContext } = useAuth();
-  // Never let an entrant-context login land on the Host dashboard — that's
-  // reserved for the dedicated Host portal (Rule B), even if a `redirectTo`
-  // pointed there (e.g. a stale link or the public "Hosts" nav item).
-  const requestedRedirect = safeRedirectPath(searchParams.get("redirectTo"), ENTRANT_HOME);
-  const redirectTo = requestedRedirect.startsWith("/en/dashboard")
-    ? ENTRANT_HOME
-    : requestedRedirect;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resetSent, setResetSent] = useState(false);
-  const [resetting, setResetting] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,42 +37,22 @@ export default function Login() {
       setLoading(false);
       return;
     }
-    setLoginContext("entrant");
-    navigate(redirectTo);
+    setLoginContext("host");
+    navigate(HOST_HOME);
   }
 
   async function google() {
     setError(null);
-    // The page fully reloads on the OAuth round trip, so the entrant context
-    // is stamped into storage now rather than via React state.
-    localStorage.setItem(LOGIN_CONTEXT_STORAGE_KEY, "entrant");
+    localStorage.setItem(LOGIN_CONTEXT_STORAGE_KEY, "host");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}${redirectTo}` },
+      options: { redirectTo: `${window.location.origin}${HOST_HOME}` },
     });
     if (error) setError(error.message);
   }
 
-  async function forgotPassword() {
-    if (!email.trim()) {
-      setError("Enter your email above first, then click \"Forgot password?\".");
-      return;
-    }
-    setError(null);
-    setResetting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/en/login`,
-    });
-    setResetting(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setResetSent(true);
-  }
-
   return (
-    <AuthLayout title="Welcome back" subtitle="Log in to manage your raffles and payouts.">
+    <AuthLayout title="Host portal" subtitle="Log in to manage your raffles and payouts.">
       <GoogleButton label="Continue with Google" onClick={google} />
 
       <div className="my-5 flex items-center gap-3 text-xs text-zinc-600">
@@ -155,21 +125,10 @@ export default function Login() {
             />
             Remember me
           </label>
-          <button
-            type="button"
-            onClick={forgotPassword}
-            disabled={resetting}
-            className="font-medium text-accent-soft transition-colors hover:text-white disabled:opacity-60"
-          >
-            {resetting ? "Sending…" : "Forgot password?"}
-          </button>
+          <a href="#" className="font-medium text-accent-soft transition-colors hover:text-white">
+            Forgot password?
+          </a>
         </div>
-
-        {resetSent && (
-          <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-200">
-            Check {email} for a link to reset your password.
-          </p>
-        )}
 
         <Button type="submit" variant="primary" size="lg" disabled={loading} className="w-full">
           {loading ? (
@@ -179,7 +138,7 @@ export default function Login() {
             </>
           ) : (
             <>
-              Log in
+              Log in to Host portal
               <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
             </>
           )}
@@ -193,9 +152,9 @@ export default function Login() {
         </Link>
       </p>
       <p className="mt-2 text-center text-xs text-zinc-500">
-        Managing raffles?{" "}
-        <Link to="/en/host/login" className="font-medium text-accent-soft transition-colors hover:text-white">
-          Go to the Host portal
+        Entering raffles?{" "}
+        <Link to="/en/login" className="font-medium text-accent-soft transition-colors hover:text-white">
+          Go to entrant login
         </Link>
       </p>
     </AuthLayout>

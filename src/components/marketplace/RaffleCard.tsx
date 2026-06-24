@@ -16,17 +16,28 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
       <SpotlightCard className="flex h-full flex-col">
         {/* Cover */}
         <div className="relative aspect-[16/10] overflow-hidden rounded-t-2xl">
-          <div
-            className={cn(
-              "absolute inset-0 bg-gradient-to-br transition-transform duration-500 ease-premium group-hover:scale-[1.04]",
-              raffle.gradient,
-            )}
-          />
+          {raffle.image ? (
+            <img
+              src={raffle.image}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div
+              className={cn(
+                "absolute inset-0 bg-gradient-to-br transition-transform duration-500 ease-premium group-hover:scale-[1.04]",
+                raffle.gradient,
+              )}
+            />
+          )}
           <div className="absolute inset-0 bg-obsidian/20" />
-          <Icon
-            strokeWidth={1.25}
-            className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-lg transition-transform duration-500 ease-premium group-hover:scale-110"
-          />
+          {!raffle.image && (
+            <Icon
+              strokeWidth={1.25}
+              className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-lg transition-transform duration-500 ease-premium group-hover:scale-110"
+            />
+          )}
 
           {/* Top badges */}
           <div className="absolute inset-x-3 top-3 flex items-start justify-between">

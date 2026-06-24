@@ -28,6 +28,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const HostLogin = lazy(() => import("@/pages/HostLogin"));
 const Register = lazy(() => import("@/pages/Register"));
 const MyTickets = lazy(() => import("@/pages/MyTickets"));
+const MyWinnings = lazy(() => import("@/pages/MyWinnings"));
 const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
 const CheckoutCancelled = lazy(() => import("@/pages/CheckoutCancelled"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
@@ -162,6 +163,16 @@ export default function App() {
                 <RequireAuth>
                   <RequireEntrantContext>
                     <MyTickets />
+                  </RequireEntrantContext>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/en/winnings"
+              element={
+                <RequireAuth>
+                  <RequireEntrantContext>
+                    <MyWinnings />
                   </RequireEntrantContext>
                 </RequireAuth>
               }

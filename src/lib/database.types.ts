@@ -689,6 +689,10 @@ export type Database = {
         Args: { p_promo?: string; p_qty: number; p_raffle_id: string }
         Returns: Json
       }
+      respond_to_win: {
+        Args: { p_decision: string; p_winner_id: string }
+        Returns: Json
+      }
       withdraw_revenue: { Args: { p_raffle_id: string }; Returns: Json }
     }
     Enums: {

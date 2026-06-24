@@ -5,6 +5,7 @@ import {
   Users,
   PartyPopper,
   Trophy,
+  Award,
   Ticket,
   Compass,
   Gamepad2,
@@ -28,6 +29,13 @@ const navItems = [
     label: "Your Tickets",
     desc: "View and manage your tickets",
     tint: "bg-accent/10 text-accent-soft",
+  },
+  {
+    to: "/en/winnings",
+    icon: Award,
+    label: "My Winnings",
+    desc: "Accept or dispute a prize you've won",
+    tint: "bg-amber-500/10 text-amber-300",
   },
   {
     to: "/en/public-raffles/live",

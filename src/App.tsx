@@ -23,6 +23,8 @@ const Login = lazy(() => import("@/pages/Login"));
 const HostLogin = lazy(() => import("@/pages/HostLogin"));
 const Register = lazy(() => import("@/pages/Register"));
 const MyTickets = lazy(() => import("@/pages/MyTickets"));
+const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
+const CheckoutCancelled = lazy(() => import("@/pages/CheckoutCancelled"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
 const Legal = lazy(() => import("@/pages/Legal"));
 
@@ -157,6 +159,9 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            {/* Checkout return pages (public — guests can check out without an account) */}
+            <Route path="/en/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/en/checkout/cancelled" element={<CheckoutCancelled />} />
             {/* Legal / marketing footer */}
             <Route path="/en/terms" element={<Legal title="Terms & fees" />} />
             <Route path="/en/privacy" element={<Legal title="Privacy" />} />

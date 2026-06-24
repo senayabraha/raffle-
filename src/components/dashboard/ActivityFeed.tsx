@@ -4,9 +4,7 @@ import type { HostActivityItem } from "@/lib/raffles";
 
 const entryLabel: Record<string, string> = {
   paid: "bought a ticket",
-  free_share: "earned a free ticket",
   free_bonus: "received a bonus ticket",
-  affiliate: "entered via affiliate",
 };
 
 /** Compact "x minutes ago" formatter. */

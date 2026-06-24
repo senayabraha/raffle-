@@ -41,14 +41,7 @@ export function LivePreview({
               />
             </>
           )}
-          <div className="absolute inset-x-3 top-3 flex justify-between">
-            <div className="flex gap-1.5">
-              {draft.featured && (
-                <Badge tone="accent" className="backdrop-blur-md">
-                  <Flame className="h-3 w-3" /> Featured
-                </Badge>
-              )}
-            </div>
+          <div className="absolute inset-x-3 top-3 flex justify-end">
             <Badge tone="live" dot className="backdrop-blur-md">
               Live
             </Badge>

@@ -53,8 +53,6 @@ type RaffleRowWithHost = {
   tickets_sold_count: number;
   bundle_rules: unknown;
   draw_date: string | null;
-  charity_percent: number;
-  featured_until: string | null;
   image_url: string | null;
   host: { full_name: string | null } | { full_name: string | null }[] | null;
 };
@@ -89,8 +87,6 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
     drawDate:
       row.draw_date ??
       new Date(Date.now() + 7 * 86_400_000).toISOString(),
-    featured: row.featured_until ? new Date(row.featured_until) > new Date() : false,
-    charityPercent: Number(row.charity_percent),
     bundles: parseBundles(row.bundle_rules),
   };
 }
@@ -138,12 +134,10 @@ export interface PurchaseResult {
 export async function purchaseTickets(
   raffleId: string,
   qty: number,
-  promo?: string,
 ): Promise<PurchaseResult> {
   const { data, error } = await supabase.rpc("purchase_tickets", {
     p_raffle_id: raffleId,
     p_qty: qty,
-    p_promo: promo && promo.trim() ? promo.trim() : undefined,
   });
   if (error) throw error;
   return data as unknown as PurchaseResult;
@@ -328,8 +322,7 @@ export interface EndedRaffleSummary {
   sold: number;
   ticketPrice: number;
   drawDate: string | null;
-  prizeStatus: "pending" | "confirmed" | "revoked" | "disputed";
-  revenueReleasedAt: string | null;
+  prizeStatus: "pending" | "confirmed" | "disputed";
   winner: {
     name: string;
     initials: string;
@@ -352,7 +345,7 @@ export async function fetchHostEndedRaffle(
   const { data: raffle } = await supabase
     .from("raffles")
     .select(
-      "id, title, category, ticket_price, tickets_sold_count, draw_date, prize_status, revenue_released_at",
+      "id, title, category, ticket_price, tickets_sold_count, draw_date, prize_status",
     )
     .eq("host_id", hostId)
     .eq("status", "ended")
@@ -416,34 +409,23 @@ export async function fetchHostEndedRaffle(
     sold: raffle.tickets_sold_count,
     ticketPrice: Number(raffle.ticket_price),
     drawDate: raffle.draw_date,
-    prizeStatus: raffle.prize_status,
-    revenueReleasedAt: raffle.revenue_released_at,
+    prizeStatus: raffle.prize_status === "revoked" ? "pending" : raffle.prize_status,
     winner,
     audit,
   };
 }
 
-/** Host confirms the prize was delivered, or revokes it (triggering the guarantee payout). */
+/** Host confirms the prize was delivered as advertised or with an agreed modification. */
 export async function confirmPrize(
   raffleId: string,
-  decision: "advertised" | "modified" | "revoke",
-): Promise<{ prizeStatus: string; compensation?: number }> {
+  decision: "advertised" | "modified",
+): Promise<{ prizeStatus: string }> {
   const { data, error } = await supabase.rpc("confirm_prize", {
     p_raffle_id: raffleId,
     p_decision: decision,
   });
   if (error) throw error;
-  const result = data as { prize_status: string; compensation?: number };
-  return { prizeStatus: result.prize_status, compensation: result.compensation };
-}
-
-/** Host withdraws their net revenue once the prize is confirmed. */
-export async function withdrawRevenue(raffleId: string): Promise<{ amount: number }> {
-  const { data, error } = await supabase.rpc("withdraw_revenue", {
-    p_raffle_id: raffleId,
-  });
-  if (error) throw error;
-  return { amount: (data as { amount: number }).amount };
+  return { prizeStatus: (data as { prize_status: string }).prize_status };
 }
 
 export interface MyWinning {
@@ -452,7 +434,7 @@ export interface MyWinning {
   raffleSlug: string;
   raffleTitle: string;
   ticketNumber: number | null;
-  prizeStatus: "awaiting_claim" | "claimed" | "accepted" | "disputed" | "compensated";
+  prizeStatus: "awaiting_claim" | "claimed" | "accepted" | "disputed";
   claimDeadline: string | null;
   notifiedAt: string | null;
   acceptedAt: string | null;
@@ -636,11 +618,6 @@ export async function createRaffle(
           ? new Date(draft.drawDate).toISOString()
           : null,
       min_ticket_target: draft.minTicketTarget || null,
-      charity_percent: draft.charityEnabled ? draft.charityPercent : 0,
-      affiliate_percent: draft.affiliateEnabled ? draft.affiliatePercent : 0,
-      featured_until: draft.featured
-        ? new Date(Date.now() + 30 * 86_400_000).toISOString()
-        : null,
       image_url: imageUrl || null,
     })
     .select("slug")

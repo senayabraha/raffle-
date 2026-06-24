@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Minus,
   Plus,
-  Tag,
   Check,
   Ticket,
   ShieldCheck,
@@ -42,7 +41,6 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   const { profile, user } = useAuth();
   const [step, setStep] = useState<"select" | "contact">("select");
   const [qty, setQty] = useState(5);
-  const [promo, setPromo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +70,6 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         raffleId: raffle.id,
         raffleSlug: raffle.slug,
         qty,
-        promo,
         provider,
         fullName,
         phone,
@@ -162,30 +159,6 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                   +{free} free bonus {free === 1 ? "ticket" : "tickets"} included
                 </p>
               )}
-            </div>
-
-            {/* Promo */}
-            <div className="mt-5">
-              <label className="text-xs font-medium text-zinc-400">
-                Promo code{" "}
-                <span className="font-normal text-zinc-600">(optional)</span>
-              </label>
-              <div className="relative mt-2">
-                <Tag
-                  strokeWidth={1.5}
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-                />
-                <input
-                  value={promo}
-                  onChange={(e) => setPromo(e.target.value)}
-                  placeholder="Enter a code"
-                  disabled={closed}
-                  className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-sm uppercase text-zinc-200 placeholder:normal-case placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50 disabled:opacity-40"
-                />
-              </div>
-              <p className="mt-2 text-xs text-zinc-500">
-                Any discount is applied securely at checkout.
-              </p>
             </div>
 
             {/* Totals */}

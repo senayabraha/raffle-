@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Percent, Heart, Flame, ShieldCheck, ArrowRight } from "lucide-react";
+import { Percent, ShieldCheck, ArrowRight } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
@@ -11,18 +11,6 @@ const items = [
     title: "Flat platform commission",
     body:
       "We take a single commission per ticket sold — as low as 8%, capped at 10% — taken out of escrow when the raffle settles. No monthly subscription, no setup fee.",
-  },
-  {
-    icon: Heart,
-    title: "Optional charity split",
-    body:
-      "Pledge a percentage of each ticket to a charity when you create your raffle. That share is held and released alongside the rest of the payout — it's on top of, not instead of, our commission.",
-  },
-  {
-    icon: Flame,
-    title: "Featured listing boost",
-    body:
-      "Want extra visibility on the marketplace? Feature your raffle for a flat one-time fee when you publish — entirely optional.",
   },
   {
     icon: ShieldCheck,

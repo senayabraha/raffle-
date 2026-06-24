@@ -251,8 +251,9 @@ export default function RaffleDetail() {
               <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
               <p className="text-xs leading-relaxed text-zinc-400">
                 <span className="font-semibold text-zinc-200">Raffall Guarantee:</span>{" "}
-                if the host fails to deliver, you receive 75% of ticket revenue
-                back, paid by the platform.
+                the host has 7 days after the draw to confirm delivery. If they
+                don't, you receive 75% of ticket revenue back, paid by the
+                platform — automatically.
               </p>
             </div>
           </div>

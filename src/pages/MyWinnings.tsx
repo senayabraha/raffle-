@@ -17,6 +17,9 @@ const statusBadge: Record<MyWinning["prizeStatus"], { tone: "warning" | "live" |
   compensated: { tone: "neutral", label: "Compensated" },
 };
 
+const compensatedNote =
+  "The host didn't confirm delivery within their 7-day window, so the Raffall Guarantee paid you 75% of gross ticket revenue automatically.";
+
 export default function MyWinnings() {
   const { user } = useAuth();
   const [winnings, setWinnings] = useState<MyWinning[]>([]);
@@ -151,6 +154,12 @@ export default function MyWinnings() {
                       )}
                     </div>
                   </div>
+
+                  {w.prizeStatus === "compensated" && (
+                    <p className="mt-4 border-t border-white/[0.06] pt-3 text-xs leading-relaxed text-zinc-500">
+                      {compensatedNote}
+                    </p>
+                  )}
 
                   {canRespond && (
                     <div className="mt-4 flex gap-2 border-t border-white/[0.06] pt-3">

@@ -320,12 +320,13 @@ export default function EndedRaffle() {
                 >
                   <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-300">
                     <Clock strokeWidth={1.5} className="h-4 w-4" />
-                    Confirm within
+                    Confirm within 7 days
                   </p>
                   <CountdownPills drawDate={deadline} />
                   <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    Confirm the prize was delivered to release your funds. If the
-                    timer expires, the Raffall Guarantee pays the winner 75%.
+                    Confirm the prize was delivered to release your funds. If
+                    this 7-day window expires, the Raffall Guarantee pays the
+                    winner 75% of gross revenue automatically.
                   </p>
 
                   <div className="mt-5 space-y-2">
@@ -466,8 +467,9 @@ export default function EndedRaffle() {
             <div className="glass flex items-start gap-3 p-4">
               <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
               <p className="text-xs leading-relaxed text-zinc-400">
-                Funds stay in escrow until you confirm delivery — this protects
-                both you and your winner.
+                Funds stay in escrow for 7 days while you confirm delivery. If
+                you miss that window, the winner is paid 75% of gross revenue
+                automatically — this protects both you and your winner.
               </p>
             </div>
           </div>

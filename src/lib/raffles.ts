@@ -143,7 +143,7 @@ export async function purchaseTickets(
   const { data, error } = await supabase.rpc("purchase_tickets", {
     p_raffle_id: raffleId,
     p_qty: qty,
-    p_promo: promo && promo.trim() ? promo.trim() : null,
+    p_promo: promo && promo.trim() ? promo.trim() : undefined,
   });
   if (error) throw error;
   return data as unknown as PurchaseResult;

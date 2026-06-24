@@ -11,12 +11,25 @@ import type { Database, Tables } from "./database.types";
 
 type Profile = Tables<"profiles">;
 type Client = SupabaseClient<Database>;
+export type LoginContext = "host" | "entrant";
+
+/**
+ * Which login surface the current session was established through. This is
+ * deliberately separate from `profile.role` (the account's permanent type):
+ * a Host account that signs in from the public Entrant login must still be
+ * routed through the entrant flow, and only the dedicated Host login portal
+ * may land a session on the Host dashboard. Persisted so it survives reloads
+ * for the lifetime of the session, and cleared on sign-out.
+ */
+const LOGIN_CONTEXT_KEY = "raffall.loginContext";
 
 interface AuthState {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  loginContext: LoginContext | null;
+  setLoginContext: (context: LoginContext) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -42,6 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loginContext, setLoginContextState] = useState<LoginContext | null>(
+    () => (localStorage.getItem(LOGIN_CONTEXT_KEY) as LoginContext | null) ?? null,
+  );
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -77,7 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     profile,
     loading,
+    loginContext,
+    setLoginContext: (context: LoginContext) => {
+      localStorage.setItem(LOGIN_CONTEXT_KEY, context);
+      setLoginContextState(context);
+    },
     signOut: async () => {
+      // Clear the login-context flag first so a stale "host" or "entrant"
+      // context can never leak into the next session on this device.
+      localStorage.removeItem(LOGIN_CONTEXT_KEY);
+      setLoginContextState(null);
       await clientRef.current?.auth.signOut();
     },
     refreshProfile: async () => {

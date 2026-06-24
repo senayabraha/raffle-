@@ -1,17 +1,26 @@
-import { Link } from "react-router-dom";
-import { Sparkles, Ticket } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Sparkles, Ticket, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 
-const links: { label: string; href?: string; to?: string }[] = [
+const baseLinks: { label: string; href?: string; to?: string }[] = [
   { label: "How it works", href: "/en#how" },
   { label: "Marketplace", to: "/en/public-raffles/live" },
   { label: "Pricing", href: "/en#pricing" },
-  { label: "Hosts", to: "/en/dashboard" },
 ];
 
 export function MarketingNav() {
-  const { session } = useAuth();
+  const navigate = useNavigate();
+  const { session, signOut } = useAuth();
+  // Signed-out visitors go straight to the Host portal, not the entrant
+  // login, since landing on the dashboard requires Host-context auth.
+  const links = [...baseLinks, { label: "Hosts", to: session ? "/en/dashboard" : "/en/host/login" }];
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/en");
+  }
+
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-4">
       <nav className="glass flex w-full max-w-5xl items-center justify-between rounded-2xl px-4 py-2.5 sm:px-5">
@@ -60,6 +69,13 @@ export function MarketingNav() {
                   Dashboard
                 </Button>
               </Link>
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                className="focus-ring grid h-9 w-9 place-items-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-rose-300"
+              >
+                <LogOut strokeWidth={1.5} className="h-4 w-4" />
+              </button>
             </>
           ) : (
             <>

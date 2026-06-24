@@ -19,3 +19,14 @@ export function formatCompact(value: number) {
     maximumFractionDigits: 1,
   }).format(value);
 }
+
+/**
+ * Only ever follow a `redirectTo` if it's a same-app relative path, never a
+ * scheme-relative or absolute URL — otherwise a crafted login link could
+ * bounce a freshly authenticated session off to an arbitrary host.
+ */
+export function safeRedirectPath(redirectTo: string | null, fallback: string) {
+  if (!redirectTo) return fallback;
+  if (!redirectTo.startsWith("/") || redirectTo.startsWith("//")) return fallback;
+  return redirectTo;
+}

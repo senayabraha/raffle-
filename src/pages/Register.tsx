@@ -15,10 +15,14 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { GoogleButton } from "@/components/auth/OAuthButton";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Segmented } from "@/components/ui/Form";
+import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+
+const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { setLoginContext } = useAuth();
   const [role, setRole] = useState<"host" | "entrant">("host");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +47,7 @@ export default function Register() {
     }
     // If email confirmation is enabled there's no session yet.
     if (data.session) {
+      setLoginContext(role);
       navigate(role === "host" ? "/en/dashboard" : "/en/public-raffles/live");
     } else {
       setCheckEmail(true);
@@ -52,9 +57,14 @@ export default function Register() {
 
   async function google() {
     setError(null);
+    // The chosen role here becomes this session's login context too — the
+    // page fully reloads on the OAuth round trip, so stamp it into storage
+    // now rather than via React state.
+    localStorage.setItem(LOGIN_CONTEXT_STORAGE_KEY, role);
+    const destination = role === "host" ? "/en/dashboard" : "/en/public-raffles/live";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/en/dashboard` },
+      options: { redirectTo: `${window.location.origin}${destination}` },
     });
     if (error) setError(error.message);
   }

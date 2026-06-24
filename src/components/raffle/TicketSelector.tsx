@@ -49,7 +49,8 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   async function enter() {
     setError(null);
     if (!user) {
-      navigate("/en/login");
+      const here = `${window.location.pathname}${window.location.search}`;
+      navigate(`/en/login?redirectTo=${encodeURIComponent(here)}`);
       return;
     }
     setLoading(true);

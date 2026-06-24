@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import type { Tables } from "@/lib/database.types";
+
+type Role = Tables<"profiles">["role"];
 
 /**
  * Pages are code-split so the landing page no longer ships the dashboard
@@ -35,6 +38,21 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Gates routes by profile role so a host and entrant session can never share a view. */
+function RequireRole({ children, allow }: { children: ReactNode; allow: Role[] }) {
+  const { profile, session } = useAuth();
+  if (session && !profile) return <FullPageSpinner />;
+  if (profile && !allow.includes(profile.role)) {
+    return (
+      <Navigate
+        to={profile.role === "entrant" ? "/en/public-raffles/live" : "/en/dashboard"}
+        replace
+      />
+    );
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -51,7 +69,9 @@ export default function App() {
               path="/en/dashboard/create"
               element={
                 <RequireAuth>
-                  <CreateRaffle />
+                  <RequireRole allow={["host", "both", "admin"]}>
+                    <CreateRaffle />
+                  </RequireRole>
                 </RequireAuth>
               }
             />
@@ -59,7 +79,9 @@ export default function App() {
               path="/en/dashboard/ended"
               element={
                 <RequireAuth>
-                  <EndedRaffle />
+                  <RequireRole allow={["host", "both", "admin"]}>
+                    <EndedRaffle />
+                  </RequireRole>
                 </RequireAuth>
               }
             />
@@ -67,7 +89,9 @@ export default function App() {
               path="/en/dashboard/*"
               element={
                 <RequireAuth>
-                  <Dashboard />
+                  <RequireRole allow={["host", "both", "admin"]}>
+                    <Dashboard />
+                  </RequireRole>
                 </RequireAuth>
               }
             />
@@ -93,7 +117,9 @@ export default function App() {
               path="/en/tickets"
               element={
                 <RequireAuth>
-                  <MyTickets />
+                  <RequireRole allow={["entrant", "both", "admin"]}>
+                    <MyTickets />
+                  </RequireRole>
                 </RequireAuth>
               }
             />

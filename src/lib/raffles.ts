@@ -446,6 +446,70 @@ export async function withdrawRevenue(raffleId: string): Promise<{ amount: numbe
   return { amount: (data as { amount: number }).amount };
 }
 
+export interface MyWinning {
+  winnerId: string;
+  raffleId: string;
+  raffleSlug: string;
+  raffleTitle: string;
+  ticketNumber: number | null;
+  prizeStatus: "awaiting_claim" | "claimed" | "accepted" | "disputed" | "compensated";
+  claimDeadline: string | null;
+  notifiedAt: string | null;
+  acceptedAt: string | null;
+  disputedAt: string | null;
+}
+
+/** Returns the signed-in entrant's wins, most recent first. */
+export async function fetchMyWinnings(userId: string): Promise<MyWinning[]> {
+  const { data, error } = await supabase
+    .from("winners")
+    .select(
+      "id, raffle_id, prize_status, claim_deadline, notified_at, accepted_at, disputed_at, ticket:tickets!winners_ticket_id_fkey(ticket_number), raffle:raffles!winners_raffle_id_fkey(slug, title)",
+    )
+    .eq("winner_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return (
+    data as unknown as Array<{
+      id: string;
+      raffle_id: string;
+      prize_status: MyWinning["prizeStatus"];
+      claim_deadline: string | null;
+      notified_at: string | null;
+      accepted_at: string | null;
+      disputed_at: string | null;
+      ticket: { ticket_number: number } | null;
+      raffle: { slug: string; title: string } | null;
+    }>
+  ).map((row) => ({
+    winnerId: row.id,
+    raffleId: row.raffle_id,
+    raffleSlug: row.raffle?.slug ?? "",
+    raffleTitle: row.raffle?.title ?? "Raffle",
+    ticketNumber: row.ticket?.ticket_number ?? null,
+    prizeStatus: row.prize_status,
+    claimDeadline: row.claim_deadline,
+    notifiedAt: row.notified_at,
+    acceptedAt: row.accepted_at,
+    disputedAt: row.disputed_at,
+  }));
+}
+
+/** Entrant accepts or disputes a prize they won, before the claim deadline. */
+export async function respondToWin(
+  winnerId: string,
+  decision: "accept" | "dispute",
+): Promise<{ prizeStatus: string }> {
+  const { data, error } = await supabase.rpc("respond_to_win", {
+    p_winner_id: winnerId,
+    p_decision: decision,
+  });
+  if (error) throw error;
+  return { prizeStatus: (data as { prize_status: string }).prize_status };
+}
+
 export interface PublicWinner {
   id: string;
   raffleSlug: string;

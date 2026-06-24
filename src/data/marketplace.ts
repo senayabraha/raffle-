@@ -11,6 +11,8 @@ export interface MarketplaceRaffle {
   icon: LucideIcon;
   /** Tailwind gradient classes used for the prize cover. */
   gradient: string;
+  /** Uploaded prize photo URL, if the host added one. */
+  image: string | null;
   host: string;
   hostInitials: string;
   status: RaffleStatus;

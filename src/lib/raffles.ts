@@ -55,6 +55,7 @@ type RaffleRowWithHost = {
   draw_date: string | null;
   charity_percent: number;
   featured_until: string | null;
+  image_url: string | null;
   host: { full_name: string | null } | { full_name: string | null }[] | null;
 };
 
@@ -78,6 +79,7 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
     category: row.category ?? "Other",
     icon: style.icon,
     gradient: style.gradient,
+    image: row.image_url ?? null,
     host: hostName,
     hostInitials: initials || "RH",
     status: row.status === "ended" ? "ended" : "live",
@@ -467,8 +469,28 @@ export async function fetchPublicWinners(): Promise<PublicWinner[]> {
     .filter((w): w is PublicWinner => w !== null);
 }
 
+const RAFFLE_IMAGES_BUCKET = "raffle-images";
+
+/** Uploads a prize cover photo to Storage and returns its public URL. */
+export async function uploadRaffleImage(file: File, hostId: string): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${hostId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(RAFFLE_IMAGES_BUCKET)
+    .upload(path, file, { contentType: file.type });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(RAFFLE_IMAGES_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /** Persists a wizard draft as a live raffle owned by the given host. */
-export async function createRaffle(draft: RaffleDraft, hostId: string) {
+export async function createRaffle(
+  draft: RaffleDraft,
+  hostId: string,
+  imageUrl?: string | null,
+) {
   const slug = slugify(draft.title);
   const bundle_rules = draft.bundlesEnabled
     ? [{ buy: draft.bundleQty, free: draft.bundleFree }]
@@ -498,6 +520,7 @@ export async function createRaffle(draft: RaffleDraft, hostId: string) {
       featured_until: draft.featured
         ? new Date(Date.now() + 30 * 86_400_000).toISOString()
         : null,
+      image_url: imageUrl || null,
     })
     .select("slug")
     .single();

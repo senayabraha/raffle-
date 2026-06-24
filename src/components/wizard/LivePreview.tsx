@@ -1,10 +1,16 @@
-import { ImageIcon, Star, Clock, Flame, Heart } from "lucide-react";
+import { ImageIcon, Star, Clock, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 import { type RaffleDraft } from "./types";
 
 /** Mirrors the marketplace RaffleCard so the host sees the listing live. */
-export function LivePreview({ draft }: { draft: RaffleDraft }) {
+export function LivePreview({
+  draft,
+  imagePreview,
+}: {
+  draft: RaffleDraft;
+  imagePreview?: string | null;
+}) {
   const cap = draft.unlimited ? null : draft.ticketCap;
   const drawLabel =
     draft.drawType === "soldout"
@@ -24,21 +30,22 @@ export function LivePreview({ draft }: { draft: RaffleDraft }) {
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-glass">
         {/* Cover */}
         <div className="relative aspect-[16/10] overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/30 via-accent/20 to-indigo-600/30" />
-          <ImageIcon
-            strokeWidth={1.25}
-            className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 text-white/70"
-          />
+          {imagePreview ? (
+            <img src={imagePreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/30 via-accent/20 to-indigo-600/30" />
+              <ImageIcon
+                strokeWidth={1.25}
+                className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 text-white/70"
+              />
+            </>
+          )}
           <div className="absolute inset-x-3 top-3 flex justify-between">
             <div className="flex gap-1.5">
               {draft.featured && (
                 <Badge tone="accent" className="backdrop-blur-md">
                   <Flame className="h-3 w-3" /> Featured
-                </Badge>
-              )}
-              {draft.charityEnabled && (
-                <Badge tone="info" className="backdrop-blur-md">
-                  <Heart className="h-3 w-3" /> {draft.charityPercent}%
                 </Badge>
               )}
             </div>

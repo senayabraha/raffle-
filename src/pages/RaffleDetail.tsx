@@ -107,12 +107,23 @@ export default function RaffleDetail() {
         >
           {/* Cover */}
           <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-white/10">
-            <div className={cn("absolute inset-0 bg-gradient-to-br", raffle.gradient)} />
+            {raffle.image ? (
+              <img
+                src={raffle.image}
+                alt={raffle.title}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className={cn("absolute inset-0 bg-gradient-to-br", raffle.gradient)} />
+            )}
             <div className="absolute inset-0 bg-obsidian/20" />
-            <Icon
-              strokeWidth={1}
-              className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-xl"
-            />
+            {!raffle.image && (
+              <Icon
+                strokeWidth={1}
+                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-xl"
+              />
+            )}
             <div className="absolute inset-x-4 top-4 flex gap-1.5">
               {raffle.featured && (
                 <Badge tone="accent" className="backdrop-blur-md">

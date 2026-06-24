@@ -9,7 +9,6 @@ import {
   PackageCheck,
   Globe,
   Lock,
-  Heart,
   Megaphone,
   Rocket,
   Check,
@@ -20,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { createRaffle } from "@/lib/raffles";
+import { createRaffle, uploadRaffleImage } from "@/lib/raffles";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
@@ -43,10 +42,9 @@ const steps: WizardStep[] = [
   { id: 1, title: "Prize details", desc: "What you're giving away" },
   { id: 2, title: "Ticket settings", desc: "Price, cap & bundles" },
   { id: 3, title: "Draw settings", desc: "When the winner is picked" },
-  { id: 4, title: "Charity split", desc: "Optional donation" },
-  { id: 5, title: "Promotion", desc: "Affiliates, codes & boost" },
-  { id: 6, title: "Visibility", desc: "Public or private" },
-  { id: 7, title: "Review", desc: "Check & publish" },
+  { id: 4, title: "Boost", desc: "Featured listing" },
+  { id: 5, title: "Visibility", desc: "Public or private" },
+  { id: 6, title: "Review", desc: "Check & publish" },
 ];
 
 const prizeCategories = categories.filter((c) => c !== "All");
@@ -60,23 +58,25 @@ export default function CreateRaffle() {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dir, setDir] = useState(1);
-  const [images, setImages] = useState<string[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (patch: Partial<RaffleDraft>) =>
     setDraft((d) => ({ ...d, ...patch }));
 
   function addImages(files: FileList | null) {
-    if (!files) return;
-    const urls = Array.from(files)
-      .slice(0, Math.max(0, 6 - images.length))
-      .map((f) => URL.createObjectURL(f));
-    setImages((prev) => [...prev, ...urls].slice(0, 6));
+    const file = files?.[0];
+    if (!file) return;
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
   }
 
-  function removeImage(url: string) {
-    setImages((prev) => prev.filter((u) => u !== url));
-    URL.revokeObjectURL(url);
+  function removeImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(null);
   }
 
   const canAdvance = step !== 0 || draft.title.trim().length > 2;
@@ -90,7 +90,8 @@ export default function CreateRaffle() {
     setError(null);
     setPublishing(true);
     try {
-      const { slug } = await createRaffle(draft, user.id);
+      const imageUrl = imageFile ? await uploadRaffleImage(imageFile, user.id) : null;
+      const { slug } = await createRaffle(draft, user.id, imageUrl);
       setPublishedSlug(slug);
       setPublished(true);
     } catch (e) {
@@ -172,7 +173,7 @@ export default function CreateRaffle() {
                     step={step}
                     draft={draft}
                     set={set}
-                    images={images}
+                    imagePreview={imagePreview}
                     fileInputRef={fileInputRef}
                     onAddImages={addImages}
                     onRemoveImage={removeImage}
@@ -233,7 +234,7 @@ export default function CreateRaffle() {
         {/* Live preview */}
         <aside className="lg:col-span-4">
           <div className="sticky top-24">
-            <LivePreview draft={draft} />
+            <LivePreview draft={draft} imagePreview={imagePreview} />
           </div>
         </aside>
       </div>
@@ -260,8 +261,7 @@ const headings = [
   { title: "Tell us about the prize", sub: "A clear title and great description sell tickets." },
   { title: "Set your ticket pricing", sub: "Choose a price, a cap, and optional bundle deals." },
   { title: "Decide how the draw ends", sub: "On a fixed date or automatically when sold out." },
-  { title: "Give back (optional)", sub: "Donate a percentage of revenue to a good cause." },
-  { title: "Promote your raffle", sub: "Affiliates, promo codes and a featured boost." },
+  { title: "Boost your raffle", sub: "Optionally feature it at the top of the marketplace." },
   { title: "Choose who can see it", sub: "List on the public marketplace or share privately." },
   { title: "Review & publish", sub: "Everything look good? Send it live." },
 ];
@@ -271,7 +271,7 @@ function StepBody({
   step,
   draft,
   set,
-  images,
+  imagePreview,
   fileInputRef,
   onAddImages,
   onRemoveImage,
@@ -279,10 +279,10 @@ function StepBody({
   step: number;
   draft: RaffleDraft;
   set: (p: Partial<RaffleDraft>) => void;
-  images: string[];
+  imagePreview: string | null;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onAddImages: (files: FileList | null) => void;
-  onRemoveImage: (url: string) => void;
+  onRemoveImage: () => void;
 }) {
   switch (step) {
     case 0:
@@ -322,48 +322,42 @@ function StepBody({
               ))}
             </div>
           </Field>
-          <Field label="Prize images" hint={`${images.length}/6`}>
+          <Field label="Prize cover photo" hint={imagePreview ? "1/1" : "0/1"}>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg"
-              multiple
               className="hidden"
               onChange={(e) => {
                 onAddImages(e.target.files);
                 e.target.value = "";
               }}
             />
-            <button
-              type="button"
-              disabled={images.length >= 6}
-              onClick={() => fileInputRef.current?.click()}
-              className="focus-ring group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
-                <UploadCloud strokeWidth={1.5} className="h-5 w-5" />
-              </span>
-              <span className="text-sm font-medium text-zinc-200">
-                {images.length >= 6 ? "Maximum 6 images added" : "Click to upload"}
-              </span>
-              <span className="text-xs text-zinc-500">PNG or JPG, up to 8MB each</span>
-            </button>
+            {!imagePreview && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="focus-ring group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04]"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
+                  <UploadCloud strokeWidth={1.5} className="h-5 w-5" />
+                </span>
+                <span className="text-sm font-medium text-zinc-200">Click to upload</span>
+                <span className="text-xs text-zinc-500">PNG or JPG, up to 8MB</span>
+              </button>
+            )}
 
-            {images.length > 0 && (
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {images.map((url) => (
-                  <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10">
-                    <img src={url} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => onRemoveImage(url)}
-                      aria-label="Remove image"
-                      className="focus-ring absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <X strokeWidth={2} className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+            {imagePreview && (
+              <div className="group relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-white/10">
+                <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={onRemoveImage}
+                  aria-label="Remove image"
+                  className="focus-ring absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <X strokeWidth={2} className="h-4 w-4" />
+                </button>
               </div>
             )}
           </Field>
@@ -493,105 +487,21 @@ function StepBody({
 
     case 3:
       return (
-        <>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-cyan-300">
-                <Heart strokeWidth={1.5} className="h-[18px] w-[18px]" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-zinc-200">Donate to charity</p>
-                <p className="text-xs text-zinc-500">Boosts trust & ticket sales</p>
-              </div>
+        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-accent-soft">
+              <Megaphone strokeWidth={1.5} className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Featured listing</p>
+              <p className="text-xs text-zinc-500">Top of the marketplace · +£29</p>
             </div>
-            <Switch
-              checked={draft.charityEnabled}
-              onChange={(v) => set({ charityEnabled: v })}
-            />
           </div>
-
-          {draft.charityEnabled && (
-            <>
-              <Field label="Charity name">
-                <Input
-                  value={draft.charityName}
-                  onChange={(e) => set({ charityName: e.target.value })}
-                  placeholder="e.g. Brightside Children's Trust"
-                />
-              </Field>
-              <Field
-                label="Donation percentage"
-                hint={`${draft.charityPercent}% of revenue`}
-              >
-                <input
-                  type="range"
-                  min={1}
-                  max={100}
-                  value={draft.charityPercent}
-                  onChange={(e) => set({ charityPercent: Number(e.target.value) })}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#8b5cf6]"
-                />
-                <div className="flex justify-between text-[11px] text-zinc-600">
-                  <span>1%</span>
-                  <span>100%</span>
-                </div>
-              </Field>
-            </>
-          )}
-        </>
+          <Switch checked={draft.featured} onChange={(v) => set({ featured: v })} />
+        </div>
       );
 
     case 4:
-      return (
-        <>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            <div>
-              <p className="text-sm font-medium text-zinc-200">Affiliate program</p>
-              <p className="text-xs text-zinc-500">Pay promoters per ticket sold</p>
-            </div>
-            <Switch
-              checked={draft.affiliateEnabled}
-              onChange={(v) => set({ affiliateEnabled: v })}
-            />
-          </div>
-          {draft.affiliateEnabled && (
-            <Field label="Affiliate commission" hint={`${draft.affiliatePercent}%`}>
-              <input
-                type="range"
-                min={1}
-                max={25}
-                value={draft.affiliatePercent}
-                onChange={(e) => set({ affiliatePercent: Number(e.target.value) })}
-                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#8b5cf6]"
-              />
-            </Field>
-          )}
-
-          <Field label="Promo code (optional)" hint="Shown at checkout">
-            <Input
-              value={draft.promoCode}
-              onChange={(e) => set({ promoCode: e.target.value.toUpperCase() })}
-              placeholder="e.g. LAUNCH20"
-              className="uppercase placeholder:normal-case"
-            />
-          </Field>
-
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-accent-soft">
-                <Megaphone strokeWidth={1.5} className="h-[18px] w-[18px]" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-zinc-200">Featured listing</p>
-                <p className="text-xs text-zinc-500">Top of the marketplace · +£29</p>
-              </div>
-            </div>
-            <Switch checked={draft.featured} onChange={(v) => set({ featured: v })} />
-          </div>
-        </>
-      );
-
-    case 5:
       return (
         <Field label="Visibility">
           <Segmented
@@ -615,7 +525,7 @@ function StepBody({
         </Field>
       );
 
-    case 6:
+    case 5:
       return <ReviewStep draft={draft} />;
 
     default:
@@ -629,11 +539,7 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
   const commission = 0.1;
   const price = draft.ticketPrice || 0;
   const platformCut = price * commission;
-  const charityCut = draft.charityEnabled ? price * (draft.charityPercent / 100) : 0;
-  const affiliateCut = draft.affiliateEnabled
-    ? price * (draft.affiliatePercent / 100)
-    : 0;
-  const hostNet = Math.max(price - platformCut - charityCut - affiliateCut, 0);
+  const hostNet = Math.max(price - platformCut, 0);
 
   const rows: [string, string][] = [
     ["Prize", draft.title || "Untitled"],
@@ -652,8 +558,6 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
           ? new Date(draft.drawDate).toLocaleString("en-GB")
           : "No date set",
     ],
-    ["Charity", draft.charityEnabled ? `${draft.charityPercent}% to ${draft.charityName || "charity"}` : "None"],
-    ["Affiliates", draft.affiliateEnabled ? `${draft.affiliatePercent}% commission` : "Off"],
     ["Featured", draft.featured ? "Yes (+£29)" : "No"],
     ["Visibility", draft.visibility === "public" ? "Public marketplace" : "Private link"],
   ];
@@ -677,12 +581,6 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
         <div className="space-y-1.5 text-sm">
           <Row label="Ticket price" value={formatCurrency(price)} />
           <Row label="Platform commission (10%)" value={`−${formatCurrency(platformCut)}`} muted />
-          {charityCut > 0 && (
-            <Row label={`Charity (${draft.charityPercent}%)`} value={`−${formatCurrency(charityCut)}`} muted />
-          )}
-          {affiliateCut > 0 && (
-            <Row label={`Affiliate (${draft.affiliatePercent}%)`} value={`−${formatCurrency(affiliateCut)}`} muted />
-          )}
           <div className="mt-1 flex items-center justify-between border-t border-white/10 pt-2 font-bold text-white">
             <span>You earn (held in escrow)</span>
             <span className="tabular-nums text-emerald-300">{formatCurrency(hostNet)}</span>

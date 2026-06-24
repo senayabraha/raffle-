@@ -437,6 +437,7 @@ export type Database = {
           featured_until: string | null
           host_id: string
           id: string
+          image_url: string | null
           min_ticket_target: number | null
           prize_confirmed_at: string | null
           prize_status: Database["public"]["Enums"]["prize_status"]
@@ -463,6 +464,7 @@ export type Database = {
           featured_until?: string | null
           host_id: string
           id?: string
+          image_url?: string | null
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
@@ -489,6 +491,7 @@ export type Database = {
           featured_until?: string | null
           host_id?: string
           id?: string
+          image_url?: string | null
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]

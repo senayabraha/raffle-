@@ -8,13 +8,11 @@ export interface MarketplaceRaffle {
   title: string;
   description: string;
   category: string;
-  hostType: "individual" | "brand" | "charity";
   icon: LucideIcon;
   /** Tailwind gradient classes used for the prize cover. */
   gradient: string;
   host: string;
   hostInitials: string;
-  rating: number;
   status: RaffleStatus;
   ticketPrice: number;
   sold: number;

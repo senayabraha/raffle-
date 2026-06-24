@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, ShieldCheck, Star, Zap } from "lucide-react";
+import { Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 
 const proofs = [
   { icon: ShieldCheck, text: "Escrow-protected payouts" },
   { icon: Zap, text: "Automated, auditable draws" },
-  { icon: Star, text: "4.9 average host rating" },
 ];
 
 /** Split-screen auth shell: brand panel + glass form card. */
@@ -47,14 +46,6 @@ export function AuthLayout({
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="glass max-w-md p-5">
-          <p className="text-sm leading-relaxed text-zinc-300">
-            “We raised £40k for our club in a single weekend. Setup took ten
-            minutes and the payout hit the next day.”
-          </p>
-          <p className="mt-3 text-xs text-zinc-500">— Riverside FC, charity host</p>
         </div>
       </div>
 

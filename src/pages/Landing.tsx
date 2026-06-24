@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   Sparkles,
   Zap,
-  Star,
   PencilRuler,
   Share2,
   Trophy,
@@ -15,13 +14,6 @@ import { MarketingNav } from "@/components/layout/MarketingNav";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-
-const stats = [
-  { label: "Paid to hosts", value: 48, prefix: "£", suffix: "M+" },
-  { label: "Tickets sold", value: 12, suffix: "M+" },
-  { label: "Avg. host rating", value: 4.9, suffix: "★", decimals: 1 },
-];
 
 const steps = [
   {
@@ -118,40 +110,13 @@ export default function Landing() {
           className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500"
         >
           <span className="inline-flex items-center gap-1.5">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-            4.9 on Trustpilot
-          </span>
-          <span className="inline-flex items-center gap-1.5">
             <ShieldCheck strokeWidth={1.5} className="h-4 w-4 text-emerald-400" />
-            Approved by Facebook, Google & Apple
+            Funds held in escrow until your winner confirms
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Zap strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
-            Same-day payouts
+            Automated, auditable draws
           </span>
-        </motion.div>
-
-        {/* Stats strip */}
-        <motion.div
-          custom={5}
-          variants={fade}
-          initial="hidden"
-          animate="show"
-          className="mx-auto mt-14 grid max-w-3xl grid-cols-3 gap-4"
-        >
-          {stats.map((s) => (
-            <SpotlightCard key={s.label} className="p-5">
-              <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                <AnimatedNumber
-                  value={s.value}
-                  prefix={s.prefix}
-                  suffix={s.suffix}
-                  decimals={s.decimals ?? 0}
-                />
-              </p>
-              <p className="mt-1 text-xs text-zinc-500 sm:text-sm">{s.label}</p>
-            </SpotlightCard>
-          ))}
         </motion.div>
       </section>
 

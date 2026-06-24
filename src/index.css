@@ -21,6 +21,9 @@
   body {
     @apply bg-obsidian text-zinc-200 font-sans antialiased;
     background-color: #09090b;
+    /* Scroll anchoring fights the drawer's scroll-lock restore: as the drawer
+       unmounts and layout shifts, Chrome "helpfully" re-adjusts scrollY. */
+    overflow-anchor: none;
     /* faint top-down vignette for depth */
     background-image:
       radial-gradient(120% 80% at 50% -10%, rgba(139, 92, 246, 0.10), transparent 60%),

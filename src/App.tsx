@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { DrawerProvider } from "@/lib/drawer";
+import { NavDrawer } from "@/components/layout/NavDrawer";
 import type { Tables } from "@/lib/database.types";
 
 type Role = Tables<"profiles">["role"];
@@ -92,6 +94,8 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <DrawerProvider>
+        <NavDrawer />
         <Suspense fallback={<FullPageSpinner />}>
           <Routes>
             <Route path="/" element={<Navigate to="/en" replace />} />
@@ -173,6 +177,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/en" replace />} />
           </Routes>
         </Suspense>
+        </DrawerProvider>
       </BrowserRouter>
     </AuthProvider>
   );

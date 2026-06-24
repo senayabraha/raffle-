@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, Ticket, LogOut } from "lucide-react";
+import { Menu, Ticket, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
+import { useDrawer } from "@/lib/drawer";
 
 const baseLinks: { label: string; href?: string; to?: string }[] = [
   { label: "How it works", href: "/en#how" },
@@ -12,6 +13,7 @@ const baseLinks: { label: string; href?: string; to?: string }[] = [
 export function MarketingNav() {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
+  const { open: openDrawer } = useDrawer();
   // Signed-out visitors go straight to the Host portal, not the entrant
   // login, since landing on the dashboard requires Host-context auth.
   const links = [...baseLinks, { label: "Hosts", to: session ? "/en/dashboard" : "/en/host/login" }];
@@ -24,14 +26,18 @@ export function MarketingNav() {
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-4">
       <nav className="glass flex w-full max-w-5xl items-center justify-between rounded-2xl px-4 py-2.5 sm:px-5">
-        <Link to="/en" className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent-gradient shadow-accent-glow">
-            <Sparkles strokeWidth={2} className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-[15px] font-bold tracking-tight text-white">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={openDrawer}
+            aria-label="Open menu"
+            className="focus-ring grid h-8 w-8 place-items-center rounded-lg bg-accent-gradient text-white shadow-accent-glow transition-all duration-300 hover:brightness-110 active:scale-[0.94]"
+          >
+            <Menu strokeWidth={2} className="h-4 w-4" />
+          </button>
+          <Link to="/en" className="text-[15px] font-bold tracking-tight text-white">
             Raffall
-          </span>
-        </Link>
+          </Link>
+        </div>
 
         <div className="hidden items-center gap-1 md:flex">
           {links.map((l) =>

@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Search, Bell, PlusCircle, LogOut, BellOff } from "lucide-react";
+import { Search, Bell, PlusCircle, LogOut, BellOff, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
+import { useDrawer } from "@/lib/drawer";
 
 function initialsOf(name?: string | null, email?: string | null) {
   if (name) {
@@ -15,6 +16,7 @@ function initialsOf(name?: string | null, email?: string | null) {
 export function Topbar() {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
+  const { open: openDrawer } = useDrawer();
 
   const displayName =
     profile?.full_name ?? user?.email?.split("@")[0] ?? "Account";
@@ -30,6 +32,14 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-obsidian/70 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-4 px-5 sm:px-8">
+        <button
+          onClick={openDrawer}
+          aria-label="Open menu"
+          className="focus-ring grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] lg:hidden"
+        >
+          <Menu strokeWidth={1.5} className="h-[18px] w-[18px]" />
+        </button>
+
         {/* Search */}
         <div className="relative hidden flex-1 max-w-md md:block">
           <Search

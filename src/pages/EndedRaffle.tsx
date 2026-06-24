@@ -25,12 +25,21 @@ import { CountdownPills } from "@/components/ui/Countdown";
 import { useAuth } from "@/lib/auth";
 import {
   fetchHostEndedRaffle,
+  confirmPrize,
+  withdrawRevenue,
   type EndedRaffleSummary,
 } from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
 type Flow = "pending" | "confirmed" | "revoked" | "withdrawn";
 type Decision = "advertised" | "modified" | "revoke";
+
+function flowFromRaffle(raffle: EndedRaffleSummary): Flow {
+  if (raffle.prizeStatus === "revoked") return "revoked";
+  if (raffle.revenueReleasedAt) return "withdrawn";
+  if (raffle.prizeStatus === "confirmed") return "confirmed";
+  return "pending";
+}
 
 const decisions: {
   key: Decision;
@@ -68,6 +77,8 @@ export default function EndedRaffle() {
   const [loading, setLoading] = useState(true);
   const [flow, setFlow] = useState<Flow>("pending");
   const [choice, setChoice] = useState<Decision>("advertised");
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // 7-day confirmation deadline from now.
   const deadline = useMemo(
@@ -81,6 +92,7 @@ export default function EndedRaffle() {
     fetchHostEndedRaffle(user.id).then((r) => {
       if (!active) return;
       setRaffle(r);
+      if (r) setFlow(flowFromRaffle(r));
       setLoading(false);
     });
     return () => {
@@ -88,8 +100,32 @@ export default function EndedRaffle() {
     };
   }, [user]);
 
-  function submitDecision() {
-    setFlow(choice === "revoke" ? "revoked" : "confirmed");
+  async function submitDecision() {
+    if (!raffle || submitting) return;
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      await confirmPrize(raffle.id, choice);
+      setFlow(choice === "revoke" ? "revoked" : "confirmed");
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submitWithdraw() {
+    if (!raffle || submitting) return;
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      await withdrawRevenue(raffle.id);
+      setFlow("withdrawn");
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -223,13 +259,17 @@ export default function EndedRaffle() {
             </p>
             <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10 font-mono text-xs">
               {[
-                ["method", "CSPRNG · crypto.getRandomValues"],
-                ["entries", raffle.sold.toLocaleString()],
-                ["drawn_ticket", winner?.ticket?.toLocaleString() ?? "pending"],
+                ["method", raffle.audit?.method ?? "pending"],
+                ["seed", raffle.audit?.seed ?? "pending"],
+                ["entries", (raffle.audit?.entries ?? raffle.sold).toLocaleString()],
+                [
+                  "drawn_ticket",
+                  raffle.audit?.drawnTicketNumber?.toLocaleString() ?? "pending",
+                ],
                 [
                   "timestamp",
-                  raffle.drawDate
-                    ? new Date(raffle.drawDate).toISOString()
+                  raffle.audit
+                    ? new Date(raffle.audit.createdAt).toISOString()
                     : "pending",
                 ],
               ].map(([k, v]) => (
@@ -333,13 +373,18 @@ export default function EndedRaffle() {
                     })}
                   </div>
 
+                  {actionError && (
+                    <p className="mt-3 text-xs text-rose-300">{actionError}</p>
+                  )}
+
                   <Button
                     variant="primary"
                     size="lg"
                     onClick={submitDecision}
+                    disabled={submitting}
                     className="mt-4 w-full"
                   >
-                    Submit decision
+                    {submitting ? "Submitting…" : "Submit decision"}
                   </Button>
                 </motion.div>
               )}
@@ -359,14 +404,19 @@ export default function EndedRaffle() {
                     Your revenue is unlocked. Withdraw to your connected payout
                     account — funds typically arrive same-day.
                   </p>
+                  {actionError && (
+                    <p className="mt-3 text-xs text-rose-300">{actionError}</p>
+                  )}
+
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={() => setFlow("withdrawn")}
+                    onClick={submitWithdraw}
+                    disabled={submitting}
                     className="mt-4 w-full"
                   >
                     <Wallet strokeWidth={1.5} className="h-5 w-5" />
-                    Withdraw {formatCurrency(hostNet)}
+                    {submitting ? "Withdrawing…" : `Withdraw ${formatCurrency(hostNet)}`}
                   </Button>
                 </motion.div>
               )}

@@ -2,14 +2,15 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
-import type { Tables } from "./database.types";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
+import type { Database, Tables } from "./database.types";
 
 type Profile = Tables<"profiles">;
+type Client = SupabaseClient<Database>;
 
 interface AuthState {
   session: Session | null;
@@ -22,8 +23,8 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
-async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data } = await supabase
+async function fetchProfile(client: Client, userId: string): Promise<Profile | null> {
+  const { data } = await client
     .from("profiles")
     .select("*")
     .eq("id", userId)
@@ -31,29 +32,43 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+/**
+ * The Supabase SDK (~55KB gzip) is dynamically imported here instead of
+ * statically, so unauthenticated routes like the public landing page don't
+ * pay for it before they can render. The auth state simply resolves a beat
+ * later once the chunk and session check land.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    import("./supabase").then(async ({ supabase }) => {
+      if (!active) return;
+      clientRef.current = supabase;
+
+      const { data } = await supabase.auth.getSession();
       if (!active) return;
       setSession(data.session);
-      if (data.session?.user) setProfile(await fetchProfile(data.session.user.id));
+      if (data.session?.user) setProfile(await fetchProfile(supabase, data.session.user.id));
       setLoading(false);
-    });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
-      setSession(next);
-      setProfile(next?.user ? await fetchProfile(next.user.id) : null);
+      const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
+        if (!active) return;
+        setSession(next);
+        setProfile(next?.user ? await fetchProfile(supabase, next.user.id) : null);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
     });
 
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
@@ -63,10 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     signOut: async () => {
-      await supabase.auth.signOut();
+      await clientRef.current?.auth.signOut();
     },
     refreshProfile: async () => {
-      if (session?.user) setProfile(await fetchProfile(session.user.id));
+      const client = clientRef.current;
+      if (client && session?.user) setProfile(await fetchProfile(client, session.user.id));
     },
   };
 

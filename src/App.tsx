@@ -3,6 +3,7 @@ import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { DrawerProvider } from "@/lib/drawer";
 import { NavDrawer } from "@/components/layout/NavDrawer";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Tables } from "@/lib/database.types";
 
 type Role = Tables<"profiles">["role"];
@@ -33,6 +34,7 @@ const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
 const CheckoutCancelled = lazy(() => import("@/pages/CheckoutCancelled"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
 const Legal = lazy(() => import("@/pages/Legal"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 /** Centered spinner shown while a lazy route chunk or the session loads. */
 function FullPageSpinner() {
@@ -96,6 +98,7 @@ function RequireEntrantContext({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <BrowserRouter>
         <DrawerProvider>
@@ -189,11 +192,12 @@ export default function App() {
             <Route path="/en/public-raffles/ended" element={<Winners />} />
             <Route path="/en/pricing" element={<Pricing />} />
             <Route path="/en/raffle/:slug" element={<RaffleDetail />} />
-            <Route path="*" element={<Navigate to="/en" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
         </DrawerProvider>
       </BrowserRouter>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

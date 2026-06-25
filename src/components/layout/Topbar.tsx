@@ -3,7 +3,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Search, Bell, PlusCircle, LogOut, BellOff, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
-import { useDrawer } from "@/lib/drawer";
+import { useDashboardDrawer } from "@/lib/dashboardDrawer";
 
 function initialsOf(name?: string | null, email?: string | null) {
   if (name) {
@@ -16,7 +16,7 @@ function initialsOf(name?: string | null, email?: string | null) {
 export function Topbar() {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
-  const { open: openDrawer } = useDrawer();
+  const { open: openDrawer } = useDashboardDrawer();
 
   const displayName =
     profile?.full_name ?? user?.email?.split("@")[0] ?? "Account";

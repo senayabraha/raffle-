@@ -15,8 +15,6 @@ set search_path = ''
 as $$
 declare
   v_raffle record;
-  v_gross numeric;
-  v_comp numeric;
 begin
   for v_raffle in
     select id from public.raffles
@@ -26,15 +24,9 @@ begin
       and draw_date + interval '7 days' <= now()
     for update skip locked
   loop
-    select coalesce(sum(amount_gross), 0) into v_gross
-      from public.payments where raffle_id = v_raffle.id;
-    v_comp := round(v_gross * 0.75, 2);
-
     update public.raffles set prize_status = 'revoked' where id = v_raffle.id;
     update public.winners set prize_status = 'compensated' where raffle_id = v_raffle.id;
     update public.payments set status = 'compensated' where raffle_id = v_raffle.id;
-    insert into public.payouts (host_id, raffle_id, amount, type, status)
-      values (null, v_raffle.id, v_comp, 'winner_compensation', 'processed');
   end loop;
 end;
 $$;

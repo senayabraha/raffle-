@@ -109,7 +109,7 @@ export default function CheckoutSuccess() {
                 </div>
                 <div className="flex justify-between border-t border-white/[0.06] pt-2 font-bold text-white">
                   <span>Amount paid</span>
-                  <span>{formatCurrency(status.amount, "ETB")}</span>
+                  <span>{formatCurrency(status.amount)}</span>
                 </div>
               </div>
 

@@ -69,7 +69,7 @@ export default function Dashboard() {
       key: "revenue",
       label: "Escrowed Revenue",
       value: totals?.revenue ?? 0,
-      prefix: "£",
+      prefix: "ETB ",
       icon: Trophy,
       decimals: 0,
     },

@@ -115,10 +115,58 @@ export async function fetchRaffleBySlug(
     .from("raffles")
     .select(HOST_SELECT)
     .eq("slug", slug)
+    .in("status", ["live", "ended"])
     .maybeSingle();
 
   if (error || !data) return null;
   return mapRaffleRow(data as unknown as RaffleRowWithHost);
+}
+
+export interface RaffleEntrant {
+  id: string;
+  name: string;
+  initials: string;
+  ticketNumber: number;
+  createdAt: string;
+}
+
+type TicketRowWithEntrant = {
+  id: string;
+  ticket_number: number;
+  created_at: string;
+  entrant: { full_name: string | null } | { full_name: string | null }[] | null;
+};
+
+/** Fetches the most recent entries for a public raffle, for a "recent entries" feed. */
+export async function fetchRaffleEntrants(raffleId: string): Promise<RaffleEntrant[]> {
+  const { data, error } = await supabase
+    .from("tickets")
+    .select("id, ticket_number, created_at, entrant:profiles!tickets_entrant_id_fkey(full_name)")
+    .eq("raffle_id", raffleId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error || !data) return [];
+
+  return (data as unknown as TicketRowWithEntrant[]).map((row) => {
+    const entrant = Array.isArray(row.entrant) ? row.entrant[0] : row.entrant;
+    const name = entrant?.full_name?.trim() || "A Raffall entrant";
+    const initials =
+      name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p) => p[0])
+        .join("")
+        .toUpperCase() || "R";
+
+    return {
+      id: row.id,
+      name,
+      initials,
+      ticketNumber: row.ticket_number,
+      createdAt: row.created_at,
+    };
+  });
 }
 
 export interface PurchaseResult {

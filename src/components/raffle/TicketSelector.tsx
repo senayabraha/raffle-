@@ -21,6 +21,7 @@ import { type MarketplaceRaffle } from "@/data/marketplace";
 import { useAuth } from "@/lib/auth";
 import { startCheckout, type PaymentProvider } from "@/lib/checkout";
 import { formatCurrency, cn } from "@/lib/utils";
+import { useConfirmOnLeave } from "@/lib/useConfirmOnLeave";
 
 const quickPicks = [1, 5, 10, 25];
 
@@ -68,6 +69,11 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
 
   const subtotal = qty * raffle.ticketPrice;
   const total = subtotal;
+
+  useConfirmOnLeave(
+    step === "contact" && !loading,
+    "Leave checkout? Your entry details won't be saved.",
+  );
 
   async function submitCheckout() {
     setError(null);

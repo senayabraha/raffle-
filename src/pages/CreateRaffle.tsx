@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -36,6 +36,7 @@ import { LivePreview } from "@/components/wizard/LivePreview";
 import { initialDraft, type RaffleDraft } from "@/components/wizard/types";
 import { categories } from "@/data/marketplace";
 import { formatCurrency, cn } from "@/lib/utils";
+import { useConfirmOnLeave } from "@/lib/useConfirmOnLeave";
 
 const steps: WizardStep[] = [
   { id: 1, title: "Prize details", desc: "What you're giving away" },
@@ -49,6 +50,7 @@ const prizeCategories = categories.filter((c) => c !== "All");
 
 export default function CreateRaffle() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<RaffleDraft>(initialDraft);
   const [published, setPublished] = useState(false);
@@ -79,6 +81,23 @@ export default function CreateRaffle() {
 
   const canAdvance = step !== 0 || draft.title.trim().length > 2;
   const isLast = step === steps.length - 1;
+  const hasProgress = step > 0 || draft.title.trim().length > 0;
+
+  useConfirmOnLeave(
+    hasProgress && !published,
+    "Discard this raffle and leave? Your progress won't be saved.",
+  );
+
+  function exitToDashboard() {
+    if (
+      hasProgress &&
+      !published &&
+      !window.confirm("Discard this raffle and go back to the dashboard?")
+    ) {
+      return;
+    }
+    navigate("/en/dashboard");
+  }
 
   async function publish() {
     if (!user) {
@@ -118,13 +137,13 @@ export default function CreateRaffle() {
     <AppShell>
       {/* Header */}
       <div className="mb-7">
-        <Link
-          to="/en/dashboard"
+        <button
+          onClick={exitToDashboard}
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
         >
           <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
           Back to dashboard
-        </Link>
+        </button>
         <h1 className="text-3xl font-bold tracking-tightest text-white sm:text-4xl">
           Create a <span className="text-gradient">raffle</span>
         </h1>

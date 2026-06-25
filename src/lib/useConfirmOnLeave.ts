@@ -20,7 +20,12 @@ export function useConfirmOnLeave(active: boolean, message: string) {
     window.history.pushState(null, "", window.location.href);
     const handlePopState = () => {
       if (window.confirm(message)) {
+        // Drop both guards before navigating: leaving the beforeunload
+        // listener armed past this point can surface a second native
+        // "leave site?" prompt (or stall the navigation while the browser
+        // resolves it) on top of the confirm() the user just answered.
         window.removeEventListener("popstate", handlePopState);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
         window.history.back();
       } else {
         window.history.pushState(null, "", window.location.href);

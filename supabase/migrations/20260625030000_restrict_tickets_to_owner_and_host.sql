@@ -10,5 +10,5 @@ create policy "Entrants and hosts can read tickets"
   on public.tickets for select
   using (
     entrant_id = (select auth.uid())
-    or public.is_raffle_host(raffle_id)
+    or private.is_raffle_host(raffle_id)
   );

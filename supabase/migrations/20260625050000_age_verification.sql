@@ -45,7 +45,6 @@ alter table public.checkout_contacts
 create or replace function public.create_pending_checkout(
   p_raffle_id uuid,
   p_qty integer,
-  p_promo text default null,
   p_provider public.payment_provider default 'chapa',
   p_full_name text default null,
   p_phone text default null,
@@ -64,12 +63,9 @@ declare
   v_tier public.subscription_tier;
   v_rate numeric;
   v_gross numeric;
-  v_discount numeric := 0;
   v_free integer := 0;
   v_bundle jsonb;
-  v_promo public.promo_codes;
   v_commission numeric;
-  v_charity numeric;
   v_host_net numeric;
   v_payment_id uuid;
 begin
@@ -123,41 +119,18 @@ begin
 
   v_gross := v_raffle.ticket_price * p_qty;
 
-  if p_promo is not null and length(trim(p_promo)) > 0 then
-    select * into v_promo from public.promo_codes
-      where raffle_id = p_raffle_id and upper(code) = upper(trim(p_promo))
-        and (expires_at is null or expires_at > now())
-        and (max_uses is null or uses_count < max_uses)
-      limit 1;
-    if found then
-      if v_promo.discount_type = 'percent' then
-        v_discount := v_gross * (v_promo.discount_value / 100);
-      elsif v_promo.discount_type = 'fixed' then
-        v_discount := least(v_promo.discount_value, v_gross);
-      elsif v_promo.discount_type = 'free_tickets' then
-        v_free := v_free + v_promo.discount_value::int;
-      end if;
-    end if;
-  end if;
-
-  v_gross := greatest(v_gross - v_discount, 0);
-
   select subscription_tier into v_tier from public.profiles where id = v_raffle.host_id;
   v_rate := case when v_tier = 'basic' then 0.15 else 0.10 end;
   v_commission := round(v_gross * v_rate, 2);
-  v_charity := round(v_gross * (v_raffle.charity_percent / 100), 2);
-  v_host_net := v_gross - v_commission - v_charity;
+  v_host_net := v_gross - v_commission;
 
   insert into public.payments (
-    raffle_id, payer_id, amount_gross, platform_commission, host_net, charity_share,
+    raffle_id, payer_id, amount_gross, platform_commission, host_net,
     status, provider, meta
   ) values (
-    p_raffle_id, v_uid, v_gross, v_commission, v_host_net, v_charity,
+    p_raffle_id, v_uid, v_gross, v_commission, v_host_net,
     'pending', p_provider,
-    jsonb_build_object(
-      'qty', p_qty, 'free', v_free,
-      'promo_code_id', v_promo.id
-    )
+    jsonb_build_object('qty', p_qty, 'free', v_free)
   ) returning id into v_payment_id;
 
   insert into public.checkout_contacts (payment_id, full_name, phone, email, city, date_of_birth)
@@ -173,7 +146,7 @@ begin
 end;
 $function$;
 
-revoke execute on function public.create_pending_checkout(uuid, integer, text, public.payment_provider, text, text, text, text) from anon, authenticated;
-drop function public.create_pending_checkout(uuid, integer, text, public.payment_provider, text, text, text, text);
+revoke execute on function public.create_pending_checkout(uuid, integer, public.payment_provider, text, text, text, text) from anon, authenticated;
+drop function if exists public.create_pending_checkout(uuid, integer, public.payment_provider, text, text, text, text);
 
-grant execute on function public.create_pending_checkout(uuid, integer, text, public.payment_provider, text, text, text, text, date) to anon, authenticated;
+grant execute on function public.create_pending_checkout(uuid, integer, public.payment_provider, text, text, text, text, date) to anon, authenticated;

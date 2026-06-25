@@ -152,17 +152,16 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
 - ✅ Realtime cleanup — only the auth subscription; cleaned up correctly. (No realtime data subscriptions at all.)
 
 ### Database / Backend
-- ⚠️ RLS — **cannot verify from repo**; no policy definitions checked in
-- ⚠️ `raffles` status enum — only `draft|live|ended|cancelled`; **no `draw_pending` / `prize_confirmed` / `revenue_released`** states (those exist only as separate `prize_status` enum + timestamp columns)
+- ✅ RLS — comprehensive policies checked in (`supabase/migrations/20260623193807_rls_policies.sql` + hardening migration), now live on the project; helper functions (`is_raffle_host`/`is_raffle_public`) live in a non-API-exposed `private` schema
+- ⚠️ `raffles` status enum — only `draft|live|ended|cancelled`; **no `draw_pending` / `prize_confirmed` / `revenue_released`** states (those exist only as separate `prize_status` enum + timestamp columns). This is an intentional design choice, not a gap — see Section 6.
 - ✅ `tickets` table
 - ✅ `payments` / escrow table
 - ✅ `winners` table
-- ✅ `payouts` table
-- ✅ `promo_codes` table
-- ✅ `affiliates` table
-- ❌ Cron for auto-draw
-- ❌ Cron for 7-day host confirmation
-- ❌ Cron for 21-day winner acceptance
+- 🗑️ `payouts` / `affiliates` / `promo_codes` / `campaigns` / `charities` tables — **intentionally removed**; none of them ever executed a real transfer or had a host-facing creation flow, so they were dropped (`supabase/migrations/20260625010000`, `20260625020000`) rather than left as dead schema
+- ✅ Cron for auto-draw — `run-due-draws` (every minute), live and CSPRNG-backed (`private.draw_raffle`, `draw_audit`)
+- ✅ Cron for 7-day host confirmation — `run-due-guarantee-compensations` (every 15 min): unconfirmed prizes auto-revoke into the 75% guarantee compensation after 7 days
+- ✅ Cron for 21-day winner acceptance — `run-due-winner-claim-expirations` (every 15 min): an unanswered win auto-accepts after the 21-day claim deadline, mirroring the host-side guarantee
+- ✅ Server-side age verification — `date_of_birth` captured + `>=18` CHECK constraint enforced inside `create_pending_checkout` for both registered and guest checkout
 
 ---
 

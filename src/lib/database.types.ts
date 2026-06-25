@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          meta: Json
+          reason: string | null
+          target_id: string
+          target_table: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          reason?: string | null
+          target_id: string
+          target_table: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          reason?: string | null
+          target_id?: string
+          target_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_actions_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkout_contacts: {
         Row: {
           city: string
@@ -394,6 +435,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_resolve_dispute: {
+        Args: { p_decision: string; p_reason: string; p_winner_id: string }
+        Returns: Json
+      }
       confirm_prize: {
         Args: { p_decision: string; p_raffle_id: string }
         Returns: Json

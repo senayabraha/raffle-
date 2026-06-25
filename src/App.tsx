@@ -34,6 +34,12 @@ const CheckoutCancelled = lazy(() => import("@/pages/CheckoutCancelled"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
+const AdminOverview = lazy(() => import("@/pages/admin/Overview"));
+const AdminRaffles = lazy(() => import("@/pages/admin/Raffles"));
+const AdminPayments = lazy(() => import("@/pages/admin/Payments"));
+const AdminUsers = lazy(() => import("@/pages/admin/Users"));
+const AdminDisputes = lazy(() => import("@/pages/admin/Disputes"));
 
 /**
  * Lazy because NavDrawer pulls in framer-motion. It used to be a static
@@ -96,6 +102,16 @@ function RequireHostContext({ children }: { children: ReactNode }) {
     if (!hasHostRole || loginContext === "entrant") {
       return <Navigate to="/en/public-raffles/live" replace />;
     }
+  }
+  return <>{children}</>;
+}
+
+/** Gates the admin panel to accounts with `role = 'admin'`. */
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const { profile, session, loading } = useAuth();
+  if (loading || (session && !profile)) return <FullPageSpinner />;
+  if (!session || profile?.role !== "admin") {
+    return <Navigate to="/en/dashboard" replace />;
   }
   return <>{children}</>;
 }
@@ -201,6 +217,23 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            {/* Admin panel (authenticated, role = 'admin' only) */}
+            <Route
+              path="/en/admin"
+              element={
+                <RequireAuth>
+                  <RequireAdmin>
+                    <AdminLayout />
+                  </RequireAdmin>
+                </RequireAuth>
+              }
+            >
+              <Route index element={<AdminOverview />} />
+              <Route path="raffles" element={<AdminRaffles />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="disputes" element={<AdminDisputes />} />
+            </Route>
             {/* Checkout return pages (public — guests can check out without an account) */}
             <Route path="/en/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/en/checkout/cancelled" element={<CheckoutCancelled />} />

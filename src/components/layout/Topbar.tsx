@@ -1,9 +1,25 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Search, Bell, PlusCircle, LogOut, BellOff, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { useDashboardDrawer } from "@/lib/dashboardDrawer";
+import {
+  fetchNotifications,
+  markNotificationsRead,
+  type AppNotification,
+} from "@/lib/raffles";
+
+function timeAgo(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 function initialsOf(name?: string | null, email?: string | null) {
   if (name) {
@@ -17,6 +33,27 @@ export function Topbar() {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
   const { open: openDrawer } = useDashboardDrawer();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    fetchNotifications(user.id).then((rows) => {
+      if (active) setNotifications(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const unreadIds = notifications.filter((n) => !n.readAt).map((n) => n.id);
+
+  function handleOpenChange(open: boolean) {
+    if (!open && unreadIds.length > 0) {
+      markNotificationsRead(unreadIds);
+      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
+    }
+  }
 
   const displayName =
     profile?.full_name ?? user?.email?.split("@")[0] ?? "Account";
@@ -64,26 +101,43 @@ export function Topbar() {
             </Button>
           </Link>
 
-          <DropdownMenu.Root>
+          <DropdownMenu.Root onOpenChange={handleOpenChange}>
             <DropdownMenu.Trigger asChild>
               <button className="focus-ring relative grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
                 <Bell strokeWidth={1.5} className="h-[18px] w-[18px]" />
-                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-obsidian" />
+                {unreadIds.length > 0 && (
+                  <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-obsidian" />
+                )}
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content
                 align="end"
                 sideOffset={10}
-                className="glass-strong z-50 w-72 rounded-xl border border-white/10 p-4 text-sm shadow-glass"
+                className="glass-strong z-50 w-80 rounded-xl border border-white/10 p-2 text-sm shadow-glass"
               >
-                <div className="flex flex-col items-center gap-2 py-4 text-center">
-                  <BellOff strokeWidth={1.5} className="h-5 w-5 text-zinc-500" />
-                  <p className="font-medium text-zinc-200">No notifications yet</p>
-                  <p className="text-xs text-zinc-500">
-                    We'll let you know about entries, payouts and draws here.
-                  </p>
-                </div>
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-4 text-center">
+                    <BellOff strokeWidth={1.5} className="h-5 w-5 text-zinc-500" />
+                    <p className="font-medium text-zinc-200">No notifications yet</p>
+                    <p className="text-xs text-zinc-500">
+                      We'll let you know about entries, payouts and draws here.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="max-h-96 space-y-1 overflow-y-auto">
+                    {notifications.map((n) => (
+                      <li
+                        key={n.id}
+                        className={`rounded-lg p-2.5 ${n.readAt ? "" : "bg-white/[0.04]"}`}
+                      >
+                        <p className="text-xs font-semibold text-zinc-100">{n.title}</p>
+                        {n.body && <p className="mt-0.5 text-xs text-zinc-500">{n.body}</p>}
+                        <p className="mt-1 text-[10px] text-zinc-600">{timeAgo(n.createdAt)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>

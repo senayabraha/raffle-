@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -18,7 +18,14 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { createRaffle, uploadRaffleImage } from "@/lib/raffles";
+import {
+  createRaffle,
+  updateRaffle,
+  uploadRaffleImages,
+  fetchHostDraft,
+  parseBundles,
+  type RaffleDraftRow,
+} from "@/lib/raffles";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
@@ -48,38 +55,154 @@ const steps: WizardStep[] = [
 
 const prizeCategories = categories.filter((c) => c !== "All");
 
+/** Field-level validation errors for the active step. Empty object = step can advance. */
+function stepErrors(step: number, draft: RaffleDraft): Record<string, string> {
+  const errors: Record<string, string> = {};
+  switch (step) {
+    case 0:
+      if (draft.title.trim().length <= 2) {
+        errors.title = "Give your prize a title (3+ characters).";
+      }
+      break;
+    case 1:
+      if (!draft.unlimited && draft.ticketCap < 1) {
+        errors.ticketCap = "Set a ticket cap of at least 1.";
+      }
+      if (draft.bundlesEnabled && draft.bundleFree >= draft.bundleQty) {
+        errors.bundle =
+          "Free tickets must be fewer than the buy quantity, or every ticket ends up free.";
+      }
+      break;
+    case 2:
+      if (draft.drawType === "date") {
+        if (!draft.drawDate) {
+          errors.drawDate = "Pick a draw date.";
+        } else if (new Date(draft.drawDate).getTime() <= Date.now()) {
+          errors.drawDate = "Draw date must be in the future.";
+        }
+      }
+      if (!draft.unlimited && draft.minTicketTarget > draft.ticketCap) {
+        errors.minTicketTarget =
+          "Can't exceed your ticket cap — the raffle would always be cancelled.";
+      }
+      break;
+  }
+  return errors;
+}
+
+/** Average revenue per ticket once bundle freebies are factored in. */
+function effectivePricePerTicket(draft: RaffleDraft) {
+  if (!draft.bundlesEnabled) return draft.ticketPrice;
+  const totalTickets = draft.bundleQty + draft.bundleFree;
+  if (totalTickets <= 0) return draft.ticketPrice;
+  return (draft.bundleQty * draft.ticketPrice) / totalTickets;
+}
+
+/** Rehydrates a saved draft row from the DB into wizard form state. */
+function draftFromRow(row: RaffleDraftRow): RaffleDraft {
+  const bundle = parseBundles(row.bundle_rules)[0];
+  return {
+    title: row.title,
+    description: row.description ?? "",
+    category: row.category ?? initialDraft.category,
+    prizeValue: row.prize_value,
+    condition: row.condition ?? initialDraft.condition,
+    deliveryMethod: row.delivery_method ?? initialDraft.deliveryMethod,
+    ticketPrice: Number(row.ticket_price),
+    unlimited: row.ticket_cap == null,
+    ticketCap: row.ticket_cap ?? initialDraft.ticketCap,
+    bundlesEnabled: !!bundle,
+    bundleQty: bundle?.qty ?? initialDraft.bundleQty,
+    bundleFree: bundle?.free ?? initialDraft.bundleFree,
+    drawType: row.draw_type,
+    drawDate: row.draw_date ? toLocalDatetimeInput(row.draw_date) : "",
+    minTicketTarget: row.min_ticket_target ?? initialDraft.minTicketTarget,
+    visibility: row.visibility,
+  };
+}
+
+/** Formats an ISO timestamp for an <input type="datetime-local"> value. */
+function toLocalDatetimeInput(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** A prize photo that's either already uploaded (resumed draft) or staged locally (new). */
+type ImageItem =
+  | { kind: "existing"; url: string }
+  | { kind: "new"; file: File; preview: string };
+
 export default function CreateRaffle() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { draftId } = useParams<{ draftId: string }>();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<RaffleDraft>(initialDraft);
+  const [raffleId, setRaffleId] = useState<string | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(!!draftId);
   const [published, setPublished] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dir, setDir] = useState(1);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<ImageItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!draftId || !user) return;
+    let active = true;
+    fetchHostDraft(draftId, user.id).then((row) => {
+      if (!active) return;
+      if (row) {
+        setRaffleId(row.id);
+        setDraft(draftFromRow(row));
+        setImages((row.image_urls ?? []).map((url) => ({ kind: "existing", url })));
+      } else {
+        setError("That draft could not be found.");
+      }
+      setLoadingDraft(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [draftId, user]);
 
   const set = (patch: Partial<RaffleDraft>) =>
     setDraft((d) => ({ ...d, ...patch }));
 
+  const MAX_IMAGES = 6;
+  const imagePreviews = images.map((i) => (i.kind === "existing" ? i.url : i.preview));
+
   function addImages(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (!files || files.length === 0) return;
+    const room = MAX_IMAGES - images.length;
+    if (room <= 0) return;
+    const incoming = Array.from(files)
+      .slice(0, room)
+      .map((file): ImageItem => ({ kind: "new", file, preview: URL.createObjectURL(file) }));
+    setImages((prev) => [...prev, ...incoming]);
   }
 
-  function removeImage() {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(null);
-    setImagePreview(null);
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const item = prev[index];
+      if (item.kind === "new") URL.revokeObjectURL(item.preview);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
-  const canAdvance = step !== 0 || draft.title.trim().length > 2;
+  /** Uploads any newly-added photos and merges them with already-uploaded URLs, preserving order. */
+  async function resolveImageUrls(hostId: string): Promise<string[]> {
+    const newFiles = images.filter((i) => i.kind === "new").map((i) => i.file);
+    const newUrls = newFiles.length ? await uploadRaffleImages(newFiles, hostId) : [];
+    let next = 0;
+    return images.map((i) => (i.kind === "existing" ? i.url : newUrls[next++]));
+  }
+
+  const errors = stepErrors(step, draft);
+  const canAdvance = Object.keys(errors).length === 0;
   const isLast = step === steps.length - 1;
   const hasProgress = step > 0 || draft.title.trim().length > 0;
 
@@ -107,14 +230,37 @@ export default function CreateRaffle() {
     setError(null);
     setPublishing(true);
     try {
-      const imageUrl = imageFile ? await uploadRaffleImage(imageFile, user.id) : null;
-      const { slug } = await createRaffle(draft, user.id, imageUrl);
+      const imageUrls = await resolveImageUrls(user.id);
+      const { slug } = raffleId
+        ? await updateRaffle(raffleId, draft, imageUrls, "live")
+        : await createRaffle(draft, user.id, imageUrls, "live");
       setPublishedSlug(slug);
       setPublished(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not publish your raffle.");
     } finally {
       setPublishing(false);
+    }
+  }
+
+  async function saveDraft() {
+    if (!user) {
+      setError("Your session expired — please log in again.");
+      return;
+    }
+    setError(null);
+    setSavingDraft(true);
+    try {
+      const imageUrls = await resolveImageUrls(user.id);
+      const { id } = raffleId
+        ? await updateRaffle(raffleId, draft, imageUrls, "draft")
+        : await createRaffle(draft, user.id, imageUrls, "draft");
+      setRaffleId(id);
+      navigate("/en/dashboard");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save your draft.");
+    } finally {
+      setSavingDraft(false);
     }
   }
 
@@ -132,6 +278,16 @@ export default function CreateRaffle() {
   }
 
   if (published) return <PublishedScreen draft={draft} slug={publishedSlug} />;
+
+  if (loadingDraft) {
+    return (
+      <AppShell>
+        <div className="flex min-h-[40vh] items-center justify-center text-zinc-400">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -190,7 +346,9 @@ export default function CreateRaffle() {
                     step={step}
                     draft={draft}
                     set={set}
-                    imagePreview={imagePreview}
+                    errors={errors}
+                    imagePreviews={imagePreviews}
+                    maxImages={MAX_IMAGES}
                     fileInputRef={fileInputRef}
                     onAddImages={addImages}
                     onRemoveImage={removeImage}
@@ -221,29 +379,45 @@ export default function CreateRaffle() {
               <span className="hidden text-xs text-zinc-500 sm:block">
                 Step {step + 1} of {steps.length}
               </span>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={next}
-                disabled={!canAdvance || publishing}
-              >
-                {publishing ? (
-                  <>
-                    <Loader2 className="h-[18px] w-[18px] animate-spin" />
-                    Publishing…
-                  </>
-                ) : isLast ? (
-                  <>
-                    <Rocket strokeWidth={1.5} className="h-[18px] w-[18px]" />
-                    Publish raffle
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
-                  </>
+              <div className="flex items-center gap-2">
+                {isLast && (
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={saveDraft}
+                    disabled={publishing || savingDraft}
+                  >
+                    {savingDraft ? (
+                      <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                    ) : (
+                      "Save as draft"
+                    )}
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={next}
+                  disabled={!canAdvance || publishing || savingDraft}
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                      Publishing…
+                    </>
+                  ) : isLast ? (
+                    <>
+                      <Rocket strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                      Publish raffle
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </SpotlightCard>
         </div>
@@ -251,7 +425,7 @@ export default function CreateRaffle() {
         {/* Live preview */}
         <aside className="lg:col-span-4">
           <div className="sticky top-24">
-            <LivePreview draft={draft} imagePreview={imagePreview} />
+            <LivePreview draft={draft} imagePreview={imagePreviews[0] ?? null} />
           </div>
         </aside>
       </div>
@@ -287,7 +461,9 @@ function StepBody({
   step,
   draft,
   set,
-  imagePreview,
+  errors,
+  imagePreviews,
+  maxImages,
   fileInputRef,
   onAddImages,
   onRemoveImage,
@@ -295,10 +471,12 @@ function StepBody({
   step: number;
   draft: RaffleDraft;
   set: (p: Partial<RaffleDraft>) => void;
-  imagePreview: string | null;
+  errors: Record<string, string>;
+  imagePreviews: string[];
+  maxImages: number;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onAddImages: (files: FileList | null) => void;
-  onRemoveImage: () => void;
+  onRemoveImage: (index: number) => void;
 }) {
   switch (step) {
     case 0:
@@ -338,44 +516,102 @@ function StepBody({
               ))}
             </div>
           </Field>
-          <Field label="Prize cover photo" hint={imagePreview ? "1/1" : "0/1"}>
+          <Field
+            label="Prize photos"
+            hint={`${imagePreviews.length}/${maxImages}`}
+          >
             <input
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg"
+              multiple
               className="hidden"
               onChange={(e) => {
                 onAddImages(e.target.files);
                 e.target.value = "";
               }}
             />
-            {!imagePreview && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="focus-ring group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04]"
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
-                  <UploadCloud strokeWidth={1.5} className="h-5 w-5" />
-                </span>
-                <span className="text-sm font-medium text-zinc-200">Click to upload</span>
-                <span className="text-xs text-zinc-500">PNG or JPG, up to 8MB</span>
-              </button>
-            )}
-
-            {imagePreview && (
-              <div className="group relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-white/10">
-                <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+            <div className="grid grid-cols-3 gap-2">
+              {imagePreviews.map((src, i) => (
+                <div
+                  key={src}
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-white/10"
+                >
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  {i === 0 && (
+                    <span className="absolute left-1 top-1 rounded-full bg-obsidian/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-200">
+                      Cover
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveImage(i)}
+                    aria-label="Remove image"
+                    className="focus-ring absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X strokeWidth={2} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+              {imagePreviews.length < maxImages && (
                 <button
                   type="button"
-                  onClick={onRemoveImage}
-                  aria-label="Remove image"
-                  className="focus-ring absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="focus-ring group flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/[0.02] text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04]"
                 >
-                  <X strokeWidth={2} className="h-4 w-4" />
+                  <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
+                    <UploadCloud strokeWidth={1.5} className="h-4 w-4" />
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-300">Add photo</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+            <p className="text-xs text-zinc-500">
+              First photo is the cover. PNG or JPG, up to 8MB each.
+            </p>
+          </Field>
+
+          <Field label="Prize value" hint="ETB · optional">
+            <PrefixInput
+              prefix="ETB"
+              type="number"
+              min={0}
+              step={1}
+              value={draft.prizeValue ?? ""}
+              onChange={(e) =>
+                set({ prizeValue: e.target.value === "" ? null : Number(e.target.value) })
+              }
+              placeholder="Retail value entrants can verify"
+            />
+          </Field>
+
+          <Field label="Condition">
+            <Segmented
+              value={draft.condition}
+              onChange={(v) => set({ condition: v })}
+              options={[
+                { value: "new", label: "New" },
+                { value: "refurbished", label: "Refurbished" },
+                { value: "used", label: "Used" },
+              ]}
+            />
+          </Field>
+
+          <Field label="Delivery method">
+            <Segmented
+              value={draft.deliveryMethod}
+              onChange={(v) => set({ deliveryMethod: v })}
+              options={[
+                { value: "shipping", label: "Shipping", hint: "Mailed to the winner" },
+                { value: "pickup", label: "Local pickup", hint: "Winner collects it" },
+                { value: "digital", label: "Digital delivery", hint: "Code or file sent online" },
+                {
+                  value: "cash_equivalent",
+                  label: "Cash equivalent",
+                  hint: "Winner can take the cash value instead",
+                },
+              ]}
+            />
           </Field>
         </>
       );
@@ -403,7 +639,7 @@ function StepBody({
           </div>
 
           {!draft.unlimited && (
-            <Field label="Ticket cap">
+            <Field label="Ticket cap" error={errors.ticketCap}>
               <Input
                 type="number"
                 min={1}
@@ -425,24 +661,34 @@ function StepBody({
           </div>
 
           {draft.bundlesEnabled && (
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Buy quantity">
-                <Input
-                  type="number"
-                  min={2}
-                  value={draft.bundleQty}
-                  onChange={(e) => set({ bundleQty: Number(e.target.value) })}
-                />
-              </Field>
-              <Field label="Free tickets">
-                <Input
-                  type="number"
-                  min={1}
-                  value={draft.bundleFree}
-                  onChange={(e) => set({ bundleFree: Number(e.target.value) })}
-                />
-              </Field>
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Buy quantity">
+                  <Input
+                    type="number"
+                    min={2}
+                    value={draft.bundleQty}
+                    onChange={(e) => set({ bundleQty: Number(e.target.value) })}
+                  />
+                </Field>
+                <Field label="Free tickets" error={errors.bundle}>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={draft.bundleFree}
+                    onChange={(e) => set({ bundleFree: Number(e.target.value) })}
+                  />
+                </Field>
+              </div>
+              {!errors.bundle && (
+                <p className="text-xs text-zinc-500">
+                  Effective price per ticket with this bundle:{" "}
+                  <span className="font-medium text-zinc-300">
+                    {formatCurrency(effectivePricePerTicket(draft))}
+                  </span>
+                </p>
+              )}
+            </>
           )}
         </>
       );
@@ -472,7 +718,7 @@ function StepBody({
           </Field>
 
           {draft.drawType === "date" && (
-            <Field label="Draw date & time">
+            <Field label="Draw date & time" error={errors.drawDate}>
               <Input
                 type="datetime-local"
                 value={draft.drawDate}
@@ -485,6 +731,7 @@ function StepBody({
           <Field
             label="Minimum ticket target"
             hint="Refund if not met"
+            error={errors.minTicketTarget}
           >
             <Input
               type="number"
@@ -541,9 +788,24 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
   const platformCut = price * commission;
   const hostNet = Math.max(price - platformCut, 0);
 
+  const conditionLabels: Record<RaffleDraft["condition"], string> = {
+    new: "New",
+    refurbished: "Refurbished",
+    used: "Used",
+  };
+  const deliveryLabels: Record<RaffleDraft["deliveryMethod"], string> = {
+    shipping: "Shipping",
+    pickup: "Local pickup",
+    digital: "Digital delivery",
+    cash_equivalent: "Cash equivalent",
+  };
+
   const rows: [string, string][] = [
     ["Prize", draft.title || "Untitled"],
     ["Category", draft.category],
+    ["Prize value", draft.prizeValue ? formatCurrency(draft.prizeValue) : "Not disclosed"],
+    ["Condition", conditionLabels[draft.condition]],
+    ["Delivery", deliveryLabels[draft.deliveryMethod]],
     ["Ticket price", formatCurrency(price)],
     ["Tickets", draft.unlimited ? "Unlimited" : draft.ticketCap.toLocaleString()],
     [
@@ -579,6 +841,13 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
         </p>
         <div className="space-y-1.5 text-sm">
           <Row label="Ticket price" value={formatCurrency(price)} />
+          {draft.bundlesEnabled && (
+            <Row
+              label="Effective price after bundle"
+              value={formatCurrency(effectivePricePerTicket(draft))}
+              muted
+            />
+          )}
           <Row label="Platform commission (10%)" value={`−${formatCurrency(platformCut)}`} muted />
           <div className="mt-1 flex items-center justify-between border-t border-white/10 pt-2 font-bold text-white">
             <span>You earn (held in escrow)</span>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { useAuth } from "@/lib/auth";
 import {
-  fetchHostEndedRaffle,
+  fetchHostEndedRaffleById,
   confirmPrize,
   type EndedRaffleSummary,
 } from "@/lib/raffles";
@@ -56,7 +56,8 @@ const decisions: {
   },
 ];
 
-export default function EndedRaffle() {
+export default function EndedRaffleDetail() {
+  const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [raffle, setRaffle] = useState<EndedRaffleSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,9 +74,9 @@ export default function EndedRaffle() {
   }, [raffle?.drawDate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !id) return;
     let active = true;
-    fetchHostEndedRaffle(user.id).then((r) => {
+    fetchHostEndedRaffleById(id, user.id).then((r) => {
       if (!active) return;
       setRaffle(r);
       if (r) setFlow(flowFromRaffle(r));
@@ -84,7 +85,7 @@ export default function EndedRaffle() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, id]);
 
   async function submitDecision() {
     if (!raffle || submitting) return;
@@ -114,26 +115,20 @@ export default function EndedRaffle() {
     return (
       <AppShell>
         <Link
-          to="/en/dashboard"
+          to="/en/dashboard/ended"
           className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
         >
           <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
-          Back to dashboard
+          Back to ended raffles
         </Link>
         <div className="glass flex flex-col items-center justify-center gap-3 py-24 text-center">
           <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
             <Award strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">No completed draws yet</p>
+          <p className="text-base font-semibold text-white">Raffle not found</p>
           <p className="max-w-sm text-sm text-zinc-500">
-            When one of your raffles ends and a winner is drawn, you'll confirm
-            delivery from here.
+            This ended raffle doesn't exist or isn't one of yours.
           </p>
-          <Link to="/en/dashboard/create" className="mt-1">
-            <Button variant="primary" size="md">
-              Create a raffle
-            </Button>
-          </Link>
         </div>
       </AppShell>
     );
@@ -156,11 +151,11 @@ export default function EndedRaffle() {
   return (
     <AppShell>
       <Link
-        to="/en/dashboard"
+        to="/en/dashboard/ended"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
       >
         <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
-        Back to dashboard
+        Back to ended raffles
       </Link>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">

@@ -100,6 +100,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          raffle_id: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          raffle_id?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          raffle_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_gross: number | null
@@ -200,16 +248,19 @@ export type Database = {
         Row: {
           bundle_rules: Json
           category: string | null
+          condition: Database["public"]["Enums"]["prize_condition"] | null
           created_at: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"] | null
           description: string | null
           draw_date: string | null
           draw_type: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id: string
-          image_url: string | null
+          image_urls: string[]
           min_ticket_target: number | null
           prize_confirmed_at: string | null
           prize_status: Database["public"]["Enums"]["prize_status"]
+          prize_value: number | null
           slug: string
           status: Database["public"]["Enums"]["raffle_status"]
           ticket_cap: number | null
@@ -222,16 +273,19 @@ export type Database = {
         Insert: {
           bundle_rules?: Json
           category?: string | null
+          condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id?: string
-          image_url?: string | null
+          image_urls?: string[]
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
+          prize_value?: number | null
           slug: string
           status?: Database["public"]["Enums"]["raffle_status"]
           ticket_cap?: number | null
@@ -244,16 +298,19 @@ export type Database = {
         Update: {
           bundle_rules?: Json
           category?: string | null
+          condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id?: string
           id?: string
-          image_url?: string | null
+          image_urls?: string[]
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
+          prize_value?: number | null
           slug?: string
           status?: Database["public"]["Enums"]["raffle_status"]
           ticket_cap?: number | null
@@ -394,8 +451,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_raffle: {
+        Args: { p_raffle_id: string }
+        Returns: Json
+      }
       confirm_prize: {
         Args: { p_decision: string; p_raffle_id: string }
+        Returns: Json
+      }
+      update_raffle_details: {
+        Args: {
+          p_description: string | null
+          p_image_urls: string[]
+          p_prize_value: number | null
+          p_raffle_id: string
+          p_ticket_cap: number | null
+          p_ticket_price: number
+        }
         Returns: Json
       }
       create_pending_checkout: {
@@ -425,6 +497,7 @@ export type Database = {
       }
     }
     Enums: {
+      delivery_method: "shipping" | "pickup" | "digital" | "cash_equivalent"
       draw_type: "date" | "soldout" | "hybrid"
       entry_type: "paid" | "free_share" | "free_bonus" | "affiliate"
       payment_provider: "chapa" | "telebirr"
@@ -435,6 +508,7 @@ export type Database = {
         | "refunded"
         | "compensated"
         | "failed"
+      prize_condition: "new" | "used" | "refurbished"
       prize_status: "pending" | "confirmed" | "revoked" | "disputed"
       raffle_status: "draft" | "live" | "ended" | "cancelled"
       subscription_tier: "basic" | "premium" | "pro"
@@ -573,6 +647,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      delivery_method: ["shipping", "pickup", "digital", "cash_equivalent"],
       draw_type: ["date", "soldout", "hybrid"],
       entry_type: ["paid", "free_share", "free_bonus", "affiliate"],
       payment_provider: ["chapa", "telebirr"],
@@ -584,6 +659,7 @@ export const Constants = {
         "compensated",
         "failed",
       ],
+      prize_condition: ["new", "used", "refurbished"],
       prize_status: ["pending", "confirmed", "revoked", "disputed"],
       raffle_status: ["draft", "live", "ended", "cancelled"],
       subscription_tier: ["basic", "premium", "pro"],

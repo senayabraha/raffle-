@@ -7,12 +7,14 @@ export function Field({
   label,
   hint,
   htmlFor,
+  error,
   children,
   className,
 }: {
   label: string;
   hint?: string;
   htmlFor?: string;
+  error?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -25,6 +27,7 @@ export function Field({
         {hint && <span className="text-xs text-zinc-500">{hint}</span>}
       </div>
       {children}
+      {error && <p className="text-xs text-rose-300">{error}</p>}
     </div>
   );
 }

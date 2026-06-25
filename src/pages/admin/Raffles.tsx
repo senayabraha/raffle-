@@ -3,9 +3,11 @@ import { X } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import {
   fetchAdminRaffles,
   fetchAdminDrawAudit,
+  setRaffleStatus,
   type AdminRaffleRow,
   type AdminDrawAuditRow,
 } from "@/lib/admin";
@@ -25,17 +27,15 @@ export default function Raffles() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<AdminRaffleRow | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  function load() {
+    setLoading(true);
     fetchAdminRaffles().then((rows) => {
-      if (!active) return;
       setRaffles(rows);
       setLoading(false);
     });
-    return () => {
-      active = false;
-    };
-  }, []);
+  }
+
+  useEffect(load, []);
 
   const statuses = useMemo(
     () => Array.from(new Set(raffles.map((r) => r.status))),
@@ -100,6 +100,7 @@ export default function Raffles() {
                   <th className="py-2 pr-4">Price</th>
                   <th className="py-2 pr-4">Sold</th>
                   <th className="py-2 pr-4">Draw date</th>
+                  <th className="py-2 pr-4">Free route</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +123,15 @@ export default function Raffles() {
                     <td className="py-3 pr-4">
                       {r.drawDate ? new Date(r.drawDate).toLocaleDateString() : "—"}
                     </td>
+                    <td className="py-3 pr-4">
+                      {r.hasFreeEntryRoute ? (
+                        <Badge tone="live">Has free route</Badge>
+                      ) : r.status === "live" ? (
+                        <Badge tone="warning">No free route</Badge>
+                      ) : (
+                        <Badge tone="neutral">—</Badge>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -131,21 +141,34 @@ export default function Raffles() {
       </SpotlightCard>
 
       {selected && (
-        <DrawAuditModal raffle={selected} onClose={() => setSelected(null)} />
+        <RaffleDetailModal
+          raffle={selected}
+          onClose={() => setSelected(null)}
+          onModerated={() => {
+            setSelected(null);
+            load();
+          }}
+        />
       )}
     </div>
   );
 }
 
-function DrawAuditModal({
+function RaffleDetailModal({
   raffle,
   onClose,
+  onModerated,
 }: {
   raffle: AdminRaffleRow;
   onClose: () => void;
+  onModerated: () => void;
 }) {
   const [rows, setRows] = useState<AdminDrawAuditRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [action, setAction] = useState<"draft" | "cancelled" | null>(null);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -159,11 +182,27 @@ function DrawAuditModal({
     };
   }, [raffle.id]);
 
+  const canModerate = raffle.status === "live" && !loading && rows.length === 0;
+
+  async function submit() {
+    if (!action || !reason.trim()) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await setRaffleStatus(raffle.id, action, reason.trim());
+      onModerated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to moderate raffle.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="glass max-h-[80vh] w-full max-w-2xl overflow-y-auto p-6"
+        className="glass max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -197,6 +236,48 @@ function DrawAuditModal({
             </div>
           )}
         </div>
+
+        {canModerate && (
+          <div className="mt-6 border-t border-white/[0.06] pt-5">
+            <p className="text-sm font-semibold text-white">Moderate this raffle</p>
+            <div className="mt-3 flex gap-3">
+              <Button
+                size="sm"
+                variant={action === "draft" ? "primary" : "outline"}
+                onClick={() => setAction("draft")}
+              >
+                Unpublish
+              </Button>
+              <Button
+                size="sm"
+                variant={action === "cancelled" ? "primary" : "outline"}
+                onClick={() => setAction("cancelled")}
+              >
+                Force cancel
+              </Button>
+            </div>
+            {action && (
+              <>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Reason (required, recorded in the audit log)"
+                  rows={2}
+                  className="mt-3 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+                />
+                {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
+                <div className="mt-3 flex justify-end gap-3">
+                  <Button variant="ghost" size="sm" onClick={() => setAction(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" disabled={!reason.trim() || submitting} onClick={submit}>
+                    {submitting ? "Saving…" : "Confirm"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

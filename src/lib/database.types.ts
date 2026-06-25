@@ -209,6 +209,7 @@ export type Database = {
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          status: string
           stripe_customer_id: string | null
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score: number | null
@@ -220,6 +221,7 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score?: number | null
@@ -231,6 +233,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score?: number | null
@@ -435,8 +438,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_export_user_data: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       admin_resolve_dispute: {
         Args: { p_decision: string; p_reason: string; p_winner_id: string }
+        Returns: Json
+      }
+      admin_set_raffle_status: {
+        Args: { p_raffle_id: string; p_reason: string; p_status: string }
+        Returns: Json
+      }
+      admin_set_subscription_tier: {
+        Args: { p_reason: string; p_tier: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_set_user_role: {
+        Args: { p_reason: string; p_role: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_set_user_status: {
+        Args: { p_reason: string; p_status: string; p_user_id: string }
         Returns: Json
       }
       confirm_prize: {

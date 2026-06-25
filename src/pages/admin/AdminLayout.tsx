@@ -6,6 +6,7 @@ import {
   Users,
   ShieldAlert,
   LogOut,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +17,7 @@ const adminNav = [
   { to: "/en/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/en/admin/users", label: "Users", icon: Users },
   { to: "/en/admin/disputes", label: "Disputes", icon: ShieldAlert },
+  { to: "/en/admin/hosts", label: "Host risk", icon: TrendingUp },
 ];
 
 export default function AdminLayout() {

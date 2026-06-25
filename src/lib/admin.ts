@@ -59,6 +59,7 @@ export interface AdminRaffleRow {
   drawDate: string | null;
   hostName: string;
   hostEmail: string | null;
+  hasFreeEntryRoute: boolean;
 }
 
 /** All raffles platform-wide, regardless of host or visibility. */
@@ -66,7 +67,7 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, slug, title, status, visibility, ticket_price, tickets_sold_count, draw_date, host:profiles!raffles_host_id_fkey(full_name, email)",
+      "id, slug, title, status, visibility, ticket_price, tickets_sold_count, draw_date, bundle_rules, host:profiles!raffles_host_id_fkey(full_name, email)",
     )
     .order("created_at", { ascending: false });
   if (error || !data) return [];
@@ -81,6 +82,7 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
       ticket_price: number;
       tickets_sold_count: number;
       draw_date: string | null;
+      bundle_rules: unknown;
       host: { full_name: string | null; email: string | null } | null;
     }>
   ).map((r) => ({
@@ -94,6 +96,7 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
     drawDate: r.draw_date,
     hostName: r.host?.full_name?.trim() || "Unknown host",
     hostEmail: r.host?.email ?? null,
+    hasFreeEntryRoute: Array.isArray(r.bundle_rules) && r.bundle_rules.length > 0,
   }));
 }
 
@@ -178,6 +181,7 @@ export interface AdminUserRow {
   fullName: string | null;
   email: string | null;
   role: UserRole;
+  status: string;
   subscriptionTier: Tables<"profiles">["subscription_tier"];
   createdAt: string;
 }
@@ -186,7 +190,7 @@ export interface AdminUserRow {
 export async function fetchAdminUsers(): Promise<AdminUserRow[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, subscription_tier, created_at")
+    .select("id, full_name, email, role, status, subscription_tier, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error || !data) return [];
@@ -195,9 +199,116 @@ export async function fetchAdminUsers(): Promise<AdminUserRow[]> {
     fullName: p.full_name,
     email: p.email,
     role: p.role,
+    status: p.status,
     subscriptionTier: p.subscription_tier,
     createdAt: p.created_at,
   }));
+}
+
+/** Unpublishes or force-cancels a live raffle. Rejected once it's been drawn. */
+export async function setRaffleStatus(
+  raffleId: string,
+  status: "draft" | "cancelled",
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_raffle_status", {
+    p_raffle_id: raffleId,
+    p_status: status,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+/** Suspends or reinstates a user. Does not auto-cancel their live raffles. */
+export async function setUserStatus(
+  userId: string,
+  status: "active" | "suspended",
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_user_status", {
+    p_user_id: userId,
+    p_status: status,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+export async function setUserRole(
+  userId: string,
+  role: UserRole,
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_user_role", {
+    p_user_id: userId,
+    p_role: role,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+export async function setSubscriptionTier(
+  userId: string,
+  tier: Tables<"profiles">["subscription_tier"],
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_subscription_tier", {
+    p_user_id: userId,
+    p_tier: tier,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+/** JSON bundle of everything tied to a user, for subject-access requests. */
+export async function exportUserData(userId: string): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.rpc("admin_export_user_data", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data as Record<string, unknown>;
+}
+
+export interface HostRiskRow {
+  hostId: string;
+  hostName: string;
+  hostEmail: string | null;
+  raffleCount: number;
+  disputeCount: number;
+  compensatedCount: number;
+}
+
+/** Hosts ranked by dispute/compensation rate — a pure read over Phase 1's data. */
+export async function fetchHostRiskLeaderboard(): Promise<HostRiskRow[]> {
+  const { data, error } = await supabase
+    .from("raffles")
+    .select(
+      "host_id, prize_status, host:profiles!raffles_host_id_fkey(full_name, email)",
+    );
+  if (error || !data) return [];
+
+  const byHost = new Map<string, HostRiskRow>();
+  for (const r of data as unknown as Array<{
+    host_id: string;
+    prize_status: Tables<"raffles">["prize_status"];
+    host: { full_name: string | null; email: string | null } | null;
+  }>) {
+    const existing = byHost.get(r.host_id) ?? {
+      hostId: r.host_id,
+      hostName: r.host?.full_name?.trim() || "Unknown host",
+      hostEmail: r.host?.email ?? null,
+      raffleCount: 0,
+      disputeCount: 0,
+      compensatedCount: 0,
+    };
+    existing.raffleCount += 1;
+    if (r.prize_status === "disputed") existing.disputeCount += 1;
+    if (r.prize_status === "revoked") existing.compensatedCount += 1;
+    byHost.set(r.host_id, existing);
+  }
+
+  return Array.from(byHost.values()).sort(
+    (a, b) => b.disputeCount + b.compensatedCount - (a.disputeCount + a.compensatedCount),
+  );
 }
 
 export interface AdminDisputeRow {

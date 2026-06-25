@@ -100,6 +100,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          raffle_id: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          raffle_id?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          raffle_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_gross: number | null
@@ -403,8 +451,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_raffle: {
+        Args: { p_raffle_id: string }
+        Returns: Json
+      }
       confirm_prize: {
         Args: { p_decision: string; p_raffle_id: string }
+        Returns: Json
+      }
+      update_raffle_details: {
+        Args: {
+          p_description: string | null
+          p_image_urls: string[]
+          p_prize_value: number | null
+          p_raffle_id: string
+          p_ticket_cap: number | null
+          p_ticket_price: number
+        }
         Returns: Json
       }
       create_pending_checkout: {

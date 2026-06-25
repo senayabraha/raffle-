@@ -390,8 +390,86 @@ export interface EndedRaffleSummary {
   } | null;
 }
 
-/** Loads a host's most recently ended raffle, with winner and audit details when available. */
-export async function fetchHostEndedRaffle(
+/** Loads all of a host's ended raffles, most recently drawn first, with winner and audit details when available. */
+export async function fetchHostEndedRaffles(
+  hostId: string,
+): Promise<EndedRaffleSummary[]> {
+  const { data: raffleRows } = await supabase
+    .from("raffles")
+    .select(
+      "id, title, category, ticket_price, tickets_sold_count, draw_date, prize_status",
+    )
+    .eq("host_id", hostId)
+    .eq("status", "ended")
+    .order("draw_date", { ascending: false, nullsFirst: false });
+
+  if (!raffleRows || raffleRows.length === 0) return [];
+
+  const ids = raffleRows.map((r) => r.id);
+
+  const [{ data: winnerRows }, { data: auditRows }] = await Promise.all([
+    supabase
+      .from("winners")
+      .select(
+        "raffle_id, winner:profiles!winners_winner_id_fkey(full_name), ticket:tickets!winners_ticket_id_fkey(ticket_number, geo_region)",
+      )
+      .in("raffle_id", ids),
+    supabase
+      .from("draw_audit")
+      .select("raffle_id, method, seed, entries, drawn_ticket_number, created_at")
+      .in("raffle_id", ids)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const winnerByRaffle = new Map<string, EndedRaffleSummary["winner"]>();
+  for (const row of (winnerRows ?? []) as unknown as Array<{
+    raffle_id: string;
+    winner: { full_name: string | null } | null;
+    ticket: { ticket_number: number; geo_region: string | null } | null;
+  }>) {
+    const name = row.winner?.full_name?.trim() || "Winner";
+    winnerByRaffle.set(row.raffle_id, {
+      name,
+      initials:
+        name
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0])
+          .join("")
+          .toUpperCase() || "W",
+      ticket: row.ticket?.ticket_number ?? null,
+      region: row.ticket?.geo_region ?? null,
+    });
+  }
+
+  const auditByRaffle = new Map<string, EndedRaffleSummary["audit"]>();
+  for (const row of auditRows ?? []) {
+    if (auditByRaffle.has(row.raffle_id)) continue; // keep only the most recent per raffle
+    auditByRaffle.set(row.raffle_id, {
+      method: row.method,
+      seed: row.seed,
+      entries: row.entries,
+      drawnTicketNumber: row.drawn_ticket_number,
+      createdAt: row.created_at,
+    });
+  }
+
+  return raffleRows.map((raffle) => ({
+    id: raffle.id,
+    title: raffle.title,
+    category: raffle.category ?? "Other",
+    sold: raffle.tickets_sold_count,
+    ticketPrice: Number(raffle.ticket_price),
+    drawDate: raffle.draw_date,
+    prizeStatus: raffle.prize_status === "revoked" ? "pending" : raffle.prize_status,
+    winner: winnerByRaffle.get(raffle.id) ?? null,
+    audit: auditByRaffle.get(raffle.id) ?? null,
+  }));
+}
+
+/** Loads a single ended raffle the host owns, for the detail/confirm-prize page. */
+export async function fetchHostEndedRaffleById(
+  raffleId: string,
   hostId: string,
 ): Promise<EndedRaffleSummary | null> {
   const { data: raffle } = await supabase
@@ -399,10 +477,9 @@ export async function fetchHostEndedRaffle(
     .select(
       "id, title, category, ticket_price, tickets_sold_count, draw_date, prize_status",
     )
+    .eq("id", raffleId)
     .eq("host_id", hostId)
     .eq("status", "ended")
-    .order("draw_date", { ascending: false, nullsFirst: false })
-    .limit(1)
     .maybeSingle();
 
   if (!raffle) return null;
@@ -765,4 +842,230 @@ export async function fetchHostDraft(
 
   if (error || !data) return null;
   return data as unknown as RaffleDraftRow;
+}
+
+export interface RaffleManageDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  status: "draft" | "live" | "ended" | "cancelled";
+  ticketPrice: number;
+  ticketCap: number | null;
+  ticketsSoldCount: number;
+  prizeValue: number | null;
+  imageUrls: string[];
+  drawDate: string | null;
+}
+
+/** Loads a single raffle the host owns, for the raffle management page. */
+export async function fetchRaffleForManage(
+  raffleId: string,
+  hostId: string,
+): Promise<RaffleManageDetail | null> {
+  const { data, error } = await supabase
+    .from("raffles")
+    .select(
+      "id, title, description, category, status, ticket_price, ticket_cap, tickets_sold_count, prize_value, image_urls, draw_date",
+    )
+    .eq("id", raffleId)
+    .eq("host_id", hostId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description,
+    category: data.category,
+    status: data.status,
+    ticketPrice: Number(data.ticket_price),
+    ticketCap: data.ticket_cap,
+    ticketsSoldCount: data.tickets_sold_count,
+    prizeValue: data.prize_value != null ? Number(data.prize_value) : null,
+    imageUrls: data.image_urls ?? [],
+    drawDate: data.draw_date,
+  };
+}
+
+/** Edits description/images/prize value; ticket price & cap are rejected server-side once any ticket has sold. */
+export async function updateRaffleDetails(
+  raffleId: string,
+  patch: {
+    description: string | null;
+    imageUrls: string[];
+    prizeValue: number | null;
+    ticketPrice: number;
+    ticketCap: number | null;
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc("update_raffle_details", {
+    p_raffle_id: raffleId,
+    p_description: patch.description,
+    p_image_urls: patch.imageUrls,
+    p_prize_value: patch.prizeValue,
+    p_ticket_price: patch.ticketPrice,
+    p_ticket_cap: patch.ticketCap,
+  });
+  if (error) throw error;
+}
+
+/** Manually cancels a live raffle that has no entries yet. */
+export async function cancelRaffle(raffleId: string): Promise<void> {
+  const { error } = await supabase.rpc("cancel_raffle", { p_raffle_id: raffleId });
+  if (error) throw error;
+}
+
+export interface RaffleAnalytics {
+  sold: number;
+  cap: number | null;
+  revenue: number;
+  /** Tickets sold per day over the last 14 days, for this raffle only. */
+  salesSeries: number[];
+}
+
+/** Scopes the dashboard's 14-day sales-series pattern to a single raffle, for the management page. */
+export async function fetchRaffleAnalytics(raffleId: string): Promise<RaffleAnalytics> {
+  const { data: raffle } = await supabase
+    .from("raffles")
+    .select("ticket_price, ticket_cap, tickets_sold_count")
+    .eq("id", raffleId)
+    .maybeSingle();
+
+  const sold = raffle?.tickets_sold_count ?? 0;
+  const price = raffle ? Number(raffle.ticket_price) : 0;
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - 13);
+
+  const { data: ticketRows } = await supabase
+    .from("tickets")
+    .select("created_at")
+    .eq("raffle_id", raffleId)
+    .gte("created_at", start.toISOString());
+
+  const salesSeries = new Array(14).fill(0) as number[];
+  for (const t of ticketRows ?? []) {
+    const day = Math.floor(
+      (new Date(t.created_at).setHours(0, 0, 0, 0) - start.getTime()) / 86_400_000,
+    );
+    if (day >= 0 && day < 14) salesSeries[day] += 1;
+  }
+
+  return {
+    sold,
+    cap: raffle?.ticket_cap ?? null,
+    revenue: sold * price,
+    salesSeries,
+  };
+}
+
+export interface RaffleOrder {
+  paymentId: string;
+  ticketNumbers: number[];
+  status: string;
+  amountGross: number | null;
+  provider: string | null;
+  createdAt: string;
+  contact: {
+    fullName: string;
+    phone: string;
+    email: string;
+    city: string;
+  } | null;
+}
+
+type OrderPaymentRow = {
+  id: string;
+  status: string;
+  amount_gross: number | null;
+  provider: string | null;
+  created_at: string;
+  checkout_contacts: {
+    full_name: string;
+    phone: string;
+    email: string;
+    city: string;
+  } | { full_name: string; phone: string; email: string; city: string }[] | null;
+  tickets: { ticket_number: number }[] | null;
+};
+
+/**
+ * Host-facing order list for one of their raffles — full contact info and
+ * ticket numbers per payment, gated by the "Raffle hosts can view checkout
+ * contacts for their orders" RLS policy (scoped to that raffle's host only).
+ */
+export async function fetchRaffleOrdersForHost(raffleId: string): Promise<RaffleOrder[]> {
+  const { data, error } = await supabase
+    .from("payments")
+    .select(
+      "id, status, amount_gross, provider, created_at, checkout_contacts(full_name, phone, email, city), tickets(ticket_number)",
+    )
+    .eq("raffle_id", raffleId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return (data as unknown as OrderPaymentRow[]).map((row) => {
+    const contact = Array.isArray(row.checkout_contacts)
+      ? row.checkout_contacts[0]
+      : row.checkout_contacts;
+    return {
+      paymentId: row.id,
+      ticketNumbers: (row.tickets ?? []).map((t) => t.ticket_number),
+      status: row.status,
+      amountGross: row.amount_gross != null ? Number(row.amount_gross) : null,
+      provider: row.provider,
+      createdAt: row.created_at,
+      contact: contact
+        ? {
+            fullName: contact.full_name,
+            phone: contact.phone,
+            email: contact.email,
+            city: contact.city,
+          }
+        : null,
+    };
+  });
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  raffleId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export async function fetchNotifications(userId: string): Promise<AppNotification[]> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, type, title, body, raffle_id, read_at, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    raffleId: row.raffle_id,
+    readAt: row.read_at,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function markNotificationsRead(notificationIds: string[]): Promise<void> {
+  if (notificationIds.length === 0) return;
+  await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .in("id", notificationIds)
+    .is("read_at", null);
 }

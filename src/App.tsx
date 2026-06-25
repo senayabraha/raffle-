@@ -18,7 +18,9 @@ const ENTRANT_ROLES: Role[] = ["entrant", "both", "admin"];
 const Landing = lazy(() => import("@/pages/Landing"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const CreateRaffle = lazy(() => import("@/pages/CreateRaffle"));
-const EndedRaffle = lazy(() => import("@/pages/EndedRaffle"));
+const EndedRafflesList = lazy(() => import("@/pages/EndedRafflesList"));
+const EndedRaffleDetail = lazy(() => import("@/pages/EndedRaffleDetail"));
+const RaffleManage = lazy(() => import("@/pages/RaffleManage"));
 const Marketplace = lazy(() => import("@/pages/Marketplace"));
 const Winners = lazy(() => import("@/pages/Winners"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
@@ -158,7 +160,27 @@ export default function App() {
               element={
                 <RequireAuth>
                   <RequireHostContext>
-                    <EndedRaffle />
+                    <EndedRafflesList />
+                  </RequireHostContext>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/en/dashboard/ended/:id"
+              element={
+                <RequireAuth>
+                  <RequireHostContext>
+                    <EndedRaffleDetail />
+                  </RequireHostContext>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/en/dashboard/raffles/:id"
+              element={
+                <RequireAuth>
+                  <RequireHostContext>
+                    <RaffleManage />
                   </RequireHostContext>
                 </RequireAuth>
               }

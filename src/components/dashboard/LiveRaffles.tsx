@@ -44,7 +44,13 @@ export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
             transition={{ duration: 0.45, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
           >
             <Link
-              to={r.status === "draft" ? `/en/dashboard/create/${r.id}` : `/en/raffle/${r.slug}`}
+              to={
+                r.status === "draft"
+                  ? `/en/dashboard/create/${r.id}`
+                  : r.status === "ended"
+                    ? `/en/dashboard/ended/${r.id}`
+                    : `/en/dashboard/raffles/${r.id}`
+              }
               className="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-all duration-300 ease-premium hover:border-white/15 hover:bg-white/[0.05]"
             >
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">

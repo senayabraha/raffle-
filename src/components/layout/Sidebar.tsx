@@ -22,7 +22,9 @@ const secondaryNav = [
   { to: "/en/support", label: "Support", icon: LifeBuoy },
 ];
 
-function NavItem({
+export { primaryNav, secondaryNav };
+
+export function NavItem({
   to,
   label,
   icon: Icon,

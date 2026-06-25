@@ -26,6 +26,7 @@ interface CheckoutBody {
   phone: string;
   email: string;
   city: string;
+  dateOfBirth: string;
 }
 
 Deno.serve(async (req) => {
@@ -39,9 +40,9 @@ Deno.serve(async (req) => {
     return json({ error: "Invalid request body." }, 400);
   }
 
-  const { raffleId, raffleSlug, qty, provider, fullName, phone, email, city } = body;
+  const { raffleId, raffleSlug, qty, provider, fullName, phone, email, city, dateOfBirth } = body;
 
-  if (!raffleId || !qty || !provider || !fullName || !phone || !email || !city) {
+  if (!raffleId || !qty || !provider || !fullName || !phone || !email || !city || !dateOfBirth) {
     return json({ error: "Missing required checkout fields." }, 400);
   }
   if (provider !== "chapa" && provider !== "telebirr") {
@@ -62,6 +63,7 @@ Deno.serve(async (req) => {
     p_phone: phone,
     p_email: email,
     p_city: city,
+    p_date_of_birth: dateOfBirth,
   });
 
   if (rpcError) {

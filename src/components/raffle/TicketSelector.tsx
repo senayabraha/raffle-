@@ -14,12 +14,14 @@ import {
   Phone,
   Mail,
   MapPin,
+  Cake,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { type MarketplaceRaffle } from "@/data/marketplace";
 import { useAuth } from "@/lib/auth";
 import { startCheckout, type PaymentProvider } from "@/lib/checkout";
 import { formatCurrency, cn } from "@/lib/utils";
+import { useConfirmOnLeave } from "@/lib/useConfirmOnLeave";
 
 const quickPicks = [1, 5, 10, 25];
 
@@ -30,6 +32,15 @@ function freeTicketsFor(qty: number, bundles: MarketplaceRaffle["bundles"]) {
     if (qty >= b.qty) free = Math.max(free, Math.floor(qty / b.qty) * b.free);
   }
   return free;
+}
+
+/** Mirrors the server-side check in create_pending_checkout: entrant must be 18+. */
+function isAdult(dateOfBirth: string) {
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return false;
+  const adultCutoff = new Date();
+  adultCutoff.setFullYear(adultCutoff.getFullYear() - 18);
+  return dob <= adultCutoff;
 }
 
 const providers: { id: PaymentProvider; label: string; available: boolean }[] = [
@@ -48,6 +59,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(profile?.email ?? user?.email ?? "");
   const [city, setCity] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [provider, setProvider] = useState<PaymentProvider>("chapa");
 
   const free = useMemo(
@@ -58,10 +70,19 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
   const subtotal = qty * raffle.ticketPrice;
   const total = subtotal;
 
+  useConfirmOnLeave(
+    step === "contact" && !loading,
+    "Leave checkout? Your entry details won't be saved.",
+  );
+
   async function submitCheckout() {
     setError(null);
-    if (!fullName.trim() || !phone.trim() || !email.trim() || !city.trim()) {
-      setError("Please fill in your full name, phone, email and city.");
+    if (!fullName.trim() || !phone.trim() || !email.trim() || !city.trim() || !dateOfBirth) {
+      setError("Please fill in your full name, phone, email, city and date of birth.");
+      return;
+    }
+    if (!isAdult(dateOfBirth)) {
+      setError("You must be 18 or older to enter a raffle.");
       return;
     }
     setLoading(true);
@@ -75,6 +96,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         phone,
         email,
         city,
+        dateOfBirth,
       });
       window.location.href = checkoutUrl;
     } catch (e) {
@@ -219,6 +241,14 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
               <Field icon={Phone} placeholder="Phone number" value={phone} onChange={setPhone} disabled={loading} type="tel" />
               <Field icon={Mail} placeholder="Email address" value={email} onChange={setEmail} disabled={loading} type="email" />
               <Field icon={MapPin} placeholder="City" value={city} onChange={setCity} disabled={loading} />
+              <Field
+                icon={Cake}
+                placeholder="Date of birth"
+                value={dateOfBirth}
+                onChange={setDateOfBirth}
+                disabled={loading}
+                type="date"
+              />
             </div>
 
             <div className="mt-4">

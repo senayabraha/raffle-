@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, PackageOpen } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
@@ -13,12 +14,53 @@ import {
   type SortKey,
 } from "@/data/marketplace";
 
+const isSortKey = (v: string | null): v is SortKey =>
+  !!v && sortOptions.some((o) => o.key === v);
+
 export default function Marketplace() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("All");
-  const [sort, setSort] = useState<SortKey>("ending");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("q") ?? "";
+  const category = searchParams.get("cat") ?? "All";
+  const sortParam = searchParams.get("sort");
+  const sort: SortKey = isSortKey(sortParam) ? sortParam : "ending";
   const [allRaffles, setAllRaffles] = useState<MarketplaceRaffle[]>([]);
   const [loading, setLoading] = useState(true);
+
+  function setQuery(next: string) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next) params.set("q", next);
+        else params.delete("q");
+        return params;
+      },
+      { replace: true },
+    );
+  }
+
+  function setCategory(next: string) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next !== "All") params.set("cat", next);
+        else params.delete("cat");
+        return params;
+      },
+      { replace: true },
+    );
+  }
+
+  function setSort(next: SortKey) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next !== "ending") params.set("sort", next);
+        else params.delete("sort");
+        return params;
+      },
+      { replace: true },
+    );
+  }
 
   // Load live, public raffles created by real hosts.
   useEffect(() => {

@@ -10,6 +10,7 @@ import {
   Ticket,
   AlertCircle,
   MailCheck,
+  Cake,
 } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { GoogleButton } from "@/components/auth/OAuthButton";
@@ -20,6 +21,15 @@ import { supabase } from "@/lib/supabase";
 
 const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
 
+/** Mirrors the DB check constraint: profiles.date_of_birth must be 18+ years ago. */
+function isAdult(dateOfBirth: string) {
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return false;
+  const adultCutoff = new Date();
+  adultCutoff.setFullYear(adultCutoff.getFullYear() - 18);
+  return dob <= adultCutoff;
+}
+
 export default function Register() {
   const navigate = useNavigate();
   const { setLoginContext } = useAuth();
@@ -27,6 +37,7 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -34,11 +45,15 @@ export default function Register() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!isAdult(dateOfBirth)) {
+      setError("You must be 18 or older to create an account.");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, role } },
+      options: { data: { full_name: fullName, role, date_of_birth: dateOfBirth } },
     });
     if (error) {
       setError(error.message);
@@ -177,13 +192,30 @@ export default function Register() {
           </div>
         </Field>
 
+        <Field label="Date of birth" htmlFor="dob" hint="You must be 18+">
+          <div className="relative">
+            <Cake
+              strokeWidth={1.5}
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+            />
+            <Input
+              id="dob"
+              type="date"
+              required
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="pl-11"
+            />
+          </div>
+        </Field>
+
         <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-zinc-400">
           <input
             type="checkbox"
             required
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/[0.03] accent-[#8b5cf6]"
           />
-          I'm 18 or over and agree to the{" "}
+          I agree to the{" "}
           <Link to="/en/terms" className="text-accent-soft hover:text-white">Terms</Link> &amp;{" "}
           <Link to="/en/privacy" className="text-accent-soft hover:text-white">Privacy Policy</Link>.
         </label>

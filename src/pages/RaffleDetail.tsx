@@ -15,6 +15,7 @@ import {
   Check,
   QrCode,
   Download,
+  ShieldAlert,
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -152,6 +153,10 @@ export default function RaffleDetail() {
               </span>
               <div className="text-sm">
                 <p className="font-semibold text-white">{raffle.host}</p>
+                <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
+                  <ShieldAlert strokeWidth={1.5} className="h-3 w-3" />
+                  Identity not verified by Raffall
+                </p>
               </div>
             </div>
           </div>

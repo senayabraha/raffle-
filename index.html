@@ -11,10 +11,26 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Loaded as a non-blocking preload instead of a plain stylesheet link:
+      a render-blocking <link rel="stylesheet"> to a third-party origin
+      stalls the entire page (including first paint) for as long as that
+      connection takes to resolve or fail. Swapping the rel to "stylesheet"
+      only once the request settles means a slow or blocked fonts.googleapis.com
+      degrades to the fallback font instead of hanging the page.
+    -->
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      />
+    </noscript>
     <title>Raffall — Premium Raffle Marketplace</title>
   </head>
   <body>

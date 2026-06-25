@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/layout/AuthLayout";
@@ -20,14 +20,21 @@ const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
  */
 export default function HostLogin() {
   const navigate = useNavigate();
-  const { setLoginContext } = useAuth();
+  const { setLoginContext, authError, clearAuthError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(authError);
   const [resetSent, setResetSent] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+      clearAuthError();
+    }
+  }, [authError, clearAuthError]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

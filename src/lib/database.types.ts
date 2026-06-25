@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          meta: Json
+          reason: string | null
+          target_id: string
+          target_table: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          reason?: string | null
+          target_id: string
+          target_table: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json
+          reason?: string | null
+          target_id?: string
+          target_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_actions_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkout_contacts: {
         Row: {
           city: string
@@ -216,6 +257,7 @@ export type Database = {
           full_name: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          status: string
           stripe_customer_id: string | null
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score: number | null
@@ -227,6 +269,7 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score?: number | null
@@ -238,6 +281,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
           trustpilot_score?: number | null
@@ -451,6 +495,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_export_user_data: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      admin_resolve_dispute: {
+        Args: { p_decision: string; p_reason: string; p_winner_id: string }
+        Returns: Json
+      }
+      admin_set_raffle_status: {
+        Args: { p_raffle_id: string; p_reason: string; p_status: string }
+        Returns: Json
+      }
+      admin_set_subscription_tier: {
+        Args: { p_reason: string; p_tier: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_set_user_role: {
+        Args: { p_reason: string; p_role: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_set_user_status: {
+        Args: { p_reason: string; p_status: string; p_user_id: string }
+        Returns: Json
+      }
       cancel_raffle: {
         Args: { p_raffle_id: string }
         Returns: Json

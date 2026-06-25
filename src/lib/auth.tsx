@@ -32,7 +32,14 @@ interface AuthState {
   setLoginContext: (context: LoginContext) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** Set when a sign-in is rejected because the account is suspended; login
+   * pages surface this once, then clear it. */
+  authError: string | null;
+  clearAuthError: () => void;
 }
+
+const SUSPENDED_MESSAGE =
+  "This account has been suspended. Contact support if you believe this is a mistake.";
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
@@ -74,11 +81,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loginContext, setLoginContextState] = useState<LoginContext | null>(
     () => (localStorage.getItem(LOGIN_CONTEXT_KEY) as LoginContext | null) ?? null,
   );
+  const [authError, setAuthError] = useState<string | null>(null);
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
+
+    /** Suspended accounts are blocked at login: rather than landing on any
+     * dashboard, the session is dropped immediately and a message surfaces
+     * on whichever login form started it. */
+    async function rejectIfSuspended(client: Client, nextSession: Session | null, nextProfile: Profile | null) {
+      if (nextSession && nextProfile?.status === "suspended") {
+        await client.auth.signOut();
+        setSession(null);
+        setProfile(null);
+        setAuthError(SUSPENDED_MESSAGE);
+        return true;
+      }
+      return false;
+    }
 
     import("./supabase")
       .then(async ({ supabase }) => {
@@ -87,16 +109,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const { data } = await withTimeout(supabase.auth.getSession(), 8000);
         if (!active) return;
-        setSession(data.session);
-        if (data.session?.user) {
-          setProfile(await withTimeout(fetchProfile(supabase, data.session.user.id), 8000));
+        const initialProfile = data.session?.user
+          ? await withTimeout(fetchProfile(supabase, data.session.user.id), 8000)
+          : null;
+        if (!active) return;
+        if (!(await rejectIfSuspended(supabase, data.session, initialProfile))) {
+          setSession(data.session);
+          setProfile(initialProfile);
         }
         setLoading(false);
 
         const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
           if (!active) return;
-          setSession(next);
-          setProfile(next?.user ? await fetchProfile(supabase, next.user.id) : null);
+          const nextProfile = next?.user ? await fetchProfile(supabase, next.user.id) : null;
+          if (!active) return;
+          if (!(await rejectIfSuspended(supabase, next, nextProfile))) {
+            setSession(next);
+            setProfile(nextProfile);
+          }
         });
         unsubscribe = () => sub.subscription.unsubscribe();
       })
@@ -139,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const client = clientRef.current;
       if (client && session?.user) setProfile(await fetchProfile(client, session.user.id));
     },
+    authError,
+    clearAuthError: () => setAuthError(null),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

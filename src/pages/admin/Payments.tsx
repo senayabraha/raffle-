@@ -34,7 +34,10 @@ export default function Payments() {
 
   const statuses = useMemo(() => Array.from(new Set(payments.map((p) => p.status))), [payments]);
   const providers = useMemo(
-    () => Array.from(new Set(payments.map((p) => p.provider).filter((p): p is string => p !== null))),
+    () =>
+      Array.from(
+        new Set(payments.map((p) => p.provider).filter((p) => p !== null)),
+      ) as NonNullable<AdminPaymentRow["provider"]>[],
     [payments],
   );
 

@@ -91,7 +91,8 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
   };
 }
 
-const HOST_SELECT = "*, host:profiles!raffles_host_id_fkey(full_name)";
+const HOST_SELECT =
+  "id, slug, title, description, category, visibility, status, ticket_price, ticket_cap, tickets_sold_count, bundle_rules, draw_date, image_url, host:profiles!raffles_host_id_fkey(full_name)";
 
 /** Fetches live, public raffles for the marketplace. */
 export async function fetchPublicRaffles(): Promise<MarketplaceRaffle[]> {
@@ -355,15 +356,24 @@ export async function fetchHostEndedRaffle(
 
   if (!raffle) return null;
 
-  let winner: EndedRaffleSummary["winner"] = null;
-  const { data: winnerRow } = await supabase
-    .from("winners")
-    .select(
-      "winner:profiles!winners_winner_id_fkey(full_name), ticket:tickets!winners_ticket_id_fkey(ticket_number, geo_region)",
-    )
-    .eq("raffle_id", raffle.id)
-    .maybeSingle();
+  const [{ data: winnerRow }, { data: auditRow }] = await Promise.all([
+    supabase
+      .from("winners")
+      .select(
+        "winner:profiles!winners_winner_id_fkey(full_name), ticket:tickets!winners_ticket_id_fkey(ticket_number, geo_region)",
+      )
+      .eq("raffle_id", raffle.id)
+      .maybeSingle(),
+    supabase
+      .from("draw_audit")
+      .select("method, seed, entries, drawn_ticket_number, created_at")
+      .eq("raffle_id", raffle.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
+  let winner: EndedRaffleSummary["winner"] = null;
   if (winnerRow) {
     const w = winnerRow as unknown as {
       winner: { full_name: string | null } | null;
@@ -383,14 +393,6 @@ export async function fetchHostEndedRaffle(
       region: w.ticket?.geo_region ?? null,
     };
   }
-
-  const { data: auditRow } = await supabase
-    .from("draw_audit")
-    .select("method, seed, entries, drawn_ticket_number, created_at")
-    .eq("raffle_id", raffle.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   const audit = auditRow
     ? {

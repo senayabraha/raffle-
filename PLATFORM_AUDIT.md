@@ -145,10 +145,10 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
 - ❌ Breadcrumbs
 
 ### Performance
-- ⚠️ Lazy images — no real images served; `loading="lazy"` not used (covers are CSS gradients)
+- ✅ Lazy images — `loading="lazy"` set on raffle covers (`RaffleCard.tsx:23`, `RaffleDetail.tsx:127`); no real images served yet, covers are CSS gradients
 - ✅ Route code splitting (`lazy()` per route)
-- ✅ `select()` with explicit columns (mostly; `HOST_SELECT` uses `*`)
-- ⚠️ N+1 — `fetchHostEndedRaffle` does sequential raffle→winner queries (acceptable, single record)
+- ✅ `select()` with explicit columns (`HOST_SELECT` now lists columns instead of `*`)
+- ✅ N+1 — `fetchHostEndedRaffle` now fetches winner + draw_audit in parallel (`Promise.all`) after the raffle lookup, instead of three sequential round-trips
 - ✅ Realtime cleanup — only the auth subscription; cleaned up correctly. (No realtime data subscriptions at all.)
 
 ### Database / Backend
@@ -240,11 +240,11 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
 
 **15. No real 404** — `*` redirects to `/en`, hiding typos (`App.tsx:173`).
 
-**16. No image lazy-loading / no real images** — moot until #6.
+**16. No real images** — covers are CSS gradients; `loading="lazy"` is already applied to the `<img>` tags, so this is moot until #6 (image upload) lands.
 
 **17. Dashboard "Escrowed Revenue" = gross** — `sold*price`, ignores commission/charity/affiliate (`raffles.ts:269`).
 
-**18. `HOST_SELECT` uses `*`** — over-fetches host+raffle columns (`raffles.ts:96`).
+**18. ~~`HOST_SELECT` uses `*`~~** — fixed: now selects explicit columns (`raffles.ts:94`).
 
 **19. HostLogin "Forgot password?" is a dead `<a href="#">`** (`HostLogin.tsx:128`) while entrant Login has a working reset.
 

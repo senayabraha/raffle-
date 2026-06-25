@@ -28,7 +28,7 @@ function slugify(title: string) {
 
 type Bundle = { qty: number; free: number };
 
-function parseBundles(raw: unknown): Bundle[] {
+export function parseBundles(raw: unknown): Bundle[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((b) => {
@@ -53,7 +53,8 @@ type RaffleRowWithHost = {
   tickets_sold_count: number;
   bundle_rules: unknown;
   draw_date: string | null;
-  image_url: string | null;
+  image_urls: string[] | null;
+  prize_value: number | null;
   host: { full_name: string | null } | { full_name: string | null }[] | null;
 };
 
@@ -77,7 +78,9 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
     category: row.category ?? "Other",
     icon: style.icon,
     gradient: style.gradient,
-    image: row.image_url ?? null,
+    image: row.image_urls?.[0] ?? null,
+    images: row.image_urls ?? [],
+    prizeValue: row.prize_value != null ? Number(row.prize_value) : null,
     host: hostName,
     hostInitials: initials || "RH",
     status: row.status === "ended" ? "ended" : "live",
@@ -92,7 +95,7 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
 }
 
 const HOST_SELECT =
-  "id, slug, title, description, category, visibility, status, ticket_price, ticket_cap, tickets_sold_count, bundle_rules, draw_date, image_url, host:profiles!raffles_host_id_fkey(full_name)";
+  "id, slug, title, description, category, visibility, status, ticket_price, ticket_cap, tickets_sold_count, bundle_rules, draw_date, image_urls, prize_value, host:profiles!raffles_host_id_fkey(full_name)";
 
 /** Fetches live, public raffles for the marketplace. */
 export async function fetchPublicRaffles(): Promise<MarketplaceRaffle[]> {
@@ -624,8 +627,8 @@ export async function fetchPublicWinners(): Promise<PublicWinner[]> {
 
 const RAFFLE_IMAGES_BUCKET = "raffle-images";
 
-/** Uploads a prize cover photo to Storage and returns its public URL. */
-export async function uploadRaffleImage(file: File, hostId: string): Promise<string> {
+/** Uploads a single prize photo to Storage and returns its public URL. */
+async function uploadOneRaffleImage(file: File, hostId: string): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${hostId}/${crypto.randomUUID()}.${ext}`;
 
@@ -638,11 +641,17 @@ export async function uploadRaffleImage(file: File, hostId: string): Promise<str
   return data.publicUrl;
 }
 
-/** Persists a wizard draft as a live raffle owned by the given host. */
+/** Uploads a host's prize photo gallery, preserving order. */
+export async function uploadRaffleImages(files: File[], hostId: string): Promise<string[]> {
+  return Promise.all(files.map((file) => uploadOneRaffleImage(file, hostId)));
+}
+
+/** Persists a wizard draft as a new raffle owned by the given host. */
 export async function createRaffle(
   draft: RaffleDraft,
   hostId: string,
-  imageUrl?: string | null,
+  imageUrls: string[] = [],
+  status: "draft" | "live" = "live",
 ) {
   const slug = slugify(draft.title);
   const bundle_rules = draft.bundlesEnabled
@@ -657,7 +666,7 @@ export async function createRaffle(
       slug,
       description: draft.description || null,
       category: draft.category,
-      status: "live",
+      status,
       visibility: draft.visibility,
       ticket_price: draft.ticketPrice,
       ticket_cap: draft.unlimited ? null : draft.ticketCap,
@@ -668,11 +677,92 @@ export async function createRaffle(
           ? new Date(draft.drawDate).toISOString()
           : null,
       min_ticket_target: draft.minTicketTarget || null,
-      image_url: imageUrl || null,
+      image_urls: imageUrls,
+      prize_value: draft.prizeValue || null,
+      condition: draft.condition,
+      delivery_method: draft.deliveryMethod,
     })
-    .select("slug")
+    .select("id, slug")
     .single();
 
   if (error) throw error;
   return data;
+}
+
+/** Updates an existing raffle the host owns — used to resume and publish a saved draft. */
+export async function updateRaffle(
+  raffleId: string,
+  draft: RaffleDraft,
+  imageUrls: string[],
+  status: "draft" | "live",
+) {
+  const bundle_rules = draft.bundlesEnabled
+    ? [{ buy: draft.bundleQty, free: draft.bundleFree }]
+    : [];
+
+  const { data, error } = await supabase
+    .from("raffles")
+    .update({
+      title: draft.title,
+      description: draft.description || null,
+      category: draft.category,
+      status,
+      visibility: draft.visibility,
+      ticket_price: draft.ticketPrice,
+      ticket_cap: draft.unlimited ? null : draft.ticketCap,
+      bundle_rules,
+      draw_type: draft.drawType,
+      draw_date:
+        draft.drawType === "date" && draft.drawDate
+          ? new Date(draft.drawDate).toISOString()
+          : null,
+      min_ticket_target: draft.minTicketTarget || null,
+      image_urls: imageUrls,
+      prize_value: draft.prizeValue || null,
+      condition: draft.condition,
+      delivery_method: draft.deliveryMethod,
+    })
+    .eq("id", raffleId)
+    .select("id, slug")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export interface RaffleDraftRow {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  prize_value: number | null;
+  condition: RaffleDraft["condition"] | null;
+  delivery_method: RaffleDraft["deliveryMethod"] | null;
+  ticket_price: number;
+  ticket_cap: number | null;
+  bundle_rules: unknown;
+  draw_type: "date" | "soldout";
+  draw_date: string | null;
+  min_ticket_target: number | null;
+  visibility: "public" | "private";
+  image_urls: string[] | null;
+}
+
+/** Loads a host's saved draft raffle so the wizard can resume it. Returns null if it isn't a draft they own. */
+export async function fetchHostDraft(
+  raffleId: string,
+  hostId: string,
+): Promise<RaffleDraftRow | null> {
+  const { data, error } = await supabase
+    .from("raffles")
+    .select(
+      "id, title, description, category, prize_value, condition, delivery_method, ticket_price, ticket_cap, bundle_rules, draw_type, draw_date, min_ticket_target, visibility, image_urls",
+    )
+    .eq("id", raffleId)
+    .eq("host_id", hostId)
+    .eq("status", "draft")
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as unknown as RaffleDraftRow;
 }

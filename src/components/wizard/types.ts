@@ -1,8 +1,14 @@
+export type PrizeCondition = "new" | "used" | "refurbished";
+export type DeliveryMethod = "shipping" | "pickup" | "digital" | "cash_equivalent";
+
 export interface RaffleDraft {
   // 1 · Prize details
   title: string;
   description: string;
   category: string;
+  prizeValue: number | null;
+  condition: PrizeCondition;
+  deliveryMethod: DeliveryMethod;
   // 2 · Ticket settings
   ticketPrice: number;
   unlimited: boolean;
@@ -22,6 +28,9 @@ export const initialDraft: RaffleDraft = {
   title: "",
   description: "",
   category: "Automotive",
+  prizeValue: null,
+  condition: "new",
+  deliveryMethod: "shipping",
   ticketPrice: 5,
   unlimited: false,
   ticketCap: 10000,

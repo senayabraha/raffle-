@@ -200,16 +200,19 @@ export type Database = {
         Row: {
           bundle_rules: Json
           category: string | null
+          condition: Database["public"]["Enums"]["prize_condition"] | null
           created_at: string
+          delivery_method: Database["public"]["Enums"]["delivery_method"] | null
           description: string | null
           draw_date: string | null
           draw_type: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id: string
-          image_url: string | null
+          image_urls: string[]
           min_ticket_target: number | null
           prize_confirmed_at: string | null
           prize_status: Database["public"]["Enums"]["prize_status"]
+          prize_value: number | null
           slug: string
           status: Database["public"]["Enums"]["raffle_status"]
           ticket_cap: number | null
@@ -222,16 +225,19 @@ export type Database = {
         Insert: {
           bundle_rules?: Json
           category?: string | null
+          condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id?: string
-          image_url?: string | null
+          image_urls?: string[]
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
+          prize_value?: number | null
           slug: string
           status?: Database["public"]["Enums"]["raffle_status"]
           ticket_cap?: number | null
@@ -244,16 +250,19 @@ export type Database = {
         Update: {
           bundle_rules?: Json
           category?: string | null
+          condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id?: string
           id?: string
-          image_url?: string | null
+          image_urls?: string[]
           min_ticket_target?: number | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
+          prize_value?: number | null
           slug?: string
           status?: Database["public"]["Enums"]["raffle_status"]
           ticket_cap?: number | null
@@ -425,6 +434,7 @@ export type Database = {
       }
     }
     Enums: {
+      delivery_method: "shipping" | "pickup" | "digital" | "cash_equivalent"
       draw_type: "date" | "soldout" | "hybrid"
       entry_type: "paid" | "free_share" | "free_bonus" | "affiliate"
       payment_provider: "chapa" | "telebirr"
@@ -435,6 +445,7 @@ export type Database = {
         | "refunded"
         | "compensated"
         | "failed"
+      prize_condition: "new" | "used" | "refurbished"
       prize_status: "pending" | "confirmed" | "revoked" | "disputed"
       raffle_status: "draft" | "live" | "ended" | "cancelled"
       subscription_tier: "basic" | "premium" | "pro"
@@ -573,6 +584,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      delivery_method: ["shipping", "pickup", "digital", "cash_equivalent"],
       draw_type: ["date", "soldout", "hybrid"],
       entry_type: ["paid", "free_share", "free_bonus", "affiliate"],
       payment_provider: ["chapa", "telebirr"],
@@ -584,6 +596,7 @@ export const Constants = {
         "compensated",
         "failed",
       ],
+      prize_condition: ["new", "used", "refurbished"],
       prize_status: ["pending", "confirmed", "revoked", "disputed"],
       raffle_status: ["draft", "live", "ended", "cancelled"],
       subscription_tier: ["basic", "premium", "pro"],

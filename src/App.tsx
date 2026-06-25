@@ -144,6 +144,16 @@ export default function App() {
               }
             />
             <Route
+              path="/en/dashboard/create/:draftId"
+              element={
+                <RequireAuth>
+                  <RequireHostContext>
+                    <CreateRaffle />
+                  </RequireHostContext>
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/en/dashboard/ended"
               element={
                 <RequireAuth>

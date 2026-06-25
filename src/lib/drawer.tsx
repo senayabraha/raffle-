@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 interface DrawerState {
   isOpen: boolean;
+  /** True once the drawer has been opened at least once; never resets. Lets
+   * the drawer's framer-motion-heavy chunk stay unmounted (and unfetched)
+   * on pages that never open it, instead of loading on every page load. */
+  hasOpened: boolean;
   open: () => void;
   close: () => void;
 }
@@ -11,6 +15,7 @@ const DrawerContext = createContext<DrawerState | undefined>(undefined);
 /** Global slide-out nav drawer state, reachable from the hamburger trigger anywhere in the app. */
 export function DrawerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
 
   // Scroll lock: freeze the body in place while the drawer is open so touch/scroll
   // gestures inside the drawer don't bleed through to the page behind it.
@@ -33,7 +38,15 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
 
   return (
     <DrawerContext.Provider
-      value={{ isOpen, open: () => setIsOpen(true), close: () => setIsOpen(false) }}
+      value={{
+        isOpen,
+        hasOpened,
+        open: () => {
+          setIsOpen(true);
+          setHasOpened(true);
+        },
+        close: () => setIsOpen(false),
+      }}
     >
       {children}
     </DrawerContext.Provider>

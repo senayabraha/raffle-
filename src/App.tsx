@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { DrawerProvider } from "@/lib/drawer";
-import { NavDrawer } from "@/components/layout/NavDrawer";
+import { DrawerProvider, useDrawer } from "@/lib/drawer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Tables } from "@/lib/database.types";
 
@@ -35,6 +34,28 @@ const CheckoutCancelled = lazy(() => import("@/pages/CheckoutCancelled"));
 const ComingSoon = lazy(() => import("@/pages/ComingSoon"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+
+/**
+ * Lazy because NavDrawer pulls in framer-motion. It used to be a static
+ * import rendered unconditionally at the app root, which meant every page
+ * — including ones that never touch framer-motion, like Login or Account —
+ * paid for that ~38KB gzip chunk before it could paint.
+ */
+const NavDrawer = lazy(() =>
+  import("@/components/layout/NavDrawer").then((m) => ({ default: m.NavDrawer })),
+);
+
+/** Mounts the (lazy) drawer only once it's actually been opened, so its chunk
+ * is never fetched on pages that never use it. */
+function NavDrawerGate() {
+  const { hasOpened } = useDrawer();
+  if (!hasOpened) return null;
+  return (
+    <Suspense fallback={null}>
+      <NavDrawer />
+    </Suspense>
+  );
+}
 
 /** Centered spinner shown while a lazy route chunk or the session loads. */
 function FullPageSpinner() {
@@ -102,7 +123,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <DrawerProvider>
-        <NavDrawer />
+        <NavDrawerGate />
         <Suspense fallback={<FullPageSpinner />}>
           <Routes>
             <Route path="/" element={<Navigate to="/en" replace />} />

@@ -33,7 +33,10 @@ export default function Payments() {
   }, []);
 
   const statuses = useMemo(() => Array.from(new Set(payments.map((p) => p.status))), [payments]);
-  const providers = useMemo(() => Array.from(new Set(payments.map((p) => p.provider))), [payments]);
+  const providers = useMemo(
+    () => Array.from(new Set(payments.map((p) => p.provider).filter((p): p is string => p !== null))),
+    [payments],
+  );
 
   const filtered = payments.filter((p) => {
     if (status !== "all" && p.status !== status) return false;

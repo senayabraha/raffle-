@@ -65,11 +65,12 @@ export default function EndedRaffle() {
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // 7-day confirmation deadline from now.
-  const deadline = useMemo(
-    () => new Date(Date.now() + 7 * 24 * 3_600_000).toISOString(),
-    [],
-  );
+  // 7-day confirmation deadline from the actual draw date, since that's
+  // also the anchor the automated guarantee compensation job uses.
+  const deadline = useMemo(() => {
+    const anchor = raffle?.drawDate ? new Date(raffle.drawDate).getTime() : Date.now();
+    return new Date(anchor + 7 * 24 * 3_600_000).toISOString();
+  }, [raffle?.drawDate]);
 
   useEffect(() => {
     if (!user) return;

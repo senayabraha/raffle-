@@ -11,6 +11,8 @@ export interface StartCheckoutInput {
   phone: string;
   email: string;
   city: string;
+  /** ISO date string (YYYY-MM-DD). Entrant must be 18+. */
+  dateOfBirth: string;
 }
 
 export interface StartCheckoutResult {

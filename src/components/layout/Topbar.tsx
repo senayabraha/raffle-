@@ -30,7 +30,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-obsidian/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-obsidian/70 backdrop-blur-md">
       <div className="flex h-16 items-center gap-4 px-5 sm:px-8">
         <button
           onClick={openDrawer}

@@ -84,7 +84,7 @@ export function Sidebar() {
   const { open: openDrawer } = useDrawer();
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.015] px-4 py-5 backdrop-blur-xl lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.015] px-4 py-5 backdrop-blur-md lg:flex">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-2 pb-6">
         <button

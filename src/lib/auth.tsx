@@ -64,23 +64,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     let unsubscribe: (() => void) | undefined;
 
-    import("./supabase").then(async ({ supabase }) => {
-      if (!active) return;
-      clientRef.current = supabase;
-
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-      setSession(data.session);
-      if (data.session?.user) setProfile(await fetchProfile(supabase, data.session.user.id));
-      setLoading(false);
-
-      const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
+    import("./supabase")
+      .then(async ({ supabase }) => {
         if (!active) return;
-        setSession(next);
-        setProfile(next?.user ? await fetchProfile(supabase, next.user.id) : null);
+        clientRef.current = supabase;
+
+        const { data } = await supabase.auth.getSession();
+        if (!active) return;
+        setSession(data.session);
+        if (data.session?.user) setProfile(await fetchProfile(supabase, data.session.user.id));
+        setLoading(false);
+
+        const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
+          if (!active) return;
+          setSession(next);
+          setProfile(next?.user ? await fetchProfile(supabase, next.user.id) : null);
+        });
+        unsubscribe = () => sub.subscription.unsubscribe();
+      })
+      .catch((err) => {
+        // A dropped connection while fetching the Supabase chunk or checking
+        // the session (common on flaky mobile networks) must not leave
+        // `loading` stuck true forever — fall back to "signed out" so the
+        // app can render instead of spinning indefinitely.
+        if (!active) return;
+        console.error("Failed to initialize auth session", err);
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
       });
-      unsubscribe = () => sub.subscription.unsubscribe();
-    });
 
     return () => {
       active = false;

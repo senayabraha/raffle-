@@ -1,7 +1,9 @@
 # Raffle Platform — Full Technical Audit
 
-> Read-only audit of the current codebase (branch `claude/raffle-platform-audit-giiepc`).
+> Read-only audit of the current codebase (branch `claude/audit-covid-base-review-nt85p6`, re-verified 2026-06-25).
 > No application code was written or modified to produce this report.
+
+> **2026-06-25 re-verification note:** Since the original audit (PR #12, commit `024f1a9`), 9 follow-up PRs (#14–#21) closed most CRITICAL/HIGH findings: automated draw + cron, host prize-confirmation, winner accept/dispute flow, mobile nav, image upload, Winners/Pricing/Account pages, 404 page, error boundary, RLS migrations, and age verification are all now real and shipped. The `payouts`/`affiliates`/`promo_codes`/`campaigns`/`charities` tables and their half-built UI hooks were removed entirely rather than finished (see §2/§3 below) — this was a deliberate scope cut, not a regression. Sections 3–7 below have been rewritten to match the current code; superseded findings are marked **RESOLVED** rather than deleted, so the history stays visible. Still-open items: **currency inconsistency (GBP/ETB)**, Telebirr, `EndedRaffle` dashboard link, draft/cancelled raffles being viewable by slug, host login "forgot password", and refunds for under-target raffles.
 
 ## Contents
 1. [Codebase Inventory](#1--codebase-inventory)
@@ -16,7 +18,9 @@
 
 ## 1 — Codebase Inventory
 
-**Stack:** React 18 + TS + Vite, React Router v6 (`/en/` prefix), Tailwind, Framer Motion, Radix, Supabase JS. Lazy-loaded routes. No test setup, no migrations folder, no CI.
+> Updated 2026-06-25 to match the current branch. Original (now-stale) state is preserved in §3's "Resolved" section for history.
+
+**Stack:** React 18 + TS + Vite, React Router v6 (`/en/` prefix), Tailwind, Framer Motion, Radix, Supabase JS. Lazy-loaded routes. **Still no test setup, no CI.** Migrations folder now exists (`supabase/migrations/`, 23 files).
 
 ### Routes (`src/App.tsx`)
 | Path | Component | Access |
@@ -28,34 +32,38 @@
 | `/en/register` | `Register` | public |
 | `/en/dashboard/*` | `Dashboard` | auth + host context |
 | `/en/dashboard/create` | `CreateRaffle` | auth + host context |
-| `/en/dashboard/ended` | `EndedRaffle` | auth + host context |
-| `/en/account` | `ComingSoon("Settings")` | auth |
+| `/en/dashboard/ended` | `EndedRaffle` | auth + host context (works, but unlinked — see #14) |
+| `/en/account` | `Account` (real settings page) | auth |
 | `/en/support` | `ComingSoon("Support")` | auth |
+| `/en/pricing` | `Pricing` (real page) | public |
+| `/en/winnings` | `MyWinnings` (winner accept/dispute) | auth + entrant context |
 | `/en/tickets` | `MyTickets` | auth + entrant context |
 | `/en/checkout/success` | `CheckoutSuccess` | public |
 | `/en/checkout/cancelled` | `CheckoutCancelled` | public |
 | `/en/terms`, `/privacy`, `/contact` | `Legal` (placeholder) | public |
 | `/en/public-raffles/live` | `Marketplace` | public |
-| `/en/public-raffles/ended` | `Marketplace` | public |
-| `/en/raffle/:slug` | `RaffleDetail` | public |
-| `*` | redirect to `/en` | — |
+| `/en/public-raffles/ended` | `Winners` (real ended/winners query) | public |
+| `/en/raffle/:slug` | `RaffleDetail` | public (no status filter — see #21) |
+| `*` | `NotFound` (real 404) | — |
 
 ### Data layer
 - `lib/supabase.ts` — client with hardcoded fallback URL/key.
 - `lib/auth.tsx` — `AuthProvider`, dynamic Supabase import, `loginContext` ("host"/"entrant") persisted in localStorage, separate from `profile.role`.
-- `lib/raffles.ts` — `fetchPublicRaffles`, `fetchRaffleBySlug`, `purchaseTickets` (RPC), `fetchMyTickets`, `fetchHostOverview`, `fetchHostEndedRaffle`, `createRaffle`.
+- `lib/raffles.ts` — `fetchPublicRaffles`, `fetchRaffleBySlug`, `purchaseTickets` (RPC), `fetchMyTickets`, `fetchHostOverview`, `fetchHostEndedRaffle`, `createRaffle`, `uploadRaffleImage`, `fetchPublicWinners`.
 - `lib/checkout.ts` — `startCheckout` (invokes `create-checkout`), `getCheckoutStatus` (RPC).
+- `lib/drawer.ts` — shared drawer-open state used by `NavDrawer`/`DashboardDrawer`.
 
-### Supabase backend (inferred from `database.types.ts`)
-- **Tables:** `affiliates`, `campaigns`, `charities`, `checkout_contacts`, `draw_audit`, `payments`, `payouts`, `profiles`, `promo_codes`, `raffles`, `tickets`, `winners`.
-- **RPCs:** `confirm_prize`, `create_pending_checkout`, `finalize_checkout`, `get_checkout_status`, `purchase_tickets`, `withdraw_revenue`.
-- **Edge functions (in repo):** `create-checkout`, `verify-payment` (Chapa only; Telebirr throws "not configured"; Resend email on finalize).
-- **No SQL migrations, no RLS definitions, no draw function, no cron jobs present in the repo.**
+### Supabase backend (now backed by committed migrations, not just inferred)
+- **Tables:** `checkout_contacts`, `draw_audit`, `payments`, `profiles`, `raffles`, `tickets`, `winners`. (`affiliates`, `campaigns`, `charities`, `payouts`, `promo_codes` were dropped — `20260625010000`, `20260625020000`.)
+- **RPCs:** `confirm_prize`, `create_pending_checkout`, `finalize_checkout`, `get_checkout_status`, `purchase_tickets`, `respond_to_win`. (`withdraw_revenue` was dropped — `20260625010000`.)
+- **Edge functions (in repo):** `create-checkout`, `verify-payment` (Chapa only; Telebirr throws "not configured"; Resend email on finalize and on draw notification).
+- **Migrations:** 23 files committed under `supabase/migrations/`, including RLS policies, the automated draw function + cron, draw notifications/claim flow, age verification, and the table-removal migrations above.
+- **Cron jobs (pg_cron, defined in migrations):** `run-due-draws` (1 min), `run-due-guarantee-compensations` (15 min), `run-due-winner-claim-expirations` (15 min).
 
 ### Navigation
-- **Desktop dashboard:** `Sidebar.tsx` (`hidden lg:flex`) + `Topbar.tsx`.
-- **Public:** `MarketingNav.tsx` floating glass nav, links `hidden md:flex`.
-- **Mobile:** No hamburger, no drawer, no bottom tab bar anywhere.
+- **Desktop dashboard:** `Sidebar.tsx` (`hidden lg:flex`) + `Topbar.tsx`, with a hamburger trigger that opens `DashboardDrawer`.
+- **Public:** `MarketingNav.tsx` floating glass nav + hamburger trigger that opens `NavDrawer`.
+- **Mobile:** `NavDrawer` (public) and `DashboardDrawer` (host) are real slide-out drawers; scroll-locked while open. No separate bottom tab bar, but no longer "zero nav."
 
 ---
 
@@ -90,62 +98,62 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
 ### Ticket Purchase / Checkout
 - ✅ Quantity selector (`TicketSelector.tsx`)
 - ✅ Bundle display
-- ✅ Promo code input (applied server-side)
-- ⚠️ Payment — Chapa works; **Telebirr unimplemented** (`create-checkout/index.ts:136`, disabled in UI)
+- 🗑️ Promo code input — `promo_codes` table dropped; intentionally removed, no longer part of the flow
+- ⚠️ Payment — Chapa works; **Telebirr still unimplemented** (`create-checkout/index.ts:136`, disabled in UI)
 - ✅ Order confirmation (`CheckoutSuccess.tsx` polls status)
 - ✅ Ticket number assignment (via `finalize_checkout`/`purchase_tickets`)
 - ✅ Email confirmation (Resend in `verify-payment`)
 - ✅ Guest checkout (`checkout_contacts`, no auth required)
 
 ### Raffle Draw & Winner Logic
-- ❌ Automated RNG draw trigger — **no draw function or cron anywhere**. Nothing moves a raffle `live → ended` or populates `winners`.
-- ⚠️ Host-independent draw — enforced only in principle; no draw exists at all.
-- ⚠️ Winner logged with seed/timestamp — `draw_audit` table exists but is **never written**; `EndedRaffle.tsx:224-244` renders a **hardcoded/fabricated** audit log client-side.
-- ❌ Automated email to entrants after draw
-- ❌ Automated email to host after draw
-- ❌ Winner notification / claim / accept / dispute (entrant-facing UI entirely missing; `winners` columns unused)
-- ⚠️ Host 7-day confirm timer — UI countdown is `Date.now()+7d` computed locally (`EndedRaffle.tsx:73`), not backed by `claim_deadline`/cron
-- ⚠️ 75% compensation logic — displayed in UI text only; no payout logic
-- ❌ Winner accept flow (unlocks payout)
-- ❌ Dispute flow
+- ✅ Automated RNG draw trigger — `private.draw_raffle()` CSPRNG + `run-due-draws` cron (every minute); moves `live → ended`, populates `winners`
+- ✅ Host-independent draw — fully automated via cron, no host action involved
+- ✅ Winner logged with seed/timestamp — `draw_audit` is written by `draw_raffle()`; `EndedRaffle.tsx` now renders the real rows (no longer fabricated)
+- ✅ Automated email to entrants after draw (draw notification flow, `20260625000000_draw_notifications_and_claim_flow.sql`)
+- ✅ Automated email to host after draw (same migration)
+- ✅ Winner notification / claim / accept / dispute — `MyWinnings.tsx` (`/en/winnings`) reads/writes `winners` columns via `respond_to_win` RPC
+- ✅ Host 7-day confirm timer — backed by `run-due-guarantee-compensations` cron (15 min), not just a client-side countdown
+- ✅ 75% compensation logic — `run-due-guarantee-compensations` cron computes and applies it automatically (though it has nowhere to be paid out to — see #2b)
+- ✅ Winner accept flow — `respond_to_win` RPC + 21-day auto-accept cron
+- ✅ Dispute flow — `respond_to_win` RPC supports a dispute decision
 
 ### Payment & Escrow
 - ✅ Revenue held in escrow — `payments.status` enum (`held`, `released`, etc.) and split columns exist
 - ✅ Commission calc — `platform_commission` column; per-ticket preview in wizard (`CreateRaffle.tsx:628-636`)
-- ⚠️ Affiliate commission tracking — columns exist (`affiliates`, `tickets.affiliate_id`); no code path populates them
-- ⚠️ Charity split tracking — `payments.charity_share` exists; not wired to a charity record
-- ⚠️ Host withdrawal request — `withdraw_revenue` RPC exists in DB but **EndedRaffle never calls it** (`setFlow("withdrawn")` is local state only, `EndedRaffle.tsx:365`)
+- 🗑️ Affiliate commission tracking — `affiliates` table dropped; intentionally removed
+- 🗑️ Charity split tracking — `charities` table dropped; intentionally removed
+- ❌ Host withdrawal request — **regressed**: `withdraw_revenue` RPC was deleted outright (`20260625010000:294`), not just left unwired. No withdrawal mechanism exists at all (#2b).
 - ❌ Payout to host account (no payout execution; Stripe transfer columns unused)
-- ❌ Winner compensation payout
+- ❌ Winner compensation payout (compensation is calculated by cron but never paid out — same root cause as #2b)
 
 ### Promotional Tools
 - ✅ Shareable URL per raffle (`RaffleDetail.tsx:34`, X/FB/Telegram/copy)
-- ❌ Share-for-free-ticket referral — UI text promises it (`RaffleDetail.tsx:216`) but no referral tracking
-- ⚠️ Promo codes — table + checkout application exist; no host UI to create them
-- ⚠️ Affiliate links — table exists; no generation/tracking UI
-- ❌ QR code generator (mentioned in Landing copy only)
-- ❌ Email campaign builder — `campaigns` table exists; no UI
-- ⚠️ Featured listing — `featured_until` set on publish; no paid boost flow
+- ✅ QR code generator — real, generates + downloads a PNG (`RaffleDetail.tsx:4,57-61`, `qrcode.react`)
+- ❌ Share-for-free-ticket referral — still no referral tracking anywhere
+- 🗑️ Promo codes — `promo_codes` table **dropped** (`20260625020000`); wizard input removed; no longer a gap to close, it's out of scope
+- 🗑️ Affiliate links — `affiliates` table **dropped** (`20260625010000`); wizard input removed
+- 🗑️ Email campaign builder — `campaigns` table **dropped** (`20260625020000`)
+- 🗑️ Featured listing — `featured_until` column **dropped** (`20260625020000`); no paid boost flow exists or is planned
 
 ### Trust & Safety
-- ❌ Entrant list publicly visible on raffle page (not rendered)
+- ❌ Entrant list publicly visible on raffle page — still not rendered (#8b)
 - ✅ Guarantee badge (`RaffleDetail.tsx:239`)
-- ⚠️ RNG auditability — `draw_audit` table exists but unused; displayed log is fake
-- ⚠️ Age verification — single checkbox at register (`Register.tsx:186`); no gate at checkout/guest
+- ✅ RNG auditability — `draw_audit` is written by the real draw function and rendered as-is in `EndedRaffle.tsx`; no longer fake
+- ✅ Age verification — `date_of_birth` + `>=18` CHECK constraint enforced server-side in `create_pending_checkout`, not just a UI checkbox
 - ❌ Host identity verification
 
 ### Navigation & UX
-- ❌ Mobile hamburger menu — none (`MarketingNav` links `hidden md:flex`, `Sidebar` `hidden lg:flex`)
-- ❌ Bottom tab navigation (mobile)
+- ✅ Mobile hamburger menu — `NavDrawer.tsx` (public) + `DashboardDrawer.tsx` (host), hamburger triggers in `MarketingNav`/`Sidebar.tsx:88-93`
+- ✅ Bottom-tab-equivalent — drawer covers this need on mobile (no separate bottom tab bar, but no longer "zero nav")
 - ✅ Loading skeletons / spinners (Marketplace, MyTickets, FullPageSpinner)
 - ✅ Empty states (Marketplace, MyTickets, EndedRaffle)
-- ⚠️ Error states — checkout/auth have them; no global error boundary
-- ❌ 404 page (catch-all silently redirects to `/en`)
-- ⚠️ Back navigation — back links exist; `*` redirect can mask mistyped URLs
+- ✅ Error states — checkout/auth have them; `ErrorBoundary.tsx` now also catches global render errors
+- ✅ 404 page — real `NotFound.tsx`, wired as catch-all
+- ⚠️ Back navigation — back links exist; wizard/checkout progress is now guarded against back-navigation, but mistyped URLs still 404 correctly rather than confusingly redirecting
 - ❌ Breadcrumbs
 
 ### Performance
-- ✅ Lazy images — `loading="lazy"` set on raffle covers (`RaffleCard.tsx:23`, `RaffleDetail.tsx:127`); no real images served yet, covers are CSS gradients
+- ✅ Lazy images — `loading="lazy"` set on raffle covers (`RaffleCard.tsx:23`, `RaffleDetail.tsx:127`); image upload (#6) is fixed, so covers are now real photos where a host has uploaded one
 - ✅ Route code splitting (`lazy()` per route)
 - ✅ `select()` with explicit columns (`HOST_SELECT` now lists columns instead of `*`)
 - ✅ N+1 — `fetchHostEndedRaffle` now fetches winner + draw_audit in parallel (`Promise.all`) after the raffle lookup, instead of three sequential round-trips
@@ -167,89 +175,90 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
 
 ## 3 — Findings Report
 
-### CRITICAL (blocks core function — fix before launch)
+### RESOLVED since the original audit
 
-**1. No automated draw exists**
-- **Issue:** Nothing selects a winner or transitions a raffle out of `live`.
-- **Location:** No draw edge function; no cron; `supabase/functions/` only has `create-checkout`, `verify-payment`.
-- **Impact:** A raffle can sell tickets but can **never end or pick a winner**. The entire core promise is non-functional.
-- **Fix:** Add a `draw-raffle` edge function (CSPRNG winner selection, writes `winners` + `draw_audit`, sets `raffles.status='ended'`), and a `pg_cron` job scanning for `draw_date` reached or `tickets_sold_count >= ticket_cap`.
+**1. ~~No automated draw exists~~ — FIXED**
+- `private.draw_raffle()` (CSPRNG, picks a winning ticket, writes `winners` + `draw_audit`, sets `raffles.status='ended'`) plus the `run-due-draws` cron (every minute) are live. `supabase/migrations/20260623200135_automated_rng_draw.sql:25-113`.
 
-**2. Host prize-confirmation & withdrawal are fake (local state only)**
-- **Issue:** `EndedRaffle.tsx` never calls the `confirm_prize` or `withdraw_revenue` RPCs; it just `setFlow(...)`. The audit log values are hardcoded.
-- **Location:** `EndedRaffle.tsx:91-93` (`submitDecision`), `:365` (`setFlow("withdrawn")`), `:224-244` (fake audit).
-- **Impact:** Hosts cannot actually confirm prizes or get paid; escrow never releases; "audit log" is not real evidence.
-- **Fix:** Wire `submitDecision` to `confirm_prize(p_raffle_id, p_decision)`, the withdraw button to `withdraw_revenue(p_raffle_id)`, and render real `draw_audit` rows.
+**2. ~~Host prize-confirmation & withdrawal are fake~~ — FIXED (confirmation), REMOVED (withdrawal)**
+- `EndedRaffle.tsx:94` now calls the real `confirmPrize()` → `confirm_prize` RPC, and the audit panel renders real `draw_audit` rows fetched via `fetchHostEndedRaffle` (`EndedRaffle.tsx:221-256`).
+- The withdraw button is gone entirely, not wired-but-fake: `withdraw_revenue` and `raffles.revenue_released_at` were both dropped in `20260625010000_remove_payout_affiliate_charity.sql:294,304`, because there was never a real payout execution path behind it. Confirming the prize is now the final host-facing step; there is no in-app withdrawal flow at all (see new finding **#2b** below).
 
-**3. Currency is inconsistent (GBP vs ETB)**
-- **Issue:** Checkout collects/charges **ETB** (`TicketSelector.tsx:97`, Chapa `currency:"ETB"`), but wizard prices in **£/GBP** (`CreateRaffle.tsx:376`, `:629`), and `formatCurrency` defaults to GBP (`utils.ts:8`) — used in MyTickets, Dashboard, RaffleCard, EndedRaffle.
-- **Impact:** A host sets "£5", an entrant is charged "5 ETB", dashboards show "£" on ETB amounts. Real financial mismatch.
-- **Fix:** Pick one currency end-to-end; make `formatCurrency` consistent and drive it from a single config.
+**4. ~~Winner-facing claim/accept/dispute flow is entirely missing~~ — FIXED**
+- `MyWinnings.tsx` (routed at `/en/winnings`, `App.tsx:174-182`) shows won raffles with accept/dispute buttons calling `respond_to_win` (`MyWinnings.tsx:39-56`). Backed by `20260625000000_draw_notifications_and_claim_flow.sql` and a 21-day `run-due-winner-claim-expirations` cron that auto-accepts unanswered wins.
 
-**4. Winner-facing claim/accept/dispute flow is entirely missing**
-- **Issue:** `winners` table has `notified_at/accepted_at/disputed_at/claim_deadline/prize_status`, but no entrant UI reads or writes them.
-- **Location:** `MyTickets.tsx` (no won state), no winner route.
-- **Impact:** A winner is never notified and can never accept/claim, so the escrow→payout chain can never legitimately complete.
-- **Fix:** Add winner notification (email + My Tickets "You won" state) and an accept/dispute page backed by RPCs + a 21-day cron.
+**5. ~~No mobile navigation~~ — FIXED**
+- `NavDrawer.tsx` (public) and `DashboardDrawer.tsx` (host) are real slide-out drawers, opened via hamburger triggers in `MarketingNav`/`Sidebar.tsx:88-93` and rendered from `App.tsx:105`.
 
-### HIGH (major UX or trust gap)
+**6. ~~Uploaded prize images are discarded~~ — FIXED**
+- `uploadRaffleImage()` (`raffles.ts:580-591`) uploads to the `raffle-images` Storage bucket; `CreateRaffle.tsx:110-111` calls it before publish and `image_url` is persisted (`20260624075444_add_raffle_image_url_and_storage_bucket.sql`).
 
-**5. No mobile navigation**
-- **Issue:** No hamburger or bottom tabs. `MarketingNav` nav links are `hidden md:flex`; `Sidebar` is `hidden lg:flex`.
-- **Location:** `MarketingNav.tsx:36`, `Sidebar.tsx:80`.
-- **Impact:** On phones, dashboard users get **no navigation at all** (no Overview/Create/Settings); public users lose How-it-works/Marketplace/Pricing.
-- **Fix:** Add a hamburger drawer for public + a mobile sidebar/bottom-tab for the dashboard.
+**7. ~~Promo codes, charities, affiliates collected but not persisted~~ — RESOLVED BY REMOVAL**
+- Rather than wiring these up, the `payouts`/`affiliates`/`promo_codes`/`campaigns`/`charities` tables and every related wizard input were deleted (`20260625010000`, `20260625020000`). None of them ever executed a real transfer or had a host-facing creation flow, so this was a deliberate scope cut. Not a gap to track anymore.
 
-**6. Uploaded prize images are discarded**
-- **Issue:** Wizard images are object URLs, never uploaded; `createRaffle` doesn't store images; cards/detail render gradient+icon only.
-- **Location:** `CreateRaffle.tsx:69-75`; `raffles.ts:391-427`.
-- **Impact:** A prize marketplace with no prize photos.
-- **Fix:** Upload to Supabase Storage, persist URLs (needs an `images` column/table).
+**8. ~~Public entrant list not shown / no Winners page~~ — PARTIALLY FIXED**
+- A real public `Winners.tsx` page now exists, querying ended raffles + their `winners` row (`raffles.ts:520-576`), routed at `/en/public-raffles/ended` (`App.tsx:192`). The **per-raffle entrant list** on `RaffleDetail.tsx` is still not rendered — carried forward as open finding **#8b**.
 
-**7. Promo codes, charities, affiliates collected but not persisted**
-- **Issue:** `createRaffle` ignores `promoCode` and `charityName`; affiliate % saved without an affiliate link.
-- **Location:** `raffles.ts:391-427`; `CreateRaffle.tsx:570-577`.
-- **Impact:** A promo input at checkout will never match a code; charity attribution missing.
-- **Fix:** Insert `promo_codes` row, resolve/link `charity_id`, and generate affiliate links.
+**9. ~~RLS unverifiable / no migrations in repo~~ — FIXED**
+- 23 migration files are committed, including `20260623193807_rls_policies.sql` and a hardening pass (`20260623194008_harden_security_definer_helpers.sql`) moving `is_raffle_host`/`is_raffle_public` into a non-API-exposed `private` schema.
 
-**8. Public entrant list not shown / no Winners page**
-- **Issue:** Raffall shows entrants per raffle and a public past-winners page; neither exists.
-- **Location:** `RaffleDetail.tsx`; `/public-raffles/ended` → `Marketplace` (queries only `status='live'`).
-- **Impact:** Core transparency/trust features absent; "ended" tab shows nothing.
-- **Fix:** Add an entrant list section and a real Winners listing (query `status='ended'` + `winners`).
+**13 (old). ~~QR code generator missing~~ — FIXED**
+- `RaffleDetail.tsx` generates and downloads a real QR PNG via `qrcode.react` (`RaffleDetail.tsx:4,57-61`).
 
-**9. RLS unverifiable / no migrations in repo**
-- **Issue:** No SQL migrations or RLS policies committed; schema lives only in the live project.
-- **Impact:** Security posture can't be reviewed or reproduced; risk of public read/write on `payments`, `winners`, `payouts`.
-- **Fix:** Commit migrations + RLS policies; run security advisors for lints.
+**15 (old). ~~No real 404~~ — FIXED**
+- `NotFound.tsx` is a real page, wired as the catch-all route (`App.tsx:195`).
+
+**20 (old). ~~No global error boundary~~ — FIXED**
+- `ErrorBoundary.tsx` wraps the app root (`App.tsx:101`).
+
+**Age verification — FIXED (was ⚠️ partial)**
+- `date_of_birth` + an `age >= 18` CHECK constraint now exist on `profiles` and `checkout_contacts` (`20260625050000_age_verification.sql:8-43`), enforced server-side inside `create_pending_checkout` for both registered and guest checkout — not just a UI checkbox.
+
+**Pricing/Account settings — FIXED (was MEDIUM #10/#11)**
+- `Pricing.tsx` and `Account.tsx` are real pages (not `ComingSoon`), routed at `/en/pricing` and `/en/account` (`App.tsx:147-161,193`).
+
+---
+
+### CRITICAL (still open — blocks correctness)
+
+**3. Currency is inconsistent (GBP vs ETB)** — *unchanged, still real*
+- **Issue:** Checkout charges **ETB** end-to-end (`TicketSelector.tsx:116,192,196,208,235` all pass `"ETB"`; Chapa `create-checkout/index.ts:119` hardcodes `currency: "ETB"`), but the wizard's price field is still labeled GBP (`CreateRaffle.tsx:386`, `hint="GBP"`), `formatCurrency` defaults to `"GBP"` (`utils.ts:8`), and `Dashboard.tsx:70` hardcodes a `£` prefix on the (ETB-denominated) escrowed-revenue stat.
+- **Impact:** A host sets a price thinking in £, the entrant is charged in ETB, and the host's own dashboard then shows that ETB figure with a £ sign. Real financial/display mismatch, unchanged since the original audit.
+- **Fix:** Pick one currency end-to-end; remove the `"GBP"` default and the `hint="GBP"`/`£` literals, drive everything from a single currency config.
+
+### HIGH (open)
+
+**2b. No host withdrawal / payout execution path exists**
+- **Issue:** Following the removal of `payouts`/`withdraw_revenue` (see resolved #2 above), there is now no mechanism — UI or RPC — for a host to ever receive escrowed funds. Prize confirmation is the last step the product performs.
+- **Impact:** Revenue can be collected and escrowed but never legitimately released to a host. This is a bigger gap than the original "fake withdraw button" — there's now no withdrawal concept in the schema at all.
+- **Fix:** Either reintroduce a real payout RPC + host bank/payout-method capture, or explicitly scope withdrawal as a manual/off-platform process and document that in product copy so hosts aren't misled.
+
+**8b. Public entrant list not shown on raffle page**
+- **Issue:** `RaffleDetail.tsx` has no section listing entrants, unlike the now-built Winners page for past results.
+- **Impact:** Trust/transparency feature still missing for live raffles.
+- **Fix:** Add an entrant list section reading from `tickets`/`profiles` with appropriate RLS-safe columns only.
 
 ### MEDIUM (missing feature, not blocking)
 
-**10. No pricing/subscription page** — `#pricing` only scrolls to a CTA; `subscription_tier` exists but no upgrade flow. Sidebar "Upgrade plan" → `/en/account` (ComingSoon). (`Landing.tsx:166`, `Sidebar.tsx:117`)
+**12. Telebirr unimplemented** — `create-checkout/index.ts:136-146` (`initTelebirr`) still throws `"Telebirr checkout is not configured yet. Please choose Chapa for now."`; provider toggle is disabled in UI. Unchanged.
 
-**11. Account settings unbuilt** — `/en/account` and `/en/support` are `ComingSoon`.
+**13. Share-for-free-ticket referral** — still promised nowhere in copy now (the old Landing-copy promise was removed along with the demo content cleanup), and there is still no referral tracking. Lower priority than originally since the dangling UI promise is gone too.
 
-**12. Telebirr unimplemented** — only Chapa works (`create-checkout/index.ts:136`).
-
-**13. Share-for-free-ticket / QR / email campaigns** — promised in copy, not built; `campaigns` table unused.
-
-**14. `EndedRaffle` route is unreachable** — `/en/dashboard/ended` is not linked from Sidebar or Dashboard.
+**14. `EndedRaffle` route is still unreachable** — confirmed unchanged: `Sidebar.tsx:14-23` (`primaryNav`/`secondaryNav`) has no entry for `/en/dashboard/ended`, and `Dashboard.tsx` doesn't link to it either, even though the route works and is now fully wired to real RPCs (see resolved #2). Hosts have no way to discover it.
 
 ### LOW (polish / performance)
 
-**15. No real 404** — `*` redirects to `/en`, hiding typos (`App.tsx:173`).
+**16. No real images** — moot until host onboarding actually populates `image_url` for existing raffles; upload path itself (#6) is fixed.
 
-**16. No real images** — covers are CSS gradients; `loading="lazy"` is already applied to the `<img>` tags, so this is moot until #6 (image upload) lands.
+**17. Dashboard "Escrowed Revenue" = gross, and hardcodes `£`** — still `sold*price` with no commission deduction (`Dashboard.tsx:70`), now also a second instance of the currency-label bug (#3).
 
-**17. Dashboard "Escrowed Revenue" = gross** — `sold*price`, ignores commission/charity/affiliate (`raffles.ts:269`).
+**18. ~~`HOST_SELECT` uses `*`~~** — fixed, unchanged from original audit: explicit columns (`raffles.ts:94`).
 
-**18. ~~`HOST_SELECT` uses `*`~~** — fixed: now selects explicit columns (`raffles.ts:94`).
+**19. HostLogin "Forgot password?" is still a dead `<a href="#">`** (`HostLogin.tsx:128`) — unchanged, entrant Login still has a working reset that host login lacks.
 
-**19. HostLogin "Forgot password?" is a dead `<a href="#">`** (`HostLogin.tsx:128`) while entrant Login has a working reset.
+**21. `fetchRaffleBySlug` still returns drafts/cancelled** — unchanged: `raffles.ts:111-122` has no `.eq("status", ...)` filter; a `draft` raffle remains viewable by guessing/sharing its slug.
 
-**20. No global error boundary** — a thrown lazy chunk/render error has no fallback.
-
-**21. `fetchRaffleBySlug` returns drafts/cancelled** — no status filter; a `draft` raffle is viewable by slug (`raffles.ts:112-123`).
+**22 (new). Min-ticket-target-not-met has no refund path** — `min_ticket_target` is stored and shown (`raffles.ts:622`), but nothing checks it against `tickets_sold_count` or issues refunds when a raffle ends under-target. Carried up from the Draw Flow table (§6) since it was never given a numbered finding before.
 
 ---
 
@@ -275,23 +284,34 @@ Legend: ✅ EXISTS · ⚠️ PARTIAL · ❌ MISSING
         └──(cancel)──► /checkout/cancelled
 
   AUTH + HOST CONTEXT (RequireAuth + RequireHostContext)
-  ┌──────────────────────────────────────────────┐
-  │ /dashboard (Overview)                          │
-  │   ├─ /dashboard/create (CreateRaffle wizard)   │ → publish → /raffle/:slug
-  │   └─ /dashboard/ended (EndedRaffle) ⚠ UNLINKED │   (fake confirm/withdraw)
-  │ Sidebar → /account, /support = ComingSoon      │
-  │ Sidebar "Marketplace" → /public-raffles/live   │
-  └──────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────┐
+  │ /dashboard (Overview)                              │
+  │   ├─ /dashboard/create (CreateRaffle wizard)       │ → publish → /raffle/:slug
+  │   └─ /dashboard/ended (EndedRaffle) ⚠ STILL UNLINKED│   (real confirm_prize RPC;
+  │       (works fine if you type the URL)             │    no withdraw step exists at all)
+  │ Sidebar → /account (real), /support (ComingSoon)   │
+  │ Sidebar "Marketplace" → /public-raffles/live       │
+  │ Sidebar → /pricing (real Pricing page)             │
+  └──────────────────────────────────────────────────┘
+
+  Entrant winner journey: /en/winnings (MyWinnings) — accept/dispute, real RPCs
 
   PLACEHOLDERS:  /terms /privacy /contact = Legal stub
-  DEAD ENDS / BROKEN:
-   • /public-raffles/ended → Marketplace (only queries live = empty)   ✗
-   • /account /support /terms /privacy /contact = placeholders          ✗
-   • #pricing = scroll anchor, no real page                            ✗
-   • Winner journey: NONE (no route, no notification)                  ✗
-   • Draw: NONE (raffle can never leave "live")                        ✗
-   • Mobile: no nav menu (links hidden below md/lg)                    ✗
-   • * (unknown URL) → silent redirect to /en (no 404)                 ✗
+  STILL DEAD ENDS / BROKEN:
+   • /dashboard/ended reachable only by typed URL, no Sidebar/Dashboard link  ✗
+   • /support = ComingSoon                                                   ✗
+   • /terms /privacy /contact = placeholders                                 ✗
+   • No host withdrawal step anywhere post-confirmation (#2b)                ✗
+   • fetchRaffleBySlug exposes draft/cancelled raffles by slug (#21)         ✗
+   • Currency: GBP-labeled price input, ETB-charged checkout (#3)            ✗
+
+  RESOLVED SINCE ORIGINAL AUDIT:
+   • /public-raffles/ended now a real Winners page (queries ended + winners) ✓
+   • #pricing replaced by a real /en/pricing page                            ✓
+   • Winner journey: /en/winnings, real accept/dispute RPCs + 21-day cron    ✓
+   • Draw: private.draw_raffle() + run-due-draws cron, every minute          ✓
+   • Mobile: NavDrawer (public) + DashboardDrawer (host), hamburger-driven   ✓
+   • * (unknown URL) → real NotFound page                                   ✓
 ```
 
 ---
@@ -302,13 +322,14 @@ Journey: *"I want to enter this raffle" → "tickets confirmed"*
 
 | # | Step | Status |
 |---|---|---|
-| 1 | Open `/raffle/:slug`, `fetchRaffleBySlug` | ✅ works |
+| 1 | Open `/raffle/:slug`, `fetchRaffleBySlug` | ⚠️ works, but no status filter — draft/cancelled raffles are also viewable (#21) |
 | 2 | Select quantity + see bundle free tickets | ✅ (`TicketSelector.tsx:118-165`) |
-| 3 | Enter promo code | ⚠️ accepted but no host UI ever creates codes, so it will never match |
-| 4 | See totals | ⚠️ promo discount **not** reflected in the shown total (applied server-side only); labeled ETB |
+| 3 | Promo code | 🗑️ removed — `promo_codes` table dropped, no longer part of the flow |
+| 4 | See totals | ✅ shown and charged consistently in ETB (`TicketSelector.tsx:116-235`) |
 | 5 | "Enter raffle" → contact step | ✅ |
 | 6 | Enter name/phone/email/city (guest OK) | ✅ |
-| 7 | Choose provider | ⚠️ Chapa only; Telebirr disabled |
+| 6b | Age (18+) check | ✅ enforced server-side in `create_pending_checkout` via DOB CHECK constraint, for both guest and registered checkout |
+| 7 | Choose provider | ⚠️ Chapa only; Telebirr still throws `"not configured yet"` |
 | 8 | `startCheckout` → `create-checkout` → `create_pending_checkout` RPC → Chapa init | ✅ (requires `CHAPA_SECRET_KEY`) |
 | 9 | Redirect to Chapa hosted page | ✅ |
 | 10 | Chapa webhook → `verify-payment` re-verifies → `finalize_checkout` allocates tickets | ✅ |
@@ -316,13 +337,12 @@ Journey: *"I want to enter this raffle" → "tickets confirmed"*
 | 12 | Return to `/checkout/success`, poll `get_checkout_status` | ✅ (24 polls / ~60s) |
 | 13 | See ticket numbers + amount | ✅ |
 | 14 | "View in My Tickets" (logged-in only) | ✅ |
+| 15 | If a winner is later drawn, see "you won" + accept/dispute | ✅ `MyWinnings.tsx`, `/en/winnings` |
 
-**Missing/broken in checkout:**
-- No client-side promo validation/preview; discount invisible until receipt.
-- No age (18+) gate before guest purchase.
+**Still missing/broken in checkout:**
 - Guest has **no way to view tickets later** (no email magic-link / order-lookup) — only the success page (lost on close).
 - Telebirr path dead.
-- Currency mismatch (Critical #3) means displayed price ≠ charged currency intent.
+- The wizard's price input is still labeled GBP while checkout charges ETB (Critical #3) — displayed creation-time price ≠ charged currency intent, even though the checkout amount itself is internally consistent.
 
 ---
 
@@ -334,42 +354,38 @@ Note: `raffles.status` enum is only `draft | live | ended | cancelled`. The late
 
 | Transition | Handled? | Automated? | Tested? | Notes |
 |---|---|---|---|---|
-| → DRAFT | ❌ | — | ❌ | Wizard inserts directly as `status:'live'` (`raffles.ts:405`); draft never used / no "save draft". |
-| DRAFT → LIVE | ⚠️ | n/a | ❌ | Effectively "create = live"; no review/publish gate server-side. |
-| LIVE → DRAW_PENDING | ❌ | ❌ | ❌ | No such status; nothing detects `draw_date`/cap reached. |
-| DRAW_PENDING → ENDED (RNG fires) | ❌ | ❌ | ❌ | **No draw function, no cron, no winner selection, no `draw_audit` write.** |
-| ENDED → PRIZE_CONFIRMED | ⚠️ | ❌ | ❌ | `confirm_prize` RPC exists but UI never calls it; `EndedRaffle` uses local state. No 7-day cron. |
-| PRIZE_CONFIRMED → REVENUE_RELEASED | ⚠️ | ❌ | ❌ | `withdraw_revenue` RPC exists but UI never calls it; "Withdraw" is `setFlow` only. No payout execution. |
-| (winner accept / 21-day) | ❌ | ❌ | ❌ | No winner UI; `claim_deadline` cron absent. |
-| Compensation (revoke → 75%) | ❌ | ❌ | ❌ | UI text only; no `payouts` row of type `winner_compensation` created. |
-| Min-target not met → refund | ❌ | ❌ | ❌ | `min_ticket_target` stored; no refund logic. |
+| → DRAFT | ❌ | — | ❌ | Unchanged: wizard still inserts directly as `status:'live'`; draft never used / no "save draft". |
+| DRAFT → LIVE | ⚠️ | n/a | ❌ | Unchanged: effectively "create = live"; no review/publish gate server-side. |
+| LIVE → DRAW_PENDING | ❌ | ❌ | ❌ | Unchanged: no such intermediate status; the cron instead directly fires the draw when due (see next row), skipping a pending state — by design, not a gap. |
+| DRAW_PENDING → ENDED (RNG fires) | ✅ | ✅ | ❌ | **FIXED.** `private.draw_raffle()` CSPRNG selection + `run-due-draws` cron (every minute) writes `winners` + `draw_audit`, sets `status='ended'`. Still untested (no test infra in repo). |
+| ENDED → PRIZE_CONFIRMED | ✅ | ⚠️ | ❌ | **FIXED.** `EndedRaffle.tsx` calls real `confirm_prize` RPC. `run-due-guarantee-compensations` cron (15 min) auto-revokes unconfirmed prizes into the 75% guarantee after 7 days if the host doesn't act. |
+| PRIZE_CONFIRMED → REVENUE_RELEASED | ❌ | ❌ | ❌ | **WORSE THAN BEFORE.** `withdraw_revenue` RPC and `revenue_released_at` column were deleted outright (not just left unwired). There is now no payout-execution concept anywhere in the schema (new finding #2b). |
+| Winner accept / 21-day claim | ✅ | ✅ | ❌ | **FIXED.** `MyWinnings.tsx` + `respond_to_win` RPC; `run-due-winner-claim-expirations` cron (15 min) auto-accepts unanswered wins after 21 days. |
+| Compensation (revoke → 75%) | ✅ | ✅ | ❌ | **FIXED.** `run-due-guarantee-compensations` cron computes and applies the 75% guarantee compensation automatically; no longer UI-text-only. (Compensation amount is calculated, but still has nowhere to be paid out to — see #2b.) |
+| Min-target not met → refund | ❌ | ❌ | ❌ | Unchanged: `min_ticket_target` stored; nothing checks it against `tickets_sold_count` or issues refunds (finding #22). |
 
-**Summary:** The entire post-`live` lifecycle is **non-functional**. Tickets accumulate but the raffle is a dead end. Front-end "confirm/withdraw/revoke" screens are mockups disconnected from the (existing) RPCs. Nothing is tested (no test infra at all).
-
----
-
-## 7 — Priority Build List
-
-1. **Automated RNG draw + cron** — Without it the product literally cannot end a raffle or name a winner; everything downstream is blocked. *Create:* `supabase/functions/draw-raffle/index.ts` (CSPRNG, writes `winners` + `draw_audit`, sets `status='ended'`); `pg_cron` job (draw_date / cap). *Modify:* migrations for cron + RLS.
-
-2. **Wire host confirm/withdraw to real RPCs + commit schema/RLS** — Makes escrow release real and lets the money flow be reviewed. *Modify:* `EndedRaffle.tsx` (call `confirm_prize`, `withdraw_revenue`, render real `draw_audit`); link it from `Dashboard.tsx`/`Sidebar.tsx`. *Create:* `supabase/migrations/*` (tables, RLS, RPC source).
-
-3. **Winner notification + accept/claim/dispute flow** — Required for a legitimate payout chain and trust. *Create:* winner page/route, email templates, `pg_cron` for 7-day host + 21-day winner timers, compensation `payouts`. *Modify:* `MyTickets.tsx` (won state), `App.tsx` (route).
-
-4. **Fix currency end-to-end** — Real financial correctness bug, cheap to fix, touches everything money. *Modify:* `lib/utils.ts` (`formatCurrency`), `CreateRaffle.tsx`, `TicketSelector.tsx`, dashboards; centralize currency config.
-
-5. **Mobile navigation (hamburger + dashboard drawer/bottom-tabs)** — Today mobile dashboard users have zero nav. *Modify:* `MarketingNav.tsx`, `Sidebar.tsx`/`AppShell.tsx`; *Create:* `MobileNav` component.
-
-6. **Persist prize images (Supabase Storage)** — A prize marketplace needs photos. *Modify:* `CreateRaffle.tsx` (upload), `raffles.ts` (`createRaffle`, mappers), `RaffleCard.tsx`/`RaffleDetail.tsx`; *Create:* `raffle_images` column/table + bucket.
-
-7. **Persist promo codes / charity link / affiliate links on create** — Makes the promo input at checkout actually usable. *Modify:* `raffles.ts:createRaffle` (insert `promo_codes`, resolve `charity_id`, create `affiliates`).
-
-8. **Public entrant list + real Winners page** — Core Raffall transparency. *Modify:* `RaffleDetail.tsx`, `Marketplace.tsx` (ended query); *Create:* `Winners` page + route; fix `/public-raffles/ended`.
-
-9. **Pricing/subscription page + Account settings** — Replace `ComingSoon`/anchor. *Create:* `Pricing.tsx`, `Account.tsx`; *Modify:* `App.tsx`, `Sidebar.tsx`.
-
-10. **Polish:** real 404 page; age gate at checkout; guest order-lookup; `fetchRaffleBySlug` status filter; HostLogin forgot-password; error boundary; Telebirr (when creds available). *Modify:* `App.tsx`, `TicketSelector.tsx`, `raffles.ts`, `HostLogin.tsx`.
+**Summary:** The draw → winner-notification → accept/dispute → compensation chain that was the original audit's headline gap is now **fully automated end-to-end via cron + CSPRNG + RPCs**. The one piece that regressed rather than improved is the very last step: actually getting escrowed money (or guarantee compensation) out to a host or winner — that mechanism was removed, not built. Nothing in this lifecycle has automated test coverage (still no test infra in repo).
 
 ---
 
-*Conclusion:* The build is a polished, well-structured **front-end shell with a working ticket-purchase path (Chapa)**, but the **draw, winner, and payout lifecycle — the heart of a raffle platform — is entirely absent or mocked**, and there is a real **currency mismatch** between pricing (GBP) and charging (ETB). Priority items 1–4 are launch-blocking.
+## 7 — Priority Build List (re-prioritized 2026-06-25)
+
+Items 1, 2 (partially), 3, 5, 6, 8 (partially), 9 from the original list are **done** — see §3 "Resolved" and §6. What's left, in priority order:
+
+1. **Build a real host payout/withdrawal path** — The single biggest open gap. `withdraw_revenue` and `revenue_released_at` were deleted along with the dead `payouts` table, so there is currently *no* mechanism, fake or real, for a host to get paid after confirming a prize, and no mechanism to pay out the 75% guarantee compensation the cron now calculates. *Decide first:* manual/off-platform payout (document it) vs. a real payout RPC + bank-detail capture + execution. *Create/modify:* new `payouts`-equivalent table + RPC, `EndedRaffle.tsx` action, payout execution (Stripe Connect/bank transfer/manual ops queue).
+
+2. **Fix currency end-to-end** — Still a real financial-correctness bug, still cheap relative to its risk. *Modify:* `lib/utils.ts` (`formatCurrency` default), `CreateRaffle.tsx:386` (`hint="GBP"`), `Dashboard.tsx:70` (hardcoded `£`); centralize on ETB (the currency that's actually charged) or introduce a host-selectable currency end-to-end.
+
+3. **Link `EndedRaffle` from the dashboard** — Trivial fix, currently the only thing stopping hosts from finding a fully-working confirm-prize flow. *Modify:* `Sidebar.tsx` (`primaryNav`/`secondaryNav`), `Dashboard.tsx` (link from the relevant raffle card once it's ended).
+
+4. **Public entrant list on `RaffleDetail.tsx`** — Last piece of the original transparency gap; the Winners page (past results) is done, live-raffle entrant visibility isn't. *Modify:* `RaffleDetail.tsx`; *Create:* RLS-safe entrant query (name/initials + ticket count only).
+
+5. **`fetchRaffleBySlug` status filter** — Quick, real bug: draft/cancelled raffles are publicly viewable by slug. *Modify:* `raffles.ts:111-122`, add `.eq("status", ...)` or an explicit allow-list.
+
+6. **Min-target-not-met refunds** — `min_ticket_target` is collected and displayed but never enforced; no refund path exists if a raffle ends under-target. *Create:* refund RPC + cron check alongside the existing draw cron.
+
+7. **Polish:** Telebirr (when merchant credentials are available — `create-checkout/index.ts:136-146`); HostLogin forgot-password (`HostLogin.tsx:128`, dead `<a href="#">`); guest order-lookup (no way to revisit a guest checkout after closing the success page).
+
+---
+
+*Conclusion (updated):* The original audit's headline gap — **draw, winner-notification, accept/dispute, and compensation are entirely automated now** via CSPRNG + cron + RPCs, and trust/UX gaps (mobile nav, images, 404, error boundary, RLS, age verification, Winners/Pricing/Account pages) have been closed. The platform traded one kind of incompleteness for a narrower one: the **end of the money trail — actually paying a host or a compensated winner — was removed rather than finished**, and the **GBP/ETB currency mismatch** from the original audit is still unresolved. Priority items 1–2 above are now the launch-blockers; the rest is real but lower-stakes polish.

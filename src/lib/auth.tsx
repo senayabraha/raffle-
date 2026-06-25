@@ -46,6 +46,22 @@ async function fetchProfile(client: Client, userId: string): Promise<Profile | n
 }
 
 /**
+ * Supabase's underlying `fetch` has no built-in timeout, so a stalled (not
+ * failed) connection — common on flaky mobile/carrier networks — never
+ * resolves AND never rejects, which would leave `loading` stuck true
+ * forever even with a `.catch()` on the outer chain. Racing against a
+ * timeout turns a silent hang into a rejection the `.catch()` can handle.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
+/**
  * The Supabase SDK (~55KB gzip) is dynamically imported here instead of
  * statically, so unauthenticated routes like the public landing page don't
  * pay for it before they can render. The auth state simply resolves a beat
@@ -69,10 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         clientRef.current = supabase;
 
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withTimeout(supabase.auth.getSession(), 8000);
         if (!active) return;
         setSession(data.session);
-        if (data.session?.user) setProfile(await fetchProfile(supabase, data.session.user.id));
+        if (data.session?.user) {
+          setProfile(await withTimeout(fetchProfile(supabase, data.session.user.id), 8000));
+        }
         setLoading(false);
 
         const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {

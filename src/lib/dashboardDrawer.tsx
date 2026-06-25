@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 interface DrawerState {
   isOpen: boolean;
+  /** True once the drawer has been opened at least once; never resets. Lets
+   * the drawer's framer-motion-heavy chunk stay unmounted (and unfetched)
+   * until it's actually needed, instead of loading on every dashboard page. */
+  hasOpened: boolean;
   open: () => void;
   close: () => void;
 }
@@ -11,6 +15,7 @@ const DashboardDrawerContext = createContext<DrawerState | undefined>(undefined)
 /** Slide-out drawer state for the host dashboard's mobile nav, scoped to AppShell. */
 export function DashboardDrawerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,7 +36,15 @@ export function DashboardDrawerProvider({ children }: { children: ReactNode }) {
 
   return (
     <DashboardDrawerContext.Provider
-      value={{ isOpen, open: () => setIsOpen(true), close: () => setIsOpen(false) }}
+      value={{
+        isOpen,
+        hasOpened,
+        open: () => {
+          setIsOpen(true);
+          setHasOpened(true);
+        },
+        close: () => setIsOpen(false),
+      }}
     >
       {children}
     </DashboardDrawerContext.Provider>

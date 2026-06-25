@@ -383,9 +383,9 @@ function StepBody({
     case 1:
       return (
         <>
-          <Field label="Ticket price" hint="GBP">
+          <Field label="Ticket price" hint="ETB">
             <PrefixInput
-              prefix="£"
+              prefix="ETB"
               type="number"
               min={0.5}
               step={0.5}

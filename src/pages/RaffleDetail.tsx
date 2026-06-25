@@ -16,13 +16,14 @@ import {
   QrCode,
   Download,
   ShieldAlert,
+  Users,
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
 import { type MarketplaceRaffle } from "@/data/marketplace";
-import { fetchRaffleBySlug } from "@/lib/raffles";
+import { fetchRaffleBySlug, fetchRaffleEntrants, type RaffleEntrant } from "@/lib/raffles";
 import { formatCompact, cn } from "@/lib/utils";
 
 export default function RaffleDetail() {
@@ -33,6 +34,7 @@ export default function RaffleDetail() {
   const [resolving, setResolving] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [entrants, setEntrants] = useState<RaffleEntrant[]>([]);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const shareUrl =
@@ -84,6 +86,18 @@ export default function RaffleDetail() {
       active = false;
     };
   }, [slug]);
+
+  // Load the recent entries feed once the raffle has resolved.
+  useEffect(() => {
+    if (!raffle) return;
+    let active = true;
+    fetchRaffleEntrants(raffle.id).then((rows) => {
+      if (active) setEntrants(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [raffle]);
 
   if (resolving) {
     return (
@@ -183,6 +197,29 @@ export default function RaffleDetail() {
               </div>
             )}
           </SpotlightCard>
+
+          {/* Recent entries */}
+          {entrants.length > 0 && (
+            <SpotlightCard className="p-6" lift={false}>
+              <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
+                <Users strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
+                Recent entries
+              </h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {entrants.map((e) => (
+                  <span
+                    key={e.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300"
+                  >
+                    <span className="grid h-6 w-6 place-items-center rounded-full bg-accent-gradient text-[10px] font-bold text-white">
+                      {e.initials}
+                    </span>
+                    {e.name.split(/\s+/)[0]}
+                  </span>
+                ))}
+              </div>
+            </SpotlightCard>
+          )}
         </motion.div>
 
         {/* ---- Right: sticky purchase panel ---- */}

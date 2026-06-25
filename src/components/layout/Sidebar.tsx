@@ -7,6 +7,7 @@ import {
   Settings,
   LifeBuoy,
   Menu,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawer } from "@/lib/drawer";
@@ -14,6 +15,7 @@ import { useDrawer } from "@/lib/drawer";
 const primaryNav = [
   { to: "/en/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/en/dashboard/create", label: "Create Raffle", icon: PlusCircle },
+  { to: "/en/dashboard/ended", label: "Ended Raffles", icon: Trophy },
 ];
 
 const secondaryNav = [

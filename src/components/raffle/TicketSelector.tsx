@@ -113,7 +113,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         <div>
           <p className="text-xs text-zinc-500">Ticket price</p>
           <p className="text-2xl font-bold tracking-tight text-white">
-            {formatCurrency(raffle.ticketPrice, "ETB")}
+            {formatCurrency(raffle.ticketPrice)}
           </p>
         </div>
         {raffle.bundles.length > 0 && (
@@ -189,11 +189,11 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                 <span>
                   {qty} {qty === 1 ? "ticket" : "tickets"}
                 </span>
-                <span className="tabular-nums">{formatCurrency(subtotal, "ETB")}</span>
+                <span className="tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex items-center justify-between pt-1 text-base font-bold text-white">
                 <span>Total</span>
-                <span className="tabular-nums">{formatCurrency(total, "ETB")}</span>
+                <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>
             </div>
 
@@ -205,7 +205,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
               className="mt-4 w-full"
             >
               <Ticket strokeWidth={1.5} className="h-5 w-5" />
-              {closed ? "Entries closed" : `Enter raffle · ${formatCurrency(total, "ETB")}`}
+              {closed ? "Entries closed" : `Enter raffle · ${formatCurrency(total)}`}
             </Button>
           </motion.div>
         ) : (
@@ -232,7 +232,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                 {free > 0 ? ` + ${free} free` : ""}
               </span>
               <span className="font-bold tabular-nums text-white">
-                {formatCurrency(total, "ETB")}
+                {formatCurrency(total)}
               </span>
             </div>
 

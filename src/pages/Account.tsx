@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Loader2, AlertCircle, CheckCircle2, User, Mail, Lock } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { useMode } from "@/lib/mode";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Form";
 import { useAuth } from "@/lib/auth";
@@ -198,8 +200,12 @@ function PasswordSection() {
 }
 
 export default function Account() {
+  // Account is shared by both modes — render it under whichever shell matches
+  // the user's current mode so the surrounding nav stays consistent.
+  const { mode } = useMode();
+  const Shell = mode === "host" ? AppShell : PublicShell;
   return (
-    <AppShell>
+    <Shell>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tightest text-white">
           Account settings
@@ -213,6 +219,6 @@ export default function Account() {
         <EmailSection />
         <PasswordSection />
       </div>
-    </AppShell>
+    </Shell>
   );
 }

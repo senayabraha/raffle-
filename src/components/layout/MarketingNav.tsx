@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, Ticket, LogOut } from "lucide-react";
+import { Menu, Ticket, LogOut, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
+import { useMode } from "@/lib/mode";
 import { useDrawer } from "@/lib/drawer";
 
 const baseLinks: { label: string; href?: string; to?: string }[] = [
@@ -13,6 +14,7 @@ const baseLinks: { label: string; href?: string; to?: string }[] = [
 export function MarketingNav() {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
+  const { canHost, setMode, switching } = useMode();
   const { open: openDrawer } = useDrawer();
   // Signed-out visitors go straight to the Host portal, not the entrant
   // login, since landing on the dashboard requires Host-context auth.
@@ -70,11 +72,23 @@ export function MarketingNav() {
                   My tickets
                 </Button>
               </Link>
-              <Link to="/en/dashboard">
-                <Button variant="primary" size="sm">
-                  Dashboard
+              {canHost ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setMode("host")}
+                  disabled={switching}
+                >
+                  <ArrowLeftRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                  Switch to hosting
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/en/pricing">
+                  <Button variant="primary" size="sm">
+                    Host a raffle
+                  </Button>
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 title="Sign out"

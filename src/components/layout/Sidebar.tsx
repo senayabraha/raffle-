@@ -8,9 +8,11 @@ import {
   LifeBuoy,
   Menu,
   Trophy,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawer } from "@/lib/drawer";
+import { useMode } from "@/lib/mode";
 
 const primaryNav = [
   { to: "/en/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
@@ -82,6 +84,7 @@ export function NavItem({
 
 export function Sidebar() {
   const { open: openDrawer } = useDrawer();
+  const { canEnter, setMode, switching } = useMode();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.015] px-4 py-5 backdrop-blur-md lg:flex">
@@ -113,6 +116,21 @@ export function Sidebar() {
         {secondaryNav.map((item) => (
           <NavItem key={item.to} {...item} />
         ))}
+        {/* Mode switch: only an account that can also enter raffles sees this. */}
+        {canEnter && (
+          <button
+            type="button"
+            onClick={() => setMode("entrant")}
+            disabled={switching}
+            className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium tracking-tight text-zinc-400 transition-all duration-300 ease-premium hover:bg-white/[0.04] hover:text-zinc-100 disabled:opacity-50"
+          >
+            <ArrowLeftRight
+              strokeWidth={1.5}
+              className="h-[18px] w-[18px] shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-300"
+            />
+            <span className="flex-1 text-left">Switch to entering</span>
+          </button>
+        )}
       </nav>
 
       {/* Pricing card */}

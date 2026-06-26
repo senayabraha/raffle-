@@ -6,12 +6,11 @@ import {
   Globe,
   Settings,
   LifeBuoy,
-  Menu,
+  Sparkles,
   Trophy,
   ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDrawer } from "@/lib/drawer";
 import { useMode } from "@/lib/mode";
 
 const primaryNav = [
@@ -83,25 +82,20 @@ export function NavItem({
 }
 
 export function Sidebar() {
-  const { open: openDrawer } = useDrawer();
   const { canEnter, setMode, switching } = useMode();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.015] px-4 py-5 backdrop-blur-md lg:flex">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-2 pb-6">
-        <button
-          onClick={openDrawer}
-          aria-label="Open menu"
-          className="focus-ring grid h-9 w-9 place-items-center rounded-xl bg-accent-gradient text-white shadow-accent-glow transition-all duration-300 hover:brightness-110 active:scale-[0.94]"
-        >
-          <Menu strokeWidth={2} className="h-[18px] w-[18px]" />
-        </button>
+      <Link to="/en/dashboard" className="flex items-center gap-2.5 px-2 pb-6">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent-gradient text-white shadow-accent-glow">
+          <Sparkles strokeWidth={2} className="h-[18px] w-[18px]" />
+        </span>
         <div className="leading-tight">
           <p className="text-[15px] font-bold tracking-tight text-white">Raffall</p>
           <p className="text-[11px] text-zinc-500">Host Studio</p>
         </div>
-      </div>
+      </Link>
 
       {/* Primary nav */}
       <nav className="flex flex-col gap-1">

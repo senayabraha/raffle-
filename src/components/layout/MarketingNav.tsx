@@ -16,9 +16,10 @@ export function MarketingNav() {
   const { session, signOut } = useAuth();
   const { canHost, setMode, switching } = useMode();
   const { open: openDrawer } = useDrawer();
-  // Signed-out visitors go straight to the Host portal, not the entrant
-  // login, since landing on the dashboard requires Host-context auth.
-  const links = [...baseLinks, { label: "Hosts", to: session ? "/en/dashboard" : "/en/host/login" }];
+  // One predictable host entry point for everyone: the become-a-host page
+  // routes signed-out visitors to sign up, upgrades entrants, and sends
+  // existing hosts straight to their dashboard.
+  const links = [...baseLinks, { label: "Hosts", to: "/en/become-a-host" }];
 
   async function handleSignOut() {
     await signOut();

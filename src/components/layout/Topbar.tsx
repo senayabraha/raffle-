@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Search, Bell, PlusCircle, LogOut, BellOff, Menu } from "lucide-react";
+import { Bell, PlusCircle, LogOut, BellOff, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth";
 import { useDashboardDrawer } from "@/lib/dashboardDrawer";
@@ -77,21 +77,8 @@ export function Topbar() {
           <Menu strokeWidth={1.5} className="h-[18px] w-[18px]" />
         </button>
 
-        {/* Search */}
-        <div className="relative hidden flex-1 max-w-md md:block">
-          <Search
-            strokeWidth={1.5}
-            className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
-          />
-          <input
-            type="text"
-            placeholder="Search raffles, entrants, payouts…"
-            className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-11 pr-16 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50"
-          />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-            ⌘K
-          </kbd>
-        </div>
+        {/* Spacer keeps the actions right-aligned now that search is gone. */}
+        <div className="hidden flex-1 md:block" />
 
         <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
           <Link to="/en/dashboard/create" className="hidden sm:inline-flex">

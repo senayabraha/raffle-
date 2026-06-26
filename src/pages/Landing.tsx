@@ -87,7 +87,7 @@ export default function Landing() {
           animate="show"
           className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <Link to="/en/dashboard">
+          <Link to="/en/become-a-host">
             <Button variant="primary" size="lg" className="w-full sm:w-auto">
               <Sparkles strokeWidth={1.5} className="h-5 w-5" />
               Start hosting free
@@ -177,9 +177,9 @@ export default function Landing() {
               monthly minimum.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Link to="/en/dashboard" className="inline-block">
+              <Link to="/en/become-a-host" className="inline-block">
                 <Button variant="primary" size="lg">
-                  Open your dashboard
+                  Start hosting free
                   <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 </Button>
               </Link>

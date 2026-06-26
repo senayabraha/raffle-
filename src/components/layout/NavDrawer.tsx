@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Users,
+  Sparkles,
   PartyPopper,
   Trophy,
   Award,
@@ -19,8 +18,6 @@ import {
 import { useDrawer } from "@/lib/drawer";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-
-type Mode = "hosts" | "entrants";
 
 const navItems = [
   {
@@ -57,16 +54,10 @@ export function NavDrawer() {
   const { isOpen, close } = useDrawer();
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("entrants");
 
   function go(to: string) {
     close();
     navigate(to);
-  }
-
-  function handleHosts() {
-    setMode("hosts");
-    go(session ? "/en/dashboard" : "/en/host/login");
   }
 
   async function handleSignOut() {
@@ -99,33 +90,17 @@ export function NavDrawer() {
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 340, damping: 34 }}
           >
-            {/* For Hosts / For Entrants toggle */}
-            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-              <button
-                onClick={handleHosts}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold transition-all duration-300",
-                  mode === "hosts"
-                    ? "bg-accent-gradient text-white shadow-accent-glow"
-                    : "text-zinc-400 hover:text-zinc-200",
-                )}
-              >
-                <Users strokeWidth={2} className="h-3.5 w-3.5 shrink-0" />
-                For Hosts
-              </button>
-              <button
-                onClick={() => setMode("entrants")}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] font-semibold transition-all duration-300",
-                  mode === "entrants"
-                    ? "bg-accent-gradient text-white shadow-accent-glow"
-                    : "text-zinc-400 hover:text-zinc-200",
-                )}
-              >
-                <Users strokeWidth={2} className="h-3.5 w-3.5 shrink-0" />
-                For Entrants
-              </button>
-            </div>
+            {/* Host entry — one clear path for anyone who wants to run a raffle */}
+            <button
+              onClick={() => go("/en/become-a-host")}
+              className="flex items-center justify-between rounded-xl border border-accent/20 bg-accent/[0.08] px-3.5 py-2 transition-all duration-300 hover:bg-accent/[0.14]"
+            >
+              <span className="flex items-center gap-2.5 text-[13px] font-semibold text-white">
+                <Sparkles strokeWidth={2} className="h-4 w-4 text-accent-soft" />
+                Host a raffle
+              </span>
+              <ChevronRight strokeWidth={2} className="h-4 w-4 text-zinc-500" />
+            </button>
 
             {/* Hero banner */}
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-accent-gradient p-3.5">

@@ -71,6 +71,7 @@ export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
       "id, raffle_id, display_order, raffles!inner(id, title, image_urls, ticket_price, tickets_sold_count, ticket_cap, draw_date, slug, status)",
     )
     .eq("raffles.status", "live")
+    .eq("raffles.suspension_status", "active")
     .order("display_order", { ascending: true });
   if (featuredError) throw featuredError;
 
@@ -84,6 +85,7 @@ export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
       .from("raffles")
       .select("id, title, image_urls, ticket_price, tickets_sold_count, ticket_cap, draw_date, slug, status")
       .eq("status", "live")
+      .eq("suspension_status", "active")
       .order("tickets_sold_count", { ascending: false })
       .limit(remaining);
     if (usedRaffleIds.length > 0) {
@@ -123,16 +125,23 @@ export async function getAdminFeaturedRaffles(): Promise<AdminFeaturedRaffle[]> 
   }));
 }
 
-/** Admin: live raffles matching a title search, for the "add featured" picker. */
+/**
+ * Admin: live raffles for the "add featured" picker. With no query, lists
+ * the most recently created live raffles so admins can browse without
+ * already knowing a title to search for; with a query, filters by title.
+ */
 export async function searchRaffles(query: string): Promise<RaffleSearchResult[]> {
   const trimmed = query.trim();
-  if (!trimmed) return [];
 
-  const { data, error } = await supabase
+  let request = supabase
     .from("raffles")
     .select("id, title")
     .eq("status", "live")
-    .ilike("title", `%${trimmed}%`)
+    .eq("suspension_status", "active");
+  if (trimmed) request = request.ilike("title", `%${trimmed}%`);
+
+  const { data, error } = await request
+    .order("created_at", { ascending: false })
     .limit(20);
   if (error) throw error;
   return data ?? [];

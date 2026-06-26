@@ -204,7 +204,7 @@ export function HeroCarousel() {
   const goNext = () => setActiveIndex((i) => (i + 1) % slides.length);
 
   return (
-    <section className="relative mx-auto max-w-5xl pt-[74px] pb-0">
+    <section className="relative mx-auto max-w-5xl pt-[90px] pb-0">
       <div className="relative mx-4 aspect-video overflow-hidden shadow-lg sm:mx-auto sm:max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div

@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { DashboardDrawerProvider, useDashboardDrawer } from "@/lib/dashboardDrawer";
+import { useSiteScale } from "@/hooks/useSiteScale";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -25,11 +26,13 @@ function DashboardDrawerGate() {
   );
 }
 
-/** Global authenticated layout: aurora bg + glass sidebar + sticky topbar. */
+/** Global authenticated layout: aurora bg + glass sidebar + sticky topbar. Scaled site-wide by the admin-controlled zoom factor. */
 export function AppShell({ children }: { children: ReactNode }) {
+  const { currentScale } = useSiteScale();
+
   return (
     <DashboardDrawerProvider>
-      <div className="relative flex min-h-screen bg-app">
+      <div className="relative flex min-h-screen bg-app" style={{ zoom: currentScale }}>
         <AuroraBackground />
         <Sidebar />
         <DashboardDrawerGate />

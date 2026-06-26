@@ -192,16 +192,25 @@ export type Database = {
         Row: {
           id: number
           rotation_interval_ms: number
+          scale_desktop: number
+          scale_mobile: number
+          scale_tablet: number
           transition_direction: string
         }
         Insert: {
           id?: number
           rotation_interval_ms?: number
+          scale_desktop?: number
+          scale_mobile?: number
+          scale_tablet?: number
           transition_direction?: string
         }
         Update: {
           id?: number
           rotation_interval_ms?: number
+          scale_desktop?: number
+          scale_mobile?: number
+          scale_tablet?: number
           transition_direction?: string
         }
         Relationships: []

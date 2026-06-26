@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Ticket,
@@ -14,13 +14,122 @@ import {
   Trophy,
 } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { CardHeader } from "@/components/dashboard/CardHeader";
+import { Button } from "@/components/ui/Button";
 import {
   fetchAdminOverview,
   fetchRecentActivity,
   type AdminOverview as AdminOverviewData,
   type AdminActivityRow,
 } from "@/lib/admin";
+import { fetchHeroSettings, updateHeroSettings } from "@/lib/hero";
 import { formatCurrency, formatCompact, formatRelativeTime } from "@/lib/utils";
+
+const SCALE_MIN = 0.65;
+const SCALE_MAX = 1.0;
+const SCALE_STEP = 0.01;
+
+interface SiteScaleValues {
+  scale_mobile: number;
+  scale_tablet: number;
+  scale_desktop: number;
+}
+
+const SCALE_SLIDERS: { field: keyof SiteScaleValues; label: string }[] = [
+  { field: "scale_mobile", label: "Mobile (phones)" },
+  { field: "scale_tablet", label: "Tablet (iPad)" },
+  { field: "scale_desktop", label: "Desktop" },
+];
+
+function SiteScaleSettings() {
+  const [values, setValues] = useState<SiteScaleValues | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetchHeroSettings()
+      .then((settings) => {
+        setValues({
+          scale_mobile: settings.scale_mobile,
+          scale_tablet: settings.scale_tablet,
+          scale_desktop: settings.scale_desktop,
+        });
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Failed to load site scale settings.");
+      });
+  }, []);
+
+  function handleSlider(field: keyof SiteScaleValues, value: number) {
+    setValues((prev) => (prev ? { ...prev, [field]: value } : prev));
+  }
+
+  async function handleSave() {
+    if (!values) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await updateHeroSettings(values);
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save site scale settings.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SpotlightCard lift={false} className="mt-6 p-5">
+      <CardHeader
+        title="Site Display Scale"
+        subtitle="Controls how zoomed in the public site appears to visitors. Does not affect the admin panel."
+      />
+
+      {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
+
+      {!values ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {SCALE_SLIDERS.map(({ field, label }) => (
+            <div key={field}>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-ink">{label}</p>
+                <span className="text-sm text-ink-subtle">{Math.round(values[field] * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min={SCALE_MIN}
+                max={SCALE_MAX}
+                step={SCALE_STEP}
+                value={values[field]}
+                onChange={(e) => handleSlider(field, Number(e.target.value))}
+                className="mt-2 w-full accent-accent"
+              />
+            </div>
+          ))}
+
+          <div className="flex items-center gap-3 pt-1">
+            <Button size="sm" variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            {saved && <span className="text-sm text-emerald-400">Saved</span>}
+          </div>
+
+          <p className="text-xs text-ink-subtle">Changes apply immediately for all visitors after saving.</p>
+        </div>
+      )}
+    </SpotlightCard>
+  );
+}
 
 const cards = [
   {
@@ -163,6 +272,8 @@ export default function Overview() {
           ))}
         </div>
       </div>
+
+      <SiteScaleSettings />
 
       <div className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight text-ink">Recent activity</h2>

@@ -5,6 +5,7 @@ import { MarketingNav } from "@/components/layout/MarketingNav";
 import { Button } from "@/components/ui/Button";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { FeaturedRafflesCarousel } from "@/components/FeaturedRafflesCarousel";
+import { HowItWorks } from "@/components/HowItWorks";
 
 export default function Landing() {
   return (
@@ -18,9 +19,12 @@ export default function Landing() {
       {/* ---- Featured raffles ---- */}
       <FeaturedRafflesCarousel />
 
+      {/* ---- How it works ---- */}
+      <HowItWorks />
+
       {/* ---- CTA ---- */}
-      <section id="pricing" className="mx-auto max-w-5xl px-5 py-16">
-        <div className="glass-strong relative overflow-hidden rounded-3xl px-8 py-14 text-center">
+      <section id="pricing" className="mx-auto max-w-5xl px-5 py-8">
+        <div className="glass-strong relative overflow-hidden rounded-3xl px-8 py-10 text-center">
           <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-accent/30 blur-3xl" />
           <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
           <div className="relative">
@@ -32,7 +36,7 @@ export default function Landing() {
               Start free with commission as low as 8%. No setup fees, no
               monthly minimum.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link to="/en/become-a-host" className="inline-block">
                 <Button variant="primary" size="lg">
                   Start hosting free
@@ -51,9 +55,9 @@ export default function Landing() {
       </section>
 
       {/* ---- Footer ---- */}
-      <footer className="mx-auto max-w-5xl px-5 py-10">
+      <footer className="mx-auto max-w-5xl px-5 py-5">
         <div className="h-px divider-faded" />
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 text-sm text-ink-subtle sm:flex-row">
+        <div className="mt-4 flex flex-col items-center justify-between gap-4 text-sm text-ink-subtle sm:flex-row">
           <div className="flex items-center gap-2">
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient">
               <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />

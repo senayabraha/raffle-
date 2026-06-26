@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUp, ArrowDown, Pencil, Trash2, X, Upload } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { SlidePreview } from "@/components/admin/SlidePreview";
 import { useHeroAdmin } from "@/hooks/useHeroAdmin";
 import type { HeroSlide } from "@/lib/hero";
 import type { TablesInsert, TablesUpdate } from "@/lib/database.types";
 
 const MAX_SLIDES = 5;
+
+/** Formats a rotation interval in milliseconds as a short, human-readable seconds label. */
+function formatSeconds(ms: number): string {
+  const seconds = ms / 1000;
+  return Number.isInteger(seconds) ? `${seconds}s` : `${seconds.toFixed(1)}s`;
+}
 
 export default function HeroCarouselAdmin() {
   const {
@@ -27,6 +34,11 @@ export default function HeroCarouselAdmin() {
   const [editing, setEditing] = useState<HeroSlide | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HeroSlide | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [rotationMs, setRotationMs] = useState(1500);
+
+  useEffect(() => {
+    if (settings) setRotationMs(settings.rotation_interval_ms);
+  }, [settings]);
 
   async function handleReorder(id: string, direction: "up" | "down") {
     const index = slides.findIndex((s) => s.id === id);
@@ -88,6 +100,30 @@ export default function HeroCarouselAdmin() {
             ))}
           </div>
         )}
+
+        <div className="mt-5 border-t border-line pt-5">
+          <div className="flex items-baseline justify-between">
+            <label htmlFor="rotation-speed" className="text-sm font-medium text-ink">
+              Slide duration
+            </label>
+            <span className="text-sm text-ink-subtle">{formatSeconds(rotationMs)}</span>
+          </div>
+          <input
+            id="rotation-speed"
+            type="range"
+            min={1000}
+            max={8000}
+            step={500}
+            value={rotationMs}
+            disabled={loading || !settings}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setRotationMs(value);
+              void updateSettings({ rotation_interval_ms: value });
+            }}
+            className="mt-2 w-full accent-accent"
+          />
+        </div>
       </SpotlightCard>
 
       <SpotlightCard lift={false} className="mt-6 p-5">
@@ -121,12 +157,12 @@ export default function HeroCarouselAdmin() {
                   {slide.media_url && slide.media_type === "video" ? (
                     <video src={slide.media_url} autoPlay muted loop playsInline className="h-full w-full object-cover" />
                   ) : slide.media_url ? (
-                    <img src={slide.media_url} alt={slide.headline} className="h-full w-full object-cover" />
+                    <img src={slide.media_url} alt={slide.headline ?? ""} className="h-full w-full object-cover" />
                   ) : null}
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">{slide.headline}</p>
+                  <p className="truncate text-sm font-medium text-ink">{slide.headline || "Untitled slide"}</p>
                   <Badge tone={slide.is_active ? "live" : "neutral"} className="mt-1">
                     {slide.is_active ? "Active" : "Inactive"}
                   </Badge>
@@ -194,7 +230,7 @@ export default function HeroCarouselAdmin() {
           <div onClick={(e) => e.stopPropagation()} className="glass w-full max-w-sm p-6">
             <h2 className="text-lg font-semibold text-ink">Delete this slide?</h2>
             <p className="mt-2 text-sm text-ink-subtle">
-              "{deleteTarget.headline}" and its media will be permanently removed.
+              "{deleteTarget.headline || "Untitled slide"}" and its media will be permanently removed.
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
@@ -228,6 +264,7 @@ function SlideEditorModal({
     slide?.media_type === "video" ? "video" : "image",
   );
   const [mediaUrl, setMediaUrl] = useState(slide?.media_url ?? "");
+  const [imageZoom, setImageZoom] = useState(slide?.image_zoom ?? 1);
   const [isActive, setIsActive] = useState(slide?.is_active ?? true);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -249,15 +286,16 @@ function SlideEditorModal({
   }
 
   async function handleSave() {
-    if (!headline.trim()) return;
+    if (!mediaUrl) return;
     setSubmitting(true);
     setError(null);
     try {
       await onSave({
-        headline: headline.trim(),
+        headline: headline.trim() || null,
         sub_copy: subCopy.trim() || null,
         media_type: mediaUrl ? mediaType : null,
         media_url: mediaUrl || null,
+        image_zoom: mediaType === "image" ? imageZoom : 1,
         is_active: isActive,
       });
     } catch (err) {
@@ -282,7 +320,9 @@ function SlideEditorModal({
 
         <div className="mt-5 space-y-4">
           <div>
-            <label className="text-sm font-medium text-ink">Headline</label>
+            <label className="text-sm font-medium text-ink">
+              Headline <span className="text-ink-subtle">(optional)</span>
+            </label>
             <input
               value={headline}
               onChange={(e) => setHeadline(e.target.value)}
@@ -292,7 +332,9 @@ function SlideEditorModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink">Sub copy</label>
+            <label className="text-sm font-medium text-ink">
+              Sub copy <span className="text-ink-subtle">(optional)</span>
+            </label>
             <textarea
               value={subCopy}
               onChange={(e) => setSubCopy(e.target.value)}
@@ -329,7 +371,12 @@ function SlideEditorModal({
                 {mediaType === "video" ? (
                   <video src={mediaUrl} autoPlay muted loop playsInline className="h-full w-full object-cover" />
                 ) : (
-                  <img src={mediaUrl} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={mediaUrl}
+                    alt=""
+                    style={{ transform: `scale(${imageZoom})`, transformOrigin: "center" }}
+                    className="h-full w-full object-cover"
+                  />
                 )}
               </div>
             )}
@@ -344,6 +391,27 @@ function SlideEditorModal({
                 className="hidden"
               />
             </label>
+
+            {mediaUrl && mediaType === "image" && (
+              <div className="mt-3">
+                <div className="flex items-baseline justify-between">
+                  <label htmlFor="image-zoom" className="text-sm font-medium text-ink">
+                    Zoom
+                  </label>
+                  <span className="text-sm text-ink-subtle">{imageZoom.toFixed(2)}x</span>
+                </div>
+                <input
+                  id="image-zoom"
+                  type="range"
+                  min={1}
+                  max={2}
+                  step={0.05}
+                  value={imageZoom}
+                  onChange={(e) => setImageZoom(Number(e.target.value))}
+                  className="mt-1.5 w-full accent-accent"
+                />
+              </div>
+            )}
           </div>
 
           <label className="flex items-center gap-2 text-sm font-medium text-ink">
@@ -362,9 +430,19 @@ function SlideEditorModal({
             <Button variant="ghost" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button size="sm" disabled={!headline.trim() || submitting || uploading} onClick={handleSave}>
+            <Button size="sm" disabled={!mediaUrl || submitting || uploading} onClick={handleSave}>
               {submitting ? "Saving…" : "Save"}
             </Button>
+          </div>
+
+          <div className="border-t border-line pt-4">
+            <SlidePreview
+              headline={headline.trim()}
+              subCopy={subCopy.trim()}
+              mediaType={mediaType}
+              mediaUrl={mediaUrl}
+              imageZoom={imageZoom}
+            />
           </div>
         </div>
       </div>

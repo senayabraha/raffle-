@@ -134,9 +134,12 @@ export function HeroCarousel() {
   const offset = direction === "vertical" ? { y: 40 } : { x: 60 };
   const exitOffset = direction === "vertical" ? { y: -40 } : { x: -60 };
 
+  const goPrev = () => setActiveIndex((i) => (i - 1 + slides.length) % slides.length);
+  const goNext = () => setActiveIndex((i) => (i + 1) % slides.length);
+
   return (
-    <section className="relative isolate overflow-hidden">
-      <div className="relative h-[640px] w-full sm:h-[720px]">
+    <section className="relative mx-auto max-w-5xl pt-36 pb-20 sm:pt-44">
+      <div className="relative mx-4 aspect-video overflow-hidden shadow-lg sm:mx-auto sm:max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div
             key={slide.id}
@@ -158,44 +161,82 @@ export function HeroCarousel() {
             ) : slide.media_url ? (
               <img
                 src={slide.media_url}
-                alt={slide.headline}
+                alt={slide.headline ?? ""}
                 className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (
               <AuroraBackground />
             )}
-            <div className="absolute inset-0 bg-black/50" />
-
-            <div className="relative z-10 mx-auto flex h-full max-w-5xl flex-col items-center justify-center px-5 text-center">
-              <h1 className="max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-white sm:text-7xl sm:leading-[1.02]">
-                {slide.headline}
-              </h1>
-              {slide.sub_copy && (
-                <p className="mx-auto mt-6 max-w-xl text-lg text-white/80">{slide.sub_copy}</p>
-              )}
-              <div className="mt-9 flex flex-row items-center justify-center gap-3">
-                {ctaButtons}
-              </div>
-            </div>
           </motion.div>
         </AnimatePresence>
 
         {slides.length > 1 && (
-          <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center gap-2">
-            {slides.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                aria-label={`Go to slide ${i + 1}`}
-                onClick={() => setActiveIndex(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  i === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60",
-                )}
-              />
-            ))}
-          </div>
+          <>
+            <button
+              type="button"
+              aria-label="Previous slide"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-xl leading-none text-white"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Next slide"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-xl leading-none text-white"
+            >
+              ›
+            </button>
+
+            <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center gap-1.5 bg-black/30 px-2 py-1.5 backdrop-blur-sm">
+              {slides.map((s, i) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-label={`Go to slide ${i + 1}`}
+                  onClick={() => setActiveIndex(i)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    i === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60",
+                  )}
+                />
+              ))}
+            </div>
+          </>
         )}
+      </div>
+
+      <div className="mx-auto mt-6 max-w-xl px-5 text-center">
+        {slide.headline && (
+          <h1 className="text-balance text-3xl font-extrabold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
+            {slide.headline}
+          </h1>
+        )}
+        {slide.sub_copy && (
+          <p
+            className={cn(
+              "mx-auto max-w-xl text-base text-ink-muted sm:text-lg",
+              slide.headline ? "mt-4" : "mt-0",
+            )}
+          >
+            {slide.sub_copy}
+          </p>
+        )}
+        <div className="mt-6 flex flex-row gap-3">
+          <Link to="/en/become-a-host" className="w-1/2">
+            <Button variant="primary" size="lg" className="w-full">
+              <Sparkles strokeWidth={1.5} className="h-5 w-5" />
+              Start hosting
+            </Button>
+          </Link>
+          <Link to="/en/public-raffles/live" className="w-1/2">
+            <Button variant="secondary" size="lg" className="w-full">
+              Browse raffles
+              <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   );

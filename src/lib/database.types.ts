@@ -162,8 +162,9 @@ export type Database = {
       hero_slides: {
         Row: {
           created_at: string
-          headline: string
+          headline: string | null
           id: string
+          image_zoom: number | null
           is_active: boolean
           media_type: string | null
           media_url: string | null
@@ -172,8 +173,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          headline: string
+          headline?: string | null
           id?: string
+          image_zoom?: number | null
           is_active?: boolean
           media_type?: string | null
           media_url?: string | null
@@ -182,8 +184,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          headline?: string
+          headline?: string | null
           id?: string
+          image_zoom?: number | null
           is_active?: boolean
           media_type?: string | null
           media_url?: string | null

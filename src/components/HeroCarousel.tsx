@@ -138,7 +138,7 @@ export function HeroCarousel() {
   const goNext = () => setActiveIndex((i) => (i + 1) % slides.length);
 
   return (
-    <section className="relative mx-auto max-w-5xl pt-36 pb-20 sm:pt-44">
+    <section className="relative mx-auto min-h-[760px] max-w-5xl pt-36 pb-20 sm:min-h-[900px] sm:pt-44">
       <div className="relative mx-4 aspect-video overflow-hidden shadow-lg sm:mx-auto sm:max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div
@@ -207,23 +207,25 @@ export function HeroCarousel() {
         )}
       </div>
 
-      <div className="mx-auto mt-6 max-w-xl px-5 text-center">
-        {slide.headline && (
-          <h1 className="text-balance text-3xl font-extrabold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
-            {slide.headline}
-          </h1>
-        )}
-        {slide.sub_copy && (
-          <p
-            className={cn(
-              "mx-auto max-w-xl text-base text-ink-muted sm:text-lg",
-              slide.headline ? "mt-4" : "mt-0",
-            )}
-          >
-            {slide.sub_copy}
-          </p>
-        )}
-        <div className="mt-6 flex flex-row gap-3">
+      <div className="mx-auto mt-6 flex min-h-[160px] max-w-xl flex-col items-center px-5 text-center">
+        <div>
+          {slide.headline && (
+            <h1 className="text-balance text-3xl font-extrabold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
+              {slide.headline}
+            </h1>
+          )}
+          {slide.sub_copy && (
+            <p
+              className={cn(
+                "mx-auto max-w-xl text-base text-ink-muted sm:text-lg",
+                slide.headline ? "mt-4" : "mt-0",
+              )}
+            >
+              {slide.sub_copy}
+            </p>
+          )}
+        </div>
+        <div className="mt-auto flex w-full flex-row gap-3 pt-6">
           <Link to="/en/become-a-host" className="w-1/2">
             <Button variant="primary" size="lg" className="w-full">
               <Sparkles strokeWidth={1.5} className="h-5 w-5" />

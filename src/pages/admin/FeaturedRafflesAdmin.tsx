@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Trash2, Star } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { FeaturedRafflesCarousel } from "@/components/FeaturedRafflesCarousel";
 import { cn } from "@/lib/utils";
 import {
   getAdminFeaturedRaffles,
+  getAdminFeaturedFeed,
   searchRaffles,
   addFeaturedRaffle,
   removeFeaturedRaffle,
@@ -14,6 +16,7 @@ import {
   getFeaturedSettings,
   updateFeaturedSettings,
   type AdminFeaturedRaffle,
+  type FeaturedFeedCard,
   type RaffleSearchResult,
   type FeaturedSettings,
 } from "@/lib/featured";
@@ -22,7 +25,7 @@ const MAX_FEATURED = 12;
 const MOBILE_OPTIONS = [1, 1.5, 2, 2.5, 3];
 const DESKTOP_OPTIONS = [1, 1.5, 2, 2.5, 3, 4, 5];
 
-function DisplaySettings() {
+function DisplaySettings({ onSaved }: { onSaved: () => void }) {
   const [settings, setSettings] = useState<FeaturedSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedField, setSavedField] = useState<"mobile" | "desktop" | null>(null);
@@ -49,6 +52,7 @@ function DisplaySettings() {
     try {
       await updateFeaturedSettings({ [field]: value });
       flashSaved(field === "cards_per_screen_mobile" ? "mobile" : "desktop");
+      onSaved();
     } catch (err) {
       setSettings(previous);
       setError(err instanceof Error ? err.message : "Failed to update display settings.");
@@ -124,47 +128,49 @@ function DisplaySettings() {
 
 export default function FeaturedRafflesAdmin() {
   const [featured, setFeatured] = useState<AdminFeaturedRaffle[]>([]);
+  const [feed, setFeed] = useState<FeaturedFeedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminFeaturedRaffle | null>(null);
+  const [previewKey, setPreviewKey] = useState(0);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RaffleSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [browsing, setBrowsing] = useState(false);
+  const [searching, setSearching] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function load() {
     setLoading(true);
-    getAdminFeaturedRaffles()
-      .then((rows) => {
+    Promise.all([getAdminFeaturedRaffles(), getAdminFeaturedFeed()])
+      .then(([rows, feedRows]) => {
         setFeatured(rows);
+        setFeed(feedRows);
         setError(null);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Failed to load featured raffles.");
       })
       .finally(() => setLoading(false));
+    setPreviewKey((k) => k + 1);
   }
 
   useEffect(load, []);
 
   useEffect(() => {
-    if (!browsing) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearching(true);
     debounceRef.current = setTimeout(() => {
       searchRaffles(query.trim())
         .then(setResults)
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Failed to search raffles.");
+          setError(err instanceof Error ? err.message : "Failed to load live raffles.");
         })
         .finally(() => setSearching(false));
     }, 300);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, browsing]);
+  }, [query]);
 
   async function handleReorder(id: string, direction: "up" | "down") {
     const index = featured.findIndex((f) => f.id === id);
@@ -176,6 +182,7 @@ export default function FeaturedRafflesAdmin() {
     setFeatured(next);
     try {
       await reorderFeaturedRaffles(next.map((f) => f.id));
+      load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reorder featured raffles.");
       load();
@@ -196,15 +203,13 @@ export default function FeaturedRafflesAdmin() {
   async function handleAdd(raffleId: string) {
     try {
       await addFeaturedRaffle(raffleId, featured.length + 1);
-      setQuery("");
-      setResults([]);
-      setBrowsing(false);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add featured raffle.");
     }
   }
 
+  const autoFilled = feed.filter((card) => card.source === "auto");
   const autoFilledCount = Math.max(0, MAX_FEATURED - featured.length);
 
   return (
@@ -216,7 +221,7 @@ export default function FeaturedRafflesAdmin() {
 
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
-      <DisplaySettings />
+      <DisplaySettings onSaved={() => setPreviewKey((k) => k + 1)} />
 
       <SpotlightCard lift={false} className="mt-6 p-5">
         <CardHeader
@@ -232,7 +237,8 @@ export default function FeaturedRafflesAdmin() {
           </div>
         ) : featured.length === 0 ? (
           <p className="text-sm text-ink-subtle">
-            No raffles featured yet. The homepage carousel will fill itself with the most popular live raffles.
+            No raffles featured yet. The homepage carousel will fill itself with the most popular live raffles
+            (shown below).
           </p>
         ) : (
           <div className="space-y-3">
@@ -282,48 +288,99 @@ export default function FeaturedRafflesAdmin() {
         )}
       </SpotlightCard>
 
-      {featured.length < MAX_FEATURED && (
-        <SpotlightCard lift={false} className="mt-6 overflow-visible p-5">
-          <CardHeader title="Add a raffle" subtitle="Browse or search currently live raffles" />
-          <div className="relative">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setBrowsing(true)}
-              onBlur={() => setTimeout(() => setBrowsing(false), 150)}
-              placeholder="Search raffle titles, or click to browse…"
-              className="h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
-            />
-            {browsing && (
-              <div className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-xl border border-line bg-surface shadow-glass">
-                {searching ? (
-                  <div className="p-3 text-sm text-ink-subtle">Loading…</div>
-                ) : results.length === 0 ? (
-                  <div className="p-3 text-sm text-ink-subtle">
-                    {query.trim() ? "No matching raffles." : "No currently live raffles."}
-                  </div>
-                ) : (
-                  results.map((result) => {
-                    const alreadyFeatured = featured.some((f) => f.raffle_id === result.id);
-                    return (
-                      <button
-                        key={result.id}
-                        type="button"
-                        disabled={alreadyFeatured}
-                        onClick={() => handleAdd(result.id)}
-                        className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-sm text-ink transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-                      >
-                        <span className="truncate">{result.title}</span>
-                        {alreadyFeatured && <Badge tone="neutral">Already featured</Badge>}
-                      </button>
-                    );
-                  })
-                )}
+      {!loading && autoFilled.length > 0 && (
+        <SpotlightCard lift={false} className="mt-6 p-5">
+          <CardHeader
+            title="Auto-filled slots"
+            subtitle="Currently showing on the homepage to fill the remaining slots, most popular first. Pin one to lock its position."
+          />
+          <div className="space-y-3">
+            {autoFilled.map((card) => (
+              <div key={card.id} className="flex items-center gap-4 rounded-xl border border-line bg-surface p-3">
+                <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-surface-2">
+                  {card.prize_image_url && (
+                    <img src={card.prize_image_url} alt={card.title} className="h-full w-full object-cover" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{card.title}</p>
+                  <Badge tone="neutral" className="mt-1">
+                    Auto-filled
+                  </Badge>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0"
+                  onClick={() => handleAdd(card.raffle_id)}
+                  disabled={featured.length >= MAX_FEATURED}
+                >
+                  <Star className="h-4 w-4" />
+                  Pin
+                </Button>
               </div>
-            )}
+            ))}
           </div>
         </SpotlightCard>
       )}
+
+      <SpotlightCard lift={false} className="mt-6 p-5">
+        <CardHeader title="Live raffles" subtitle="Every currently live raffle. Pin any of them to the featured carousel." />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter by title…"
+          className="h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
+        />
+        <div className="mt-3 max-h-80 space-y-1.5 overflow-y-auto pr-1">
+          {searching ? (
+            <div className="p-3 text-sm text-ink-subtle">Loading…</div>
+          ) : results.length === 0 ? (
+            <div className="p-3 text-sm text-ink-subtle">
+              {query.trim() ? "No matching live raffles." : "No currently live raffles."}
+            </div>
+          ) : (
+            results.map((result) => {
+              const alreadyFeatured = featured.some((f) => f.raffle_id === result.id);
+              return (
+                <div
+                  key={result.id}
+                  className="flex items-center justify-between gap-3 rounded-lg px-3.5 py-2.5 text-sm text-ink hover:bg-surface-2"
+                >
+                  <span className="truncate">{result.title}</span>
+                  {alreadyFeatured ? (
+                    <Badge tone="accent" className="shrink-0">
+                      Featured
+                    </Badge>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="shrink-0"
+                      disabled={featured.length >= MAX_FEATURED}
+                      onClick={() => handleAdd(result.id)}
+                    >
+                      Add
+                    </Button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </SpotlightCard>
+
+      <SpotlightCard lift={false} className="mt-6 overflow-hidden p-0">
+        <div className="p-5 pb-0">
+          <CardHeader
+            title="Live preview"
+            subtitle="Exactly what visitors see on the homepage right now — updates as you make changes above."
+          />
+        </div>
+        <div className="-mx-0 bg-app">
+          <FeaturedRafflesCarousel key={previewKey} />
+        </div>
+      </SpotlightCard>
 
       {deleteTarget && (
         <div

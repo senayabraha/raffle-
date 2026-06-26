@@ -22,6 +22,11 @@ export interface AdminFeaturedRaffle {
   prize_image_url: string | null;
 }
 
+/** A card in the effective homepage feed, tagged by where it came from. */
+export interface FeaturedFeedCard extends FeaturedRaffleCard {
+  source: "curated" | "auto";
+}
+
 export interface RaffleSearchResult {
   id: string;
   title: string;
@@ -66,10 +71,12 @@ function toCard(id: string, raffle: RaffleJoinRow): FeaturedRaffleCard {
 }
 
 /**
- * Public homepage carousel feed: admin-curated featured raffles in display
- * order, topped up with the most popular live raffles until there are 12.
+ * Builds the effective homepage carousel feed: admin-curated featured
+ * raffles in display order, topped up with the most popular live raffles
+ * until there are 12. Each card is tagged with where it came from so the
+ * admin panel can show curated vs. auto-filled entries separately.
  */
-export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
+async function buildFeaturedFeed(): Promise<FeaturedFeedCard[]> {
   const { data: featuredRows, error: featuredError } = await supabase
     .from("featured_raffles")
     .select(
@@ -81,7 +88,7 @@ export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
   if (featuredError) throw featuredError;
 
   const curated = (featuredRows ?? []) as unknown as FeaturedJoinRow[];
-  const cards = curated.map((row) => toCard(row.id, row.raffles));
+  const cards: FeaturedFeedCard[] = curated.map((row) => ({ ...toCard(row.id, row.raffles), source: "curated" }));
 
   const remaining = MAX_FEATURED - cards.length;
   if (remaining > 0) {
@@ -100,10 +107,20 @@ export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
     if (popularError) throw popularError;
 
     const popular = (popularRows ?? []) as unknown as RaffleJoinRow[];
-    cards.push(...popular.map((raffle) => toCard(raffle.id, raffle)));
+    cards.push(...popular.map((raffle) => ({ ...toCard(raffle.id, raffle), source: "auto" as const })));
   }
 
   return cards.slice(0, MAX_FEATURED);
+}
+
+/** Public homepage carousel feed. */
+export async function getFeaturedRaffles(): Promise<FeaturedRaffleCard[]> {
+  return buildFeaturedFeed();
+}
+
+/** Admin: the effective homepage feed, tagged curated vs. auto-filled, for the preview/list. */
+export async function getAdminFeaturedFeed(): Promise<FeaturedFeedCard[]> {
+  return buildFeaturedFeed();
 }
 
 /** Admin: every currently featured raffle, in display order. */
@@ -147,7 +164,7 @@ export async function searchRaffles(query: string): Promise<RaffleSearchResult[]
 
   const { data, error } = await request
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(50);
   if (error) throw error;
   return data ?? [];
 }

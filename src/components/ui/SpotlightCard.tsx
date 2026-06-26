@@ -6,6 +6,7 @@ interface SpotlightCardProps {
   className?: string;
   /** Tailwind size utilities still apply; this just toggles the lift effect. */
   lift?: boolean;
+  onClick?: () => void;
 }
 
 /**
@@ -16,6 +17,7 @@ export function SpotlightCard({
   children,
   className,
   lift = true,
+  onClick,
 }: SpotlightCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -34,6 +36,7 @@ export function SpotlightCard({
       onMouseMove={handleMove}
       onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
+      onClick={onClick}
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-line bg-surface/70 backdrop-blur-md shadow-glass transition-all duration-300 ease-premium",
         lift && "hover:-translate-y-1 hover:bg-surface",

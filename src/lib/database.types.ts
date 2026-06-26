@@ -344,6 +344,8 @@ export type Database = {
           status: string
           stripe_customer_id: string | null
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
+          suspension_ends_at: string | null
+          suspension_type: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -356,6 +358,8 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          suspension_ends_at?: string | null
+          suspension_type?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -368,6 +372,8 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+          suspension_ends_at?: string | null
+          suspension_type?: string | null
         }
         Relationships: []
       }
@@ -390,6 +396,10 @@ export type Database = {
           prize_value: number | null
           slug: string
           status: Database["public"]["Enums"]["raffle_status"]
+          draw_date_extended_at: string | null
+          suspended_at: string | null
+          suspended_until: string | null
+          suspension_status: string
           ticket_cap: number | null
           ticket_price: number
           tickets_sold_count: number
@@ -415,6 +425,10 @@ export type Database = {
           prize_value?: number | null
           slug: string
           status?: Database["public"]["Enums"]["raffle_status"]
+          draw_date_extended_at?: string | null
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_status?: string
           ticket_cap?: number | null
           ticket_price?: number
           tickets_sold_count?: number
@@ -440,6 +454,10 @@ export type Database = {
           prize_value?: number | null
           slug?: string
           status?: Database["public"]["Enums"]["raffle_status"]
+          draw_date_extended_at?: string | null
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_status?: string
           ticket_cap?: number | null
           ticket_price?: number
           tickets_sold_count?: number
@@ -600,6 +618,36 @@ export type Database = {
       }
       admin_set_user_status: {
         Args: { p_reason: string; p_status: string; p_user_id: string }
+        Returns: Json
+      }
+      admin_suspend_raffle: {
+        Args: {
+          p_raffle_id: string
+          p_reason: string
+          p_type: string
+          p_until?: string | null
+        }
+        Returns: Json
+      }
+      admin_unsuspend_raffle: {
+        Args: { p_raffle_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_extend_raffle_draw: {
+        Args: { p_new_draw_date: string; p_raffle_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_suspend_user: {
+        Args: {
+          p_ends_at?: string | null
+          p_reason: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      admin_unsuspend_user: {
+        Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
       cancel_raffle: {

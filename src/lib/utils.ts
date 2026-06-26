@@ -20,6 +20,27 @@ export function formatCompact(value: number) {
   }).format(value);
 }
 
+const RELATIVE_TIME_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 86_400_000],
+  ["month", 30 * 86_400_000],
+  ["week", 7 * 86_400_000],
+  ["day", 86_400_000],
+  ["hour", 3_600_000],
+  ["minute", 60_000],
+];
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en-GB", { numeric: "auto" });
+
+export function formatRelativeTime(iso: string) {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  for (const [unit, ms] of RELATIVE_TIME_UNITS) {
+    if (Math.abs(diffMs) >= ms) {
+      return relativeTimeFormatter.format(Math.round(diffMs / ms), unit);
+    }
+  }
+  return relativeTimeFormatter.format(Math.round(diffMs / 60_000), "minute");
+}
+
 /**
  * Only ever follow a `redirectTo` if it's a same-app relative path, never a
  * scheme-relative or absolute URL — otherwise a crafted login link could

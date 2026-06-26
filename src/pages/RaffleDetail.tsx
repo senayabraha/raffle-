@@ -262,7 +262,25 @@ export default function RaffleDetail() {
             </div>
 
             {/* Ticket selector */}
-            <TicketSelector raffle={raffle} />
+            {raffle.suspensionStatus === "active" ? (
+              <TicketSelector raffle={raffle} />
+            ) : (
+              <div className="glass-strong flex items-start gap-3 p-5">
+                <ShieldAlert strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+                <div>
+                  <p className="text-sm font-semibold text-ink">
+                    {raffle.suspensionStatus === "permanent"
+                      ? "This raffle has been closed."
+                      : "This raffle has been temporarily paused."}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-subtle">
+                    {raffle.suspensionStatus === "permanent"
+                      ? "Ticket sales are no longer available for this raffle."
+                      : "Check back later — ticket sales will resume once the pause is lifted."}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Share */}
             <div className="glass p-5">

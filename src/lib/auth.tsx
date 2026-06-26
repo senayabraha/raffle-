@@ -38,8 +38,16 @@ interface AuthState {
   clearAuthError: () => void;
 }
 
-const SUSPENDED_MESSAGE =
-  "This account has been suspended. Contact support if you believe this is a mistake.";
+function suspensionMessage(profile: Profile): string {
+  if (profile.suspension_type === "temporary" && profile.suspension_ends_at) {
+    const until = new Date(profile.suspension_ends_at).toLocaleDateString();
+    return `Your account has been temporarily suspended until ${until}. Please contact support.`;
+  }
+  if (profile.suspension_type === "permanent") {
+    return "Your account has been permanently suspended. Please contact support.";
+  }
+  return "This account has been suspended. Contact support if you believe this is a mistake.";
+}
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
@@ -96,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await client.auth.signOut();
         setSession(null);
         setProfile(null);
-        setAuthError(SUSPENDED_MESSAGE);
+        setAuthError(suspensionMessage(nextProfile));
         return true;
       }
       return false;

@@ -48,6 +48,8 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
   };
 }
 
+export type SuspensionStatus = "active" | "temporary" | "permanent";
+
 export interface AdminRaffleRow {
   id: string;
   slug: string;
@@ -56,10 +58,13 @@ export interface AdminRaffleRow {
   visibility: Tables<"raffles">["visibility"];
   ticketPrice: number;
   ticketsSold: number;
+  ticketCap: number | null;
   drawDate: string | null;
   hostName: string;
   hostEmail: string | null;
   hasFreeEntryRoute: boolean;
+  suspensionStatus: SuspensionStatus;
+  suspendedUntil: string | null;
 }
 
 /** All raffles platform-wide, regardless of host or visibility. */
@@ -67,7 +72,7 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, slug, title, status, visibility, ticket_price, tickets_sold_count, draw_date, bundle_rules, host:profiles!raffles_host_id_fkey(full_name, email)",
+      "id, slug, title, status, visibility, ticket_price, tickets_sold_count, ticket_cap, draw_date, bundle_rules, suspension_status, suspended_until, host:profiles!raffles_host_id_fkey(full_name, email)",
     )
     .order("created_at", { ascending: false });
   if (error || !data) return [];
@@ -81,8 +86,11 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
       visibility: Tables<"raffles">["visibility"];
       ticket_price: number;
       tickets_sold_count: number;
+      ticket_cap: number | null;
       draw_date: string | null;
       bundle_rules: unknown;
+      suspension_status: SuspensionStatus;
+      suspended_until: string | null;
       host: { full_name: string | null; email: string | null } | null;
     }>
   ).map((r) => ({
@@ -93,11 +101,52 @@ export async function fetchAdminRaffles(): Promise<AdminRaffleRow[]> {
     visibility: r.visibility,
     ticketPrice: Number(r.ticket_price),
     ticketsSold: r.tickets_sold_count,
+    ticketCap: r.ticket_cap,
     drawDate: r.draw_date,
     hostName: r.host?.full_name?.trim() || "Unknown host",
     hostEmail: r.host?.email ?? null,
     hasFreeEntryRoute: Array.isArray(r.bundle_rules) && r.bundle_rules.length > 0,
+    suspensionStatus: r.suspension_status,
+    suspendedUntil: r.suspended_until,
   }));
+}
+
+/** Temporarily or permanently suspends a raffle, hiding the ticket purchase
+ * flow without disturbing its underlying `status` lifecycle. */
+export async function suspendRaffle(
+  raffleId: string,
+  type: "temporary" | "permanent",
+  reason: string,
+  until?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_suspend_raffle", {
+    p_raffle_id: raffleId,
+    p_type: type,
+    p_reason: reason,
+    p_until: until ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function unsuspendRaffle(raffleId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_unsuspend_raffle", {
+    p_raffle_id: raffleId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+export async function extendRaffleDraw(
+  raffleId: string,
+  newDrawDate: string,
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_extend_raffle_draw", {
+    p_raffle_id: raffleId,
+    p_new_draw_date: newDrawDate,
+    p_reason: reason,
+  });
+  if (error) throw error;
 }
 
 export interface AdminDrawAuditRow {
@@ -184,16 +233,30 @@ export interface AdminUserRow {
   status: string;
   subscriptionTier: Tables<"profiles">["subscription_tier"];
   createdAt: string;
+  suspensionType: "temporary" | "permanent" | null;
+  suspensionEndsAt: string | null;
+  raffleCount: number;
 }
 
 /** All registered users, for support lookups and role auditing. */
 export async function fetchAdminUsers(): Promise<AdminUserRow[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, email, role, status, subscription_tier, created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [{ data, error }, raffleCounts] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "id, full_name, email, role, status, subscription_tier, created_at, suspension_type, suspension_ends_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(200),
+    supabase.from("raffles").select("host_id"),
+  ]);
   if (error || !data) return [];
+
+  const countByHost = new Map<string, number>();
+  for (const r of raffleCounts.data ?? []) {
+    countByHost.set(r.host_id, (countByHost.get(r.host_id) ?? 0) + 1);
+  }
+
   return data.map((p) => ({
     id: p.id,
     fullName: p.full_name,
@@ -202,7 +265,37 @@ export async function fetchAdminUsers(): Promise<AdminUserRow[]> {
     status: p.status,
     subscriptionTier: p.subscription_tier,
     createdAt: p.created_at,
+    suspensionType: (p.suspension_type as "temporary" | "permanent" | null) ?? null,
+    suspensionEndsAt: p.suspension_ends_at,
+    raffleCount: countByHost.get(p.id) ?? 0,
   }));
+}
+
+/** Suspends a user. If the account hosts active raffles, each is cascaded
+ * into a temporary suspension server-side (see admin_suspend_user). */
+export async function suspendUser(
+  userId: string,
+  type: "temporary" | "permanent",
+  reason: string,
+  endsAt?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_suspend_user", {
+    p_user_id: userId,
+    p_type: type,
+    p_reason: reason,
+    p_ends_at: endsAt ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Reinstates a suspended user. Does not touch their raffles — those must
+ * be unsuspended individually from the Raffles page. */
+export async function unsuspendUser(userId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_unsuspend_user", {
+    p_user_id: userId,
+    p_reason: reason,
+  });
+  if (error) throw error;
 }
 
 /** Unpublishes or force-cancels a live raffle. Rejected once it's been drawn. */
@@ -309,6 +402,48 @@ export async function fetchHostRiskLeaderboard(): Promise<HostRiskRow[]> {
   return Array.from(byHost.values()).sort(
     (a, b) => b.disputeCount + b.compensatedCount - (a.disputeCount + a.compensatedCount),
   );
+}
+
+export interface AdminActivityRow {
+  id: string;
+  action: string;
+  targetTable: string;
+  reason: string | null;
+  meta: Record<string, unknown>;
+  actorName: string;
+  createdAt: string;
+}
+
+/** Last 10 admin actions from the existing audit log, for the overview's
+ * recent activity feed. There is no separate activity_log table — every
+ * admin RPC already writes here via private.log_admin_action(). */
+export async function fetchRecentActivity(): Promise<AdminActivityRow[]> {
+  const { data, error } = await supabase
+    .from("admin_actions")
+    .select("id, action, target_table, reason, meta, created_at, actor:profiles!admin_actions_actor_id_fkey(full_name)")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error || !data) return [];
+
+  return (
+    data as unknown as Array<{
+      id: string;
+      action: string;
+      target_table: string;
+      reason: string | null;
+      meta: Record<string, unknown>;
+      created_at: string;
+      actor: { full_name: string | null } | null;
+    }>
+  ).map((row) => ({
+    id: row.id,
+    action: row.action,
+    targetTable: row.target_table,
+    reason: row.reason,
+    meta: row.meta ?? {},
+    actorName: row.actor?.full_name?.trim() || "Admin",
+    createdAt: row.created_at,
+  }));
 }
 
 export interface AdminDisputeRow {

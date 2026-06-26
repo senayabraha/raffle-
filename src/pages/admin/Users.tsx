@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { X, Download } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CardHeader } from "@/components/dashboard/CardHeader";
@@ -6,10 +7,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   fetchAdminUsers,
-  setUserStatus,
   setUserRole,
   setSubscriptionTier,
   exportUserData,
+  suspendUser,
+  unsuspendUser,
   type AdminUserRow,
 } from "@/lib/admin";
 import type { Tables } from "@/lib/database.types";
@@ -24,13 +26,19 @@ const ROLE_TONE: Record<string, "live" | "neutral" | "warning" | "info" | "accen
   both: "live",
 };
 
+const SUSPENSION_LABEL: Record<"temporary" | "permanent", string> = {
+  temporary: "Temporarily suspended",
+  permanent: "Permanently suspended",
+};
+
 const ROLES: UserRole[] = ["entrant", "host", "both", "admin"];
 const TIERS: SubscriptionTier[] = ["basic", "premium", "pro"];
 
 export default function Users() {
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState("all");
+  const [role, setRole] = useState(() => (searchParams.get("filter") === "hosts" ? "hosts" : "all"));
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<AdminUserRow | null>(null);
 
@@ -47,7 +55,8 @@ export default function Users() {
   const roles = useMemo(() => Array.from(new Set(users.map((u) => u.role))), [users]);
 
   const filtered = users.filter((u) => {
-    if (role !== "all" && u.role !== role) return false;
+    if (role === "hosts" && u.role !== "host" && u.role !== "both") return false;
+    if (role !== "all" && role !== "hosts" && u.role !== role) return false;
     if (!query.trim()) return true;
     const q = query.trim().toLowerCase();
     return u.fullName?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
@@ -73,6 +82,7 @@ export default function Users() {
           className="h-10 rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring"
         >
           <option value="all">All roles</option>
+          <option value="hosts">Hosts</option>
           {roles.map((r) => (
             <option key={r} value={r}>
               {r}
@@ -99,6 +109,7 @@ export default function Users() {
                   <th className="py-2 pr-4">Role</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Tier</th>
+                  <th className="py-2 pr-4">Hosted raffles</th>
                   <th className="py-2 pr-4">Joined</th>
                 </tr>
               </thead>
@@ -116,10 +127,13 @@ export default function Users() {
                     </td>
                     <td className="py-3 pr-4">
                       <Badge tone={u.status === "suspended" ? "warning" : "live"}>
-                        {u.status}
+                        {u.status === "suspended" && u.suspensionType
+                          ? SUSPENSION_LABEL[u.suspensionType]
+                          : u.status}
                       </Badge>
                     </td>
                     <td className="py-3 pr-4 capitalize">{u.subscriptionTier}</td>
+                    <td className="py-3 pr-4">{u.raffleCount}</td>
                     <td className="py-3 pr-4">{new Date(u.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
@@ -157,6 +171,9 @@ function UserDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState<Record<string, unknown> | null>(null);
+  const [suspendPanelOpen, setSuspendPanelOpen] = useState(false);
+  const [suspendType, setSuspendType] = useState<"temporary" | "permanent">("temporary");
+  const [suspendEndsAt, setSuspendEndsAt] = useState("");
 
   async function run(action: () => Promise<void>) {
     if (!reason.trim()) {
@@ -246,23 +263,93 @@ function UserDetailModal({
             </p>
             <div className="mt-2">
               {user.status === "suspended" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={submitting}
-                  onClick={() => run(() => setUserStatus(user.id, "active", reason))}
-                >
-                  Reinstate account
-                </Button>
+                <>
+                  <p className="text-xs text-ink-subtle">
+                    {user.suspensionType ? SUSPENSION_LABEL[user.suspensionType] : "Suspended"}
+                    {user.suspensionEndsAt
+                      ? ` until ${new Date(user.suspensionEndsAt).toLocaleString()}`
+                      : ""}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={submitting}
+                    className="mt-2"
+                    onClick={() => run(() => unsuspendUser(user.id, reason))}
+                  >
+                    Reinstate account
+                  </Button>
+                  <p className="mt-1 text-xs text-ink-subtle">
+                    Their raffles will remain suspended and must be manually unsuspended.
+                  </p>
+                </>
               ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={submitting}
-                  onClick={() => run(() => setUserStatus(user.id, "suspended", reason))}
-                >
-                  Suspend account
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant={suspendPanelOpen ? "primary" : "outline"}
+                    disabled={submitting}
+                    onClick={() => setSuspendPanelOpen((v) => !v)}
+                  >
+                    Suspend account
+                  </Button>
+                  {suspendPanelOpen && (
+                    <div className="mt-3 space-y-3">
+                      {user.raffleCount > 0 && (
+                        <p className="text-xs text-amber-400">
+                          Suspending this host will also temporarily suspend all their active
+                          raffles.
+                        </p>
+                      )}
+                      <div className="flex gap-3">
+                        <Button
+                          size="sm"
+                          variant={suspendType === "temporary" ? "primary" : "outline"}
+                          onClick={() => setSuspendType("temporary")}
+                        >
+                          Temporary
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={suspendType === "permanent" ? "primary" : "outline"}
+                          onClick={() => setSuspendType("permanent")}
+                        >
+                          Permanent
+                        </Button>
+                      </div>
+                      {suspendType === "temporary" && (
+                        <input
+                          type="datetime-local"
+                          value={suspendEndsAt}
+                          onChange={(e) => setSuspendEndsAt(e.target.value)}
+                          className="h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink focus-ring"
+                        />
+                      )}
+                      <Button
+                        size="sm"
+                        disabled={
+                          submitting ||
+                          !reason.trim() ||
+                          (suspendType === "temporary" && !suspendEndsAt)
+                        }
+                        onClick={() =>
+                          run(() =>
+                            suspendUser(
+                              user.id,
+                              suspendType,
+                              reason,
+                              suspendType === "temporary"
+                                ? new Date(suspendEndsAt).toISOString()
+                                : undefined,
+                            ),
+                          )
+                        }
+                      >
+                        Confirm suspension
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

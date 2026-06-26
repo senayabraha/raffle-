@@ -1,19 +1,11 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-  PencilRuler,
-  Share2,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, Sparkles, PencilRuler, Share2, Trophy } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { MarketingNav } from "@/components/layout/MarketingNav";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
+import { HeroCarousel } from "@/components/HeroCarousel";
 
 const steps = [
   {
@@ -49,76 +41,7 @@ export default function Landing() {
       <MarketingNav />
 
       {/* ---- Hero ---- */}
-      <section className="relative mx-auto max-w-5xl px-5 pt-36 pb-20 text-center sm:pt-44">
-        <motion.div custom={0} variants={fade} initial="hidden" animate="show">
-          <Badge tone="accent" dot className="mx-auto">
-            Escrow-protected · Fully automated draws
-          </Badge>
-        </motion.div>
-
-        <motion.h1
-          custom={1}
-          variants={fade}
-          initial="hidden"
-          animate="show"
-          className="mx-auto mt-6 max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-ink sm:text-7xl sm:leading-[1.02]"
-        >
-          Host raffles that{" "}
-          <span className="text-gradient">give back</span> and earn from your
-          audience
-        </motion.h1>
-
-        <motion.p
-          custom={2}
-          variants={fade}
-          initial="hidden"
-          animate="show"
-          className="mx-auto mt-6 max-w-xl text-lg text-ink-muted"
-        >
-          The premium marketplace for prize competitions. List a prize, sell
-          tickets, and run a transparent draw — with funds held safely in escrow
-          until your winner confirms.
-        </motion.p>
-
-        <motion.div
-          custom={3}
-          variants={fade}
-          initial="hidden"
-          animate="show"
-          className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
-        >
-          <Link to="/en/become-a-host">
-            <Button variant="primary" size="lg" className="w-full sm:w-auto">
-              <Sparkles strokeWidth={1.5} className="h-5 w-5" />
-              Start hosting free
-            </Button>
-          </Link>
-          <Link to="/en/public-raffles/live">
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-              Browse raffles
-              <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            </Button>
-          </Link>
-        </motion.div>
-
-        {/* Trust row */}
-        <motion.div
-          custom={4}
-          variants={fade}
-          initial="hidden"
-          animate="show"
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-subtle"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck strokeWidth={1.5} className="h-4 w-4 text-emerald-400" />
-            Funds held in escrow until your winner confirms
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Zap strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
-            Automated, auditable draws
-          </span>
-        </motion.div>
-      </section>
+      <HeroCarousel />
 
       {/* ---- How it works ---- */}
       <section id="how" className="mx-auto max-w-5xl px-5 py-16">

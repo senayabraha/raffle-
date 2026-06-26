@@ -141,6 +141,57 @@ export type Database = {
           },
         ]
       }
+      hero_settings: {
+        Row: {
+          id: number
+          rotation_interval_ms: number
+          transition_direction: string
+        }
+        Insert: {
+          id?: number
+          rotation_interval_ms?: number
+          transition_direction?: string
+        }
+        Update: {
+          id?: number
+          rotation_interval_ms?: number
+          transition_direction?: string
+        }
+        Relationships: []
+      }
+      hero_slides: {
+        Row: {
+          created_at: string
+          headline: string
+          id: string
+          is_active: boolean
+          media_type: string | null
+          media_url: string | null
+          order: number
+          sub_copy: string | null
+        }
+        Insert: {
+          created_at?: string
+          headline: string
+          id?: string
+          is_active?: boolean
+          media_type?: string | null
+          media_url?: string | null
+          order: number
+          sub_copy?: string | null
+        }
+        Update: {
+          created_at?: string
+          headline?: string
+          id?: string
+          is_active?: boolean
+          media_type?: string | null
+          media_url?: string | null
+          order?: number
+          sub_copy?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null

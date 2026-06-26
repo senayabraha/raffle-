@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -23,8 +25,11 @@ const HOME: Record<AppMode, string> = {
   entrant: "/en/public-raffles/live",
 };
 
+/** Entrant-only accounts who tap a host CTA land here to upgrade. */
+const HOST_UPSELL = "/en/become-a-host";
+
 interface ModeState {
-  /** The active app mode. Durable: backed by profiles.last_active_mode. */
+  /** The active app mode. */
   mode: AppMode;
   /** Account can act as a host (role host | both | admin). */
   canHost: boolean;
@@ -33,8 +38,8 @@ interface ModeState {
   /**
    * Switch mode: persists to the DB, mirrors to the session login-context so
    * the existing route guards stay consistent, then routes to that mode's
-   * home. Switching to host requires `canHost`; otherwise it routes to the
-   * hosting upsell instead of flipping.
+   * home. Switching to host without host capability routes to the hosting
+   * upsell instead of flipping.
    */
   setMode: (next: AppMode) => Promise<void>;
   /** True while a switch is writing to the DB. */
@@ -47,12 +52,22 @@ function normalize(value: string | null | undefined): AppMode | null {
   return value === "host" || value === "entrant" ? value : null;
 }
 
+async function persistMode(userId: string, mode: AppMode) {
+  const { supabase } = await import("./supabase");
+  await supabase.from("profiles").update({ last_active_mode: mode }).eq("id", userId);
+}
+
 /**
  * Mode is deliberately separate from `profile.role` (the account's permanent
  * capability). A `both` account can be *in* entrant mode while still being
- * able to host. The durable source of truth is `profiles.last_active_mode`;
- * before the profile resolves we fall back to the localStorage login hint,
- * then default to entrant.
+ * able to host.
+ *
+ * For the *current* session the login-context (the portal/switch the user
+ * last used, persisted in localStorage) is authoritative, so what's on screen
+ * always agrees with the route guards, which also key off login-context.
+ * `profiles.last_active_mode` is the *durable* memory: it seeds the mode on a
+ * fresh device where there's no local context yet, and we write the active
+ * mode back to it so that memory stays current.
  */
 export function ModeProvider({ children }: { children: ReactNode }) {
   const { profile, user, loginContext, setLoginContext, refreshProfile } = useAuth();
@@ -64,16 +79,35 @@ export function ModeProvider({ children }: { children: ReactNode }) {
   // browsing experience renders without a flash of "blocked".
   const canEnter = profile ? ENTRANT_ROLES.includes(profile.role) : true;
 
-  const mode: AppMode =
-    normalize(profile?.last_active_mode) ?? normalize(loginContext) ?? "entrant";
+  let mode: AppMode =
+    normalize(loginContext) ?? normalize(profile?.last_active_mode) ?? "entrant";
+  // An account that can't host can never be *in* host mode, however stale the
+  // stored value is.
+  if (mode === "host" && profile && !canHost) mode = "entrant";
+
+  // Keep the durable record in step with the active session mode (covers both
+  // password and OAuth logins, where the context is chosen before the profile
+  // is in hand). The in-flight guard stops the async write from re-firing
+  // before refreshProfile lands.
+  const reconciling = useRef(false);
+  useEffect(() => {
+    if (!user || !profile) return;
+    if (mode === profile.last_active_mode) return;
+    if (reconciling.current) return;
+    reconciling.current = true;
+    persistMode(user.id, mode)
+      .then(() => refreshProfile())
+      .finally(() => {
+        reconciling.current = false;
+      });
+  }, [user, profile, mode, refreshProfile]);
 
   const setMode = useCallback(
     async (next: AppMode) => {
       // Entrant-only accounts can't enter host mode — send them to the
-      // hosting upsell. (Phase 4 replaces this with the dedicated
-      // "become a host" flow; pricing explains hosting in the meantime.)
+      // hosting upsell, which can promote them and then switch.
       if (next === "host" && !canHost) {
-        navigate("/en/pricing");
+        navigate(HOST_UPSELL);
         return;
       }
       if (next === mode) {
@@ -84,11 +118,7 @@ export function ModeProvider({ children }: { children: ReactNode }) {
       setSwitching(true);
       try {
         if (user) {
-          const { supabase } = await import("./supabase");
-          await supabase
-            .from("profiles")
-            .update({ last_active_mode: next })
-            .eq("id", user.id);
+          await persistMode(user.id, next);
           await refreshProfile();
         }
         // Keep the session login-context in lockstep so RequireHostContext /

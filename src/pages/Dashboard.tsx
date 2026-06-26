@@ -63,6 +63,9 @@ export default function Dashboard() {
   const totals = data?.totals;
   const salesSeries = data?.salesSeries ?? new Array(14).fill(0);
   const hasSales = salesSeries.some((v) => v > 0);
+  // Brand-new host: loaded, but no raffles yet. Show a focused first-run
+  // panel instead of a grid of empty stat cards.
+  const isFirstRun = !loading && (data?.raffles.length ?? 0) === 0;
 
   const stats = [
     {
@@ -140,7 +143,38 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
+      {/* ---- First-run onboarding ---- */}
+      {isFirstRun && (
+        <motion.div custom={1} variants={fadeUp} initial="hidden" animate="show">
+          <div className="glass-strong relative overflow-hidden rounded-2xl p-8 sm:p-10">
+            <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/25 blur-3xl" />
+            <div className="relative max-w-lg">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
+                <Sparkles strokeWidth={1.75} className="h-6 w-6 text-white" />
+              </span>
+              <h2 className="mt-5 text-2xl font-bold tracking-tight text-white">
+                Create your first raffle
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                You don't have any raffles yet. Set a prize, choose how the draw
+                ends, and publish — your sales, entrants and escrow will all show
+                up here once tickets start moving.
+              </p>
+              <div className="mt-6">
+                <Link to="/en/dashboard/create">
+                  <Button variant="primary" size="lg">
+                    <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                    Create your first raffle
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* ---- Bento grid ---- */}
+      {!isFirstRun && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Row 1 — stat cards */}
         {stats.map((s, i) => (
@@ -269,6 +303,7 @@ export default function Dashboard() {
           </SpotlightCard>
         </motion.div>
       </div>
+      )}
     </AppShell>
   );
 }

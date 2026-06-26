@@ -30,6 +30,7 @@ const RaffleDetail = lazy(() => import("@/pages/RaffleDetail"));
 const Login = lazy(() => import("@/pages/Login"));
 const HostLogin = lazy(() => import("@/pages/HostLogin"));
 const Register = lazy(() => import("@/pages/Register"));
+const BecomeHost = lazy(() => import("@/pages/BecomeHost"));
 const MyTickets = lazy(() => import("@/pages/MyTickets"));
 const MyWinnings = lazy(() => import("@/pages/MyWinnings"));
 const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
@@ -153,6 +154,7 @@ export default function App() {
             <Route path="/en/login" element={<Login />} />
             <Route path="/en/host/login" element={<HostLogin />} />
             <Route path="/en/register" element={<Register />} />
+            <Route path="/en/become-a-host" element={<BecomeHost />} />
             {/* Host dashboard (authenticated, Host-portal context only) */}
             <Route
               path="/en/dashboard/create"

@@ -83,7 +83,7 @@ export function MarketingNav() {
                   Switch to hosting
                 </Button>
               ) : (
-                <Link to="/en/pricing">
+                <Link to="/en/become-a-host">
                   <Button variant="primary" size="sm">
                     Host a raffle
                   </Button>

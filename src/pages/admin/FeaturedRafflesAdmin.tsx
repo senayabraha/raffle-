@@ -175,7 +175,7 @@ export default function FeaturedRafflesAdmin() {
       </SpotlightCard>
 
       {featured.length < MAX_FEATURED && (
-        <SpotlightCard lift={false} className="mt-6 p-5">
+        <SpotlightCard lift={false} className="mt-6 overflow-visible p-5">
           <CardHeader title="Add a raffle" subtitle="Browse or search currently live raffles" />
           <div className="relative">
             <input

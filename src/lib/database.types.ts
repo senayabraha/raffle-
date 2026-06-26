@@ -559,6 +559,10 @@ export type Database = {
         Args: { p_qty: number; p_raffle_id: string }
         Returns: Json
       }
+      request_host_access: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       respond_to_win: {
         Args: { p_decision: string; p_winner_id: string }
         Returns: Json

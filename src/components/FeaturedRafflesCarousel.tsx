@@ -9,6 +9,11 @@ import { formatCurrency, cn } from "@/lib/utils";
 // cards-per-screen setting (mobile vs desktop) is currently active.
 const MD_BREAKPOINT_PX = 768;
 
+// Gap between cards. Applied as a trailing margin on every card (rather than
+// flex `gap`) so the two duplicated copies are exactly symmetric — required
+// for the `translateX(-50%)` loop animation to land precisely on the seam.
+const CARD_GAP_PX = 12;
+
 const CARD_BASE_CLASS = "shrink-0";
 
 function formatDrawDate(iso: string | null): string {
@@ -23,11 +28,11 @@ function formatDrawDate(iso: string | null): string {
 function RaffleCard({
   raffle,
   snap,
-  widthPct,
+  cardWidth,
 }: {
   raffle: FeaturedRaffleCard;
   snap: boolean;
-  widthPct: number;
+  cardWidth: number;
 }) {
   const pct =
     raffle.total_tickets && raffle.total_tickets > 0
@@ -38,7 +43,7 @@ function RaffleCard({
     <Link
       to={`/en/raffle/${raffle.slug}`}
       draggable={false}
-      style={{ flex: `0 0 ${widthPct}%` }}
+      style={{ flex: `0 0 ${cardWidth}px`, width: cardWidth, marginRight: CARD_GAP_PX }}
       className={cn(
         CARD_BASE_CLASS,
         "flex flex-col bg-surface shadow-glass transition-transform duration-300 ease-premium hover:scale-[1.02]",
@@ -118,6 +123,7 @@ export function FeaturedRafflesCarousel() {
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= MD_BREAKPOINT_PX,
   );
+  const [containerWidth, setContainerWidth] = useState(0);
   const manualRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -129,6 +135,22 @@ export function FeaturedRafflesCarousel() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Card width is derived from the visible container's pixel width rather
+  // than a CSS percentage: the track's box is sized to its content (two
+  // copies back to back) so `translateX(-50%)` lands exactly on the seam,
+  // which means percentage-based card widths can no longer resolve against
+  // the visible viewport. Re-runs once `loading` flips to false, since the
+  // container only mounts once the skeleton is replaced by the real markup.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const updateWidth = () => setContainerWidth(container.clientWidth);
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [loading]);
 
   const switchToManual = useCallback(() => {
     if (manualRef.current) return;
@@ -190,7 +212,7 @@ export function FeaturedRafflesCarousel() {
   const cardsPerScreen = isDesktop
     ? settings?.cards_per_screen_desktop ?? 4
     : settings?.cards_per_screen_mobile ?? 2.5;
-  const widthPct = 100 / cardsPerScreen;
+  const cardWidth = containerWidth > 0 ? containerWidth / cardsPerScreen - CARD_GAP_PX : 0;
   const cards = [...raffles, ...raffles];
 
   return (
@@ -204,9 +226,9 @@ export function FeaturedRafflesCarousel() {
         onClickCapture={handleClickCapture}
         className={cn("mt-5", manual ? "snap-x snap-mandatory overflow-x-scroll" : "overflow-x-hidden")}
       >
-        <div ref={trackRef} className={cn("flex gap-3", !manual && "animate-featured-slide")}>
+        <div ref={trackRef} className={cn("flex w-max", !manual && "animate-featured-slide")}>
           {cards.map((raffle, i) => (
-            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={manual} widthPct={widthPct} />
+            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={manual} cardWidth={cardWidth} />
           ))}
         </div>
       </div>

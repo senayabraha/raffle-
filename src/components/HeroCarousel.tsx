@@ -139,7 +139,7 @@ export function HeroCarousel() {
 
   return (
     <section className="relative mx-auto max-w-5xl pt-36 pb-20 sm:pt-44">
-      <div className="relative mx-4 aspect-video overflow-hidden rounded-2xl shadow-lg sm:mx-auto sm:max-w-4xl">
+      <div className="relative mx-4 aspect-video overflow-hidden shadow-lg sm:mx-auto sm:max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div
             key={slide.id}

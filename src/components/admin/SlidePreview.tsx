@@ -18,7 +18,7 @@ export function SlidePreview({ headline, subCopy, mediaType, mediaUrl, imageZoom
       <p className="mt-0.5 text-xs text-ink-subtle">This is how your slide will appear on the homepage</p>
 
       <div className="mt-4 rounded-2xl border border-line bg-surface-2/40 p-4">
-        <div className="relative mx-auto aspect-video w-full max-w-sm overflow-hidden rounded-2xl shadow-lg">
+        <div className="relative mx-auto aspect-video w-full max-w-sm overflow-hidden shadow-lg">
           {mediaUrl ? (
             mediaType === "video" ? (
               <video

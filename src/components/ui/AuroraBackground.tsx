@@ -11,12 +11,15 @@
  *
  * The blobs are static by default: the drift only runs when the user hasn't
  * asked for reduced motion, via the `motion-safe:` variant.
+ *
+ * Light mode stays pure white (no blobs/grid) — the glow is a dark-mode-only
+ * effect, hidden via `dark:block`.
  */
 export function AuroraBackground() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden dark:block"
     >
       {/* Violet bloom — top left */}
       <div

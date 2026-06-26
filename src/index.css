@@ -9,10 +9,10 @@
    * opacity modifiers keep working (e.g. border-line/60). */
   :root {
     color-scheme: light;
-    /* Warm, soft "paper" light theme — off-white grounds, gentle warm-gray
-       borders, and a warm near-black ink instead of cool slate. */
-    --bg: 250 248 244; /* warm paper */
-    --surface: 255 254 251; /* warm white cards */
+    /* Pure white grounds, gentle warm-gray borders, and a warm near-black
+       ink instead of cool slate. */
+    --bg: 255 255 255; /* pure white */
+    --surface: 255 255 255; /* pure white cards */
     --surface-2: 244 241 235; /* warm hover/raised */
     --line: 233 228 220; /* soft warm hairline */
     --ink: 41 37 33; /* warm near-black — primary text */
@@ -47,15 +47,12 @@
     /* Scroll anchoring fights the drawer's scroll-lock restore: as the drawer
        unmounts and layout shifts, Chrome "helpfully" re-adjusts scrollY. */
     overflow-anchor: none;
-    /* faint top-down accent vignette for depth (subtle in light, richer in dark) */
-    background-image:
-      radial-gradient(120% 80% at 50% -10%, rgba(139, 92, 246, 0.06), transparent 60%),
-      radial-gradient(80% 60% at 100% 0%, rgba(56, 189, 248, 0.04), transparent 55%);
     background-attachment: fixed;
     min-height: 100vh;
   }
 
   .dark body {
+    /* faint top-down accent vignette for depth */
     background-image:
       radial-gradient(120% 80% at 50% -10%, rgba(139, 92, 246, 0.10), transparent 60%),
       radial-gradient(80% 60% at 100% 0%, rgba(56, 189, 248, 0.06), transparent 55%);

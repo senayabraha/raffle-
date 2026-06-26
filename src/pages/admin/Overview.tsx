@@ -37,17 +37,17 @@ export default function Overview() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white">Overview</h1>
-      <p className="mt-1 text-sm text-zinc-500">Platform-wide totals across all hosts and raffles.</p>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">Overview</h1>
+      <p className="mt-1 text-sm text-ink-subtle">Platform-wide totals across all hosts and raffles.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map(({ key, label, icon: Icon, format }) => (
           <SpotlightCard key={key} className="p-5">
-            <div className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
               <Icon strokeWidth={1.5} className="h-[18px] w-[18px]" />
             </div>
-            <p className="mt-4 text-sm text-zinc-400">{label}</p>
-            <p className="mt-1 text-2xl font-bold tracking-tight text-white">
+            <p className="mt-4 text-sm text-ink-muted">{label}</p>
+            <p className="mt-1 text-2xl font-bold tracking-tight text-ink">
               {loading
                 ? "—"
                 : format === "currency"

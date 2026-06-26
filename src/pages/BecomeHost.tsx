@@ -76,10 +76,10 @@ export default function BecomeHost() {
           <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
             <Sparkles strokeWidth={1.75} className="h-6 w-6 text-white" />
           </span>
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-ink">
             Host a raffle
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
             Create an account to start hosting — it takes a minute and there are
             no setup fees.
           </p>
@@ -109,10 +109,10 @@ export default function BecomeHost() {
           <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
             <Sparkles strokeWidth={1.75} className="h-6 w-6 text-white" />
           </span>
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-ink">
             You're set up to host
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
             Your account already has hosting enabled. Head to your dashboard to
             create or manage a raffle.
           </p>
@@ -137,10 +137,10 @@ export default function BecomeHost() {
         <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
           <Sparkles strokeWidth={1.75} className="h-6 w-6 text-white" />
         </span>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight text-white">
+        <h1 className="mt-5 text-2xl font-bold tracking-tight text-ink">
           Start hosting{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
           Hosting is added to your existing account — you keep entering raffles,
           and gain a dashboard to run your own.
         </p>
@@ -148,12 +148,12 @@ export default function BecomeHost() {
         <ul className="mt-6 space-y-4">
           {PERKS.map((perk) => (
             <li key={perk.title} className="flex gap-3">
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03]">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line bg-surface">
                 <perk.icon strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">{perk.title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
+                <p className="text-sm font-semibold text-ink">{perk.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
                   {perk.body}
                 </p>
               </div>
@@ -188,9 +188,9 @@ export default function BecomeHost() {
               </>
             )}
           </Button>
-          <p className="mt-3 text-center text-xs text-zinc-500">
+          <p className="mt-3 text-center text-xs text-ink-subtle">
             See our{" "}
-            <Link to="/en/pricing" className="text-accent-soft hover:text-white">
+            <Link to="/en/pricing" className="text-accent-soft hover:text-ink">
               commission &amp; fees
             </Link>{" "}
             first.

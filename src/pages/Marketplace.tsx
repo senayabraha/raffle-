@@ -115,10 +115,10 @@ export default function Marketplace() {
           {allRaffles.filter((r) => r.status === "live").length} live draws right
           now
         </Badge>
-        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-white sm:text-5xl">
+        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-ink sm:text-5xl">
           Browse the <span className="text-gradient">marketplace</span>
         </h1>
-        <p className="mt-3 max-w-xl text-zinc-400">
+        <p className="mt-3 max-w-xl text-ink-muted">
           Discover live prize competitions from trusted hosts. Every draw is
           automated, auditable and escrow-protected.
         </p>
@@ -131,29 +131,29 @@ export default function Marketplace() {
           <div className="relative flex-1">
             <Search
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search prizes, hosts, categories…"
-              className="focus-ring h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-11 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50"
+              className="focus-ring h-11 w-full rounded-xl border border-line bg-surface pl-11 pr-4 text-sm text-ink placeholder:text-ink-subtle transition-colors duration-300 hover:border-line focus:border-accent/50"
             />
           </div>
 
           {/* Sort */}
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3">
+          <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3">
             <SlidersHorizontal
               strokeWidth={1.5}
-              className="h-[18px] w-[18px] text-zinc-500"
+              className="h-[18px] w-[18px] text-ink-subtle"
             />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="h-11 cursor-pointer appearance-none bg-transparent pr-2 text-sm font-medium text-zinc-200 outline-none"
+              className="h-11 cursor-pointer appearance-none bg-transparent pr-2 text-sm font-medium text-ink outline-none"
             >
               {sortOptions.map((o) => (
-                <option key={o.key} value={o.key} className="bg-obsidian-50 text-zinc-200">
+                <option key={o.key} value={o.key} className="bg-surface text-ink">
                   {o.label}
                 </option>
               ))}
@@ -171,8 +171,8 @@ export default function Marketplace() {
             className={cn(
               "focus-ring rounded-full border px-3.5 py-1.5 text-sm font-medium tracking-tight transition-all duration-300 ease-premium",
               category === c
-                ? "border-accent/50 bg-accent/15 text-white shadow-accent-glow"
-                : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-zinc-100",
+                ? "border-accent/50 bg-accent/15 text-ink shadow-accent-glow"
+                : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
             )}
           >
             {c}
@@ -210,15 +210,15 @@ export default function Marketplace() {
         </motion.div>
       ) : (
         <div className="glass flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-subtle">
             <PackageOpen strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">
+          <p className="text-base font-semibold text-ink">
             {query || category !== "All"
               ? "No raffles found"
               : "No live raffles yet"}
           </p>
-          <p className="max-w-xs text-sm text-zinc-500">
+          <p className="max-w-xs text-sm text-ink-subtle">
             {query || category !== "All"
               ? "Try a different search term or clear your filters to see everything."
               : "Check back soon — new prize competitions appear here as hosts launch them."}
@@ -229,7 +229,7 @@ export default function Marketplace() {
                 setQuery("");
                 setCategory("All");
               }}
-              className="mt-1 text-sm font-medium text-accent-soft transition-colors hover:text-white"
+              className="mt-1 text-sm font-medium text-accent-soft transition-colors hover:text-ink"
             >
               Clear filters
             </button>

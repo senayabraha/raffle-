@@ -40,7 +40,7 @@ export default function EndedRafflesList() {
     return (
       <AppShell>
         <div className="grid min-h-[50vh] place-items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       </AppShell>
     );
@@ -50,21 +50,21 @@ export default function EndedRafflesList() {
     <AppShell>
       <Link
         to="/en/dashboard"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
         Back to dashboard
       </Link>
 
       <div className="mb-6 flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
           <Trophy strokeWidth={1.5} className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tightest text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">
             Ended raffles
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-ink-subtle">
             Completed draws across all of your raffles.
           </p>
         </div>
@@ -72,11 +72,11 @@ export default function EndedRafflesList() {
 
       {raffles.length === 0 ? (
         <div className="glass flex flex-col items-center justify-center gap-3 py-24 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-subtle">
             <Award strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">No completed draws yet</p>
-          <p className="max-w-sm text-sm text-zinc-500">
+          <p className="text-base font-semibold text-ink">No completed draws yet</p>
+          <p className="max-w-sm text-sm text-ink-subtle">
             When one of your raffles ends and a winner is drawn, it'll show up
             here so you can confirm delivery.
           </p>
@@ -107,36 +107,36 @@ export default function EndedRafflesList() {
               >
                 <Link
                   to={`/en/dashboard/ended/${r.id}`}
-                  className="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-all duration-300 ease-premium hover:border-white/15 hover:bg-white/[0.05]"
+                  className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-3 transition-all duration-300 ease-premium hover:border-line hover:bg-surface"
                 >
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
                     <Trophy strokeWidth={1.5} className="h-5 w-5" />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold tracking-tight text-white">
+                      <p className="truncate text-sm font-semibold tracking-tight text-ink">
                         {r.title}
                       </p>
                       <Badge tone={meta.tone} className="shrink-0">
                         {meta.label}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-[11px] text-zinc-500">
+                    <p className="mt-1 text-[11px] text-ink-subtle">
                       Drawn {drawnAt} · {r.winner?.name ?? "Winner pending"}
                     </p>
                   </div>
 
                   <div className="hidden shrink-0 text-right sm:block">
-                    <p className="text-sm font-semibold tabular-nums text-white">
+                    <p className="text-sm font-semibold tabular-nums text-ink">
                       {formatCurrency(gross)}
                     </p>
-                    <p className="text-[11px] text-zinc-500">gross sales</p>
+                    <p className="text-[11px] text-ink-subtle">gross sales</p>
                   </div>
 
                   <ArrowUpRight
                     strokeWidth={1.5}
-                    className="h-4 w-4 shrink-0 text-zinc-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-soft"
+                    className="h-4 w-4 shrink-0 text-ink-subtle transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-soft"
                   />
                 </Link>
               </motion.li>

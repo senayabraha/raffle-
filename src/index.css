@@ -9,13 +9,15 @@
    * opacity modifiers keep working (e.g. border-line/60). */
   :root {
     color-scheme: light;
-    --bg: 248 250 252; /* slate-50 */
-    --surface: 255 255 255; /* white cards */
-    --surface-2: 241 245 249; /* slate-100 — hover/raised */
-    --line: 226 232 240; /* slate-200 */
-    --ink: 15 23 42; /* slate-900 — primary text */
-    --ink-muted: 71 85 105; /* slate-600 — secondary */
-    --ink-subtle: 148 163 184; /* slate-400 — tertiary */
+    /* Warm, soft "paper" light theme — off-white grounds, gentle warm-gray
+       borders, and a warm near-black ink instead of cool slate. */
+    --bg: 250 248 244; /* warm paper */
+    --surface: 255 254 251; /* warm white cards */
+    --surface-2: 244 241 235; /* warm hover/raised */
+    --line: 233 228 220; /* soft warm hairline */
+    --ink: 41 37 33; /* warm near-black — primary text */
+    --ink-muted: 120 113 105; /* warm gray — secondary */
+    --ink-subtle: 168 161 152; /* warm light gray — tertiary */
   }
 
   .dark {
@@ -87,11 +89,18 @@
 @layer components {
   /* ---------- Glass surfaces ---------- */
   .glass {
-    @apply rounded-2xl border border-line bg-surface/70 backdrop-blur-md shadow-glass;
+    @apply rounded-2xl border border-line bg-surface/70 backdrop-blur-md;
+    box-shadow: 0 1px 2px rgb(var(--ink) / 0.04), 0 10px 30px -16px rgb(var(--ink) / 0.12);
   }
 
   .glass-strong {
-    @apply rounded-2xl border border-line bg-surface/90 backdrop-blur-xl shadow-glass;
+    @apply rounded-2xl border border-line bg-surface/90 backdrop-blur-xl;
+    box-shadow: 0 1px 2px rgb(var(--ink) / 0.05), 0 16px 40px -20px rgb(var(--ink) / 0.16);
+  }
+
+  .dark .glass,
+  .dark .glass-strong {
+    @apply shadow-glass;
   }
 
   /* Interactive card: tactile lift + border brighten */

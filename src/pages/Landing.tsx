@@ -185,7 +185,7 @@ export default function Landing() {
               </Link>
               <Link
                 to="/en/pricing"
-                className="text-sm font-medium text-accent-deep transition-colors hover:text-ink dark:text-accent-soft dark:hover:text-white"
+                className="text-sm font-medium text-accent-deep transition-colors hover:text-ink dark:text-accent-soft dark:hover:text-ink"
               >
                 See how commission works →
               </Link>

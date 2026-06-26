@@ -103,7 +103,7 @@ export default function RaffleDetail() {
     return (
       <PublicShell>
         <div className="grid min-h-[50vh] place-items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       </PublicShell>
     );
@@ -118,7 +118,7 @@ export default function RaffleDetail() {
     <PublicShell>
       <Link
         to="/en/public-raffles/live"
-        className="mb-5 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+        className="mb-5 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
         Back to marketplace
@@ -133,7 +133,7 @@ export default function RaffleDetail() {
           className="space-y-6 lg:col-span-2"
         >
           {/* Cover */}
-          <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-white/10">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-line">
             {raffle.image ? (
               <img
                 src={raffle.image}
@@ -144,21 +144,21 @@ export default function RaffleDetail() {
             ) : (
               <div className={cn("absolute inset-0 bg-gradient-to-br", raffle.gradient)} />
             )}
-            <div className="absolute inset-0 bg-obsidian/20" />
+            <div className="absolute inset-0 bg-app/20" />
             {!raffle.image && (
               <Icon
                 strokeWidth={1}
-                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-xl"
+                className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 text-ink/80 drop-shadow-xl"
               />
             )}
           </div>
 
           {/* Title + host */}
           <div>
-            <span className="text-xs uppercase tracking-wider text-zinc-500">
+            <span className="text-xs uppercase tracking-wider text-ink-subtle">
               {raffle.category}
             </span>
-            <h1 className="mt-1.5 text-3xl font-bold tracking-tightest text-white sm:text-4xl">
+            <h1 className="mt-1.5 text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
               {raffle.title}
             </h1>
             <div className="mt-4 flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function RaffleDetail() {
                 {raffle.hostInitials}
               </span>
               <div className="text-sm">
-                <p className="font-semibold text-white">{raffle.host}</p>
+                <p className="font-semibold text-ink">{raffle.host}</p>
                 <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
                   <ShieldAlert strokeWidth={1.5} className="h-3 w-3" />
                   Identity not verified by Raffall
@@ -177,10 +177,10 @@ export default function RaffleDetail() {
 
           {/* About */}
           <SpotlightCard className="p-6" lift={false}>
-            <h2 className="text-[15px] font-semibold tracking-tight text-white">
+            <h2 className="text-[15px] font-semibold tracking-tight text-ink">
               About this prize
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
               {raffle.description}
             </p>
             {raffle.bundles.length > 0 && (
@@ -188,7 +188,7 @@ export default function RaffleDetail() {
                 {raffle.bundles.map((b) => (
                   <span
                     key={b.qty}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink"
                   >
                     <Gift className="h-3.5 w-3.5 text-accent-soft" />
                     Buy {b.qty}, get {b.free} free
@@ -201,7 +201,7 @@ export default function RaffleDetail() {
           {/* Recent entries */}
           {entrants.length > 0 && (
             <SpotlightCard className="p-6" lift={false}>
-              <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
+              <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
                 <Users strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
                 Recent entries
               </h2>
@@ -209,7 +209,7 @@ export default function RaffleDetail() {
                 {entrants.map((e) => (
                   <span
                     key={e.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300"
+                    className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
                   >
                     <span className="grid h-6 w-6 place-items-center rounded-full bg-accent-gradient text-[10px] font-bold text-white">
                       {e.initials}
@@ -232,14 +232,14 @@ export default function RaffleDetail() {
           <div className="space-y-4 lg:sticky lg:top-28">
             {/* Countdown + progress */}
             <div className="glass-strong p-5">
-              <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+              <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
                 <Trophy strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
                 Draw {raffle.status === "ended" ? "closed" : "in"}
               </p>
               <CountdownPills drawDate={raffle.drawDate} />
 
               <div className="mt-5">
-                <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${pct}%` }}
@@ -247,9 +247,9 @@ export default function RaffleDetail() {
                     className="h-full rounded-full bg-accent-gradient"
                   />
                 </div>
-                <div className="mt-2 flex justify-between text-xs text-zinc-400">
+                <div className="mt-2 flex justify-between text-xs text-ink-muted">
                   <span>
-                    <span className="font-semibold text-white tabular-nums">
+                    <span className="font-semibold text-ink tabular-nums">
                       {formatCompact(raffle.sold)}
                     </span>{" "}
                     sold
@@ -266,11 +266,11 @@ export default function RaffleDetail() {
 
             {/* Share */}
             <div className="glass p-5">
-              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-white">
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
                 <Share2 strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
                 Share this raffle
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-ink-subtle">
                 Send your link or scan the QR code to enter from any device.
               </p>
               <div className="mt-3 grid grid-cols-4 gap-2">
@@ -280,7 +280,7 @@ export default function RaffleDetail() {
                     type="button"
                     title={s.label}
                     onClick={s.onClick}
-                    className="focus-ring grid h-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:text-accent-soft active:scale-95"
+                    className="focus-ring grid h-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:text-accent-soft active:scale-95"
                   >
                     <s.icon strokeWidth={1.5} className="h-[18px] w-[18px]" />
                   </button>
@@ -290,7 +290,7 @@ export default function RaffleDetail() {
               <button
                 type="button"
                 onClick={() => setShowQr((v) => !v)}
-                className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-medium text-zinc-300 transition-all duration-300 hover:border-accent/40 hover:text-accent-soft"
+                className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2.5 text-xs font-medium text-ink transition-all duration-300 hover:border-accent/40 hover:text-accent-soft"
               >
                 <QrCode strokeWidth={1.5} className="h-4 w-4" />
                 {showQr ? "Hide QR code" : "Show QR code"}
@@ -299,7 +299,7 @@ export default function RaffleDetail() {
               {showQr && (
                 <div
                   ref={qrRef}
-                  className="mt-3 flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white p-4"
+                  className="mt-3 flex flex-col items-center gap-3 rounded-xl border border-line bg-white p-4"
                 >
                   <QRCodeCanvas value={shareUrl} size={160} includeMargin />
                   <button
@@ -317,8 +317,8 @@ export default function RaffleDetail() {
             {/* Guarantee */}
             <div className="glass flex items-start gap-3 p-4">
               <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-              <p className="text-xs leading-relaxed text-zinc-400">
-                <span className="font-semibold text-zinc-200">Raffall Guarantee:</span>{" "}
+              <p className="text-xs leading-relaxed text-ink-muted">
+                <span className="font-semibold text-ink">Raffall Guarantee:</span>{" "}
                 the host has 7 days after the draw to confirm delivery. If they
                 don't, you receive 75% of ticket revenue back, paid by the
                 platform — automatically.

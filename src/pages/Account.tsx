@@ -61,7 +61,7 @@ function ProfileSection() {
         <div className="grid h-9 w-9 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent-soft">
           <User strokeWidth={1.5} className="h-[18px] w-[18px]" />
         </div>
-        <h2 className="text-base font-semibold tracking-tight text-white">Profile</h2>
+        <h2 className="text-base font-semibold tracking-tight text-ink">Profile</h2>
       </div>
       <form onSubmit={submit} className="mt-5 space-y-4">
         <Field label="Full name" htmlFor="full_name">
@@ -111,7 +111,7 @@ function EmailSection() {
         <div className="grid h-9 w-9 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent-soft">
           <Mail strokeWidth={1.5} className="h-[18px] w-[18px]" />
         </div>
-        <h2 className="text-base font-semibold tracking-tight text-white">Email</h2>
+        <h2 className="text-base font-semibold tracking-tight text-ink">Email</h2>
       </div>
       <form onSubmit={submit} className="mt-5 space-y-4">
         <Field label="Email address" htmlFor="email">
@@ -164,7 +164,7 @@ function PasswordSection() {
         <div className="grid h-9 w-9 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent-soft">
           <Lock strokeWidth={1.5} className="h-[18px] w-[18px]" />
         </div>
-        <h2 className="text-base font-semibold tracking-tight text-white">Password</h2>
+        <h2 className="text-base font-semibold tracking-tight text-ink">Password</h2>
       </div>
       <form onSubmit={submit} className="mt-5 space-y-4">
         <Field label="New password" htmlFor="new_password" hint="8+ characters">
@@ -207,10 +207,10 @@ export default function Account() {
   return (
     <Shell>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tightest text-white">
+        <h1 className="text-2xl font-bold tracking-tightest text-ink">
           Account settings
         </h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-ink-muted">
           Manage your profile, email and password.
         </p>
       </div>

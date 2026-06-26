@@ -17,13 +17,13 @@ export default function CheckoutCancelled() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="glass-strong p-7 text-center"
         >
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-muted">
             <XCircle strokeWidth={1.75} className="h-7 w-7" />
           </div>
-          <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+          <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
             Checkout cancelled
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
             No payment was taken and no tickets were issued. You can try again whenever you're ready.
           </p>
           <Link to={raffleSlug ? `/en/raffle/${raffleSlug}` : "/en/public-raffles/live"} className="mt-6 inline-block">

@@ -49,8 +49,8 @@ export default function Payments() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white">Payments</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">Payments</h1>
+      <p className="mt-1 text-sm text-ink-subtle">
         Most recent 200 payments platform-wide, including guest checkouts.
       </p>
 
@@ -58,7 +58,7 @@ export default function Payments() {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white focus-ring"
+          className="h-10 rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring"
         >
           <option value="all">All statuses</option>
           {statuses.map((s) => (
@@ -70,7 +70,7 @@ export default function Payments() {
         <select
           value={provider}
           onChange={(e) => setProvider(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white focus-ring"
+          className="h-10 rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring"
         >
           <option value="all">All providers</option>
           {providers.map((p) => (
@@ -86,14 +86,14 @@ export default function Payments() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.03]" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
             ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                <tr className="text-xs uppercase tracking-wide text-ink-subtle">
                   <th className="py-2 pr-4">Raffle</th>
                   <th className="py-2 pr-4">Payer</th>
                   <th className="py-2 pr-4">Amount</th>
@@ -105,8 +105,8 @@ export default function Payments() {
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <tr key={p.id} className="border-t border-white/[0.06] text-zinc-300">
-                    <td className="py-3 pr-4 font-medium text-white">{p.raffleTitle}</td>
+                  <tr key={p.id} className="border-t border-line text-ink">
+                    <td className="py-3 pr-4 font-medium text-ink">{p.raffleTitle}</td>
                     <td className="py-3 pr-4">{p.payerName}</td>
                     <td className="py-3 pr-4">
                       {p.amountGross != null ? formatCurrency(p.amountGross) : "—"}

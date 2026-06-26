@@ -29,10 +29,7 @@ function DashboardDrawerGate() {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <DashboardDrawerProvider>
-      {/* Host Studio stays dark for now; it'll join the light theme in a
-          later pass. Pinning `.dark` here keeps its (still dark-styled)
-          internals correct regardless of the global theme. */}
-      <div className="dark relative flex min-h-screen bg-app">
+      <div className="relative flex min-h-screen bg-app">
         <AuroraBackground />
         <Sidebar />
         <DashboardDrawerGate />

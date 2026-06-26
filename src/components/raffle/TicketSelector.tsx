@@ -111,8 +111,8 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
     <div className="glass-strong p-5">
       <div className="flex items-baseline justify-between">
         <div>
-          <p className="text-xs text-zinc-500">Ticket price</p>
-          <p className="text-2xl font-bold tracking-tight text-white">
+          <p className="text-xs text-ink-subtle">Ticket price</p>
+          <p className="text-2xl font-bold tracking-tight text-ink">
             {formatCurrency(raffle.ticketPrice)}
           </p>
         </div>
@@ -135,22 +135,22 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
           >
             {/* Quantity stepper */}
             <div className="mt-5">
-              <label className="text-xs font-medium text-zinc-400">Quantity</label>
+              <label className="text-xs font-medium text-ink-muted">Quantity</label>
               <div className="mt-2 flex items-center gap-3">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                   disabled={closed}
-                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-95 disabled:opacity-40"
+                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
                 >
                   <Minus strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 </button>
-                <div className="flex h-11 flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-lg font-bold tabular-nums text-white">
+                <div className="flex h-11 flex-1 items-center justify-center rounded-xl border border-line bg-surface text-lg font-bold tabular-nums text-ink">
                   {qty}
                 </div>
                 <button
                   onClick={() => setQty((q) => q + 1)}
                   disabled={closed}
-                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-95 disabled:opacity-40"
+                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
                 >
                   <Plus strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 </button>
@@ -166,8 +166,8 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                     className={cn(
                       "focus-ring rounded-lg border py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-40",
                       qty === n
-                        ? "border-accent/50 bg-accent/15 text-white"
-                        : "border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-100",
+                        ? "border-accent/50 bg-accent/15 text-ink"
+                        : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
                     )}
                   >
                     {n}
@@ -184,14 +184,14 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
             </div>
 
             {/* Totals */}
-            <div className="mt-5 space-y-1.5 border-t border-white/[0.06] pt-4 text-sm">
-              <div className="flex justify-between text-zinc-400">
+            <div className="mt-5 space-y-1.5 border-t border-line pt-4 text-sm">
+              <div className="flex justify-between text-ink-muted">
                 <span>
                   {qty} {qty === 1 ? "ticket" : "tickets"}
                 </span>
                 <span className="tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
-              <div className="flex items-center justify-between pt-1 text-base font-bold text-white">
+              <div className="flex items-center justify-between pt-1 text-base font-bold text-ink">
                 <span>Total</span>
                 <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>
@@ -220,18 +220,18 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
             <button
               onClick={() => setStep("select")}
               disabled={loading}
-              className="focus-ring inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition-colors hover:text-white disabled:opacity-40"
+              className="focus-ring inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted transition-colors hover:text-ink disabled:opacity-40"
             >
               <ArrowLeft strokeWidth={1.5} className="h-3.5 w-3.5" />
               Back
             </button>
 
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm">
-              <span className="text-zinc-400">
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm">
+              <span className="text-ink-muted">
                 {qty} {qty === 1 ? "ticket" : "tickets"}
                 {free > 0 ? ` + ${free} free` : ""}
               </span>
-              <span className="font-bold tabular-nums text-white">
+              <span className="font-bold tabular-nums text-ink">
                 {formatCurrency(total)}
               </span>
             </div>
@@ -252,7 +252,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
             </div>
 
             <div className="mt-4">
-              <label className="text-xs font-medium text-zinc-400">Pay with</label>
+              <label className="text-xs font-medium text-ink-muted">Pay with</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {providers.map((p) => (
                   <button
@@ -262,13 +262,13 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                     className={cn(
                       "focus-ring relative rounded-xl border py-3 text-sm font-semibold transition-all duration-300 disabled:opacity-40",
                       provider === p.id
-                        ? "border-accent/50 bg-accent/15 text-white"
-                        : "border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-100",
+                        ? "border-accent/50 bg-accent/15 text-ink"
+                        : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
                     )}
                   >
                     {p.label}
                     {!p.available && (
-                      <span className="absolute -top-2 right-2 rounded-full bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-zinc-400">
+                      <span className="absolute -top-2 right-2 rounded-full bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-ink-muted">
                         Soon
                       </span>
                     )}
@@ -318,7 +318,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
         )}
       </AnimatePresence>
 
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-zinc-500">
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-ink-subtle">
         <ShieldCheck strokeWidth={1.5} className="h-3.5 w-3.5 text-emerald-400" />
         Protected by the Raffall Guarantee · Free postal entry available
       </p>
@@ -345,7 +345,7 @@ function Field({
     <div className="relative">
       <Icon
         strokeWidth={1.5}
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle"
       />
       <input
         type={type}
@@ -353,7 +353,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}
-        className="focus-ring h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] pl-9 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors duration-300 hover:border-white/20 focus:border-accent/50 disabled:opacity-40"
+        className="focus-ring h-10 w-full rounded-xl border border-line bg-surface pl-9 pr-3 text-sm text-ink placeholder:text-ink-subtle transition-colors duration-300 hover:border-line focus:border-accent/50 disabled:opacity-40"
       />
     </div>
   );

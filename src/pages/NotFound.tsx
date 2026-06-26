@@ -13,10 +13,10 @@ export default function NotFound() {
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
               <Compass strokeWidth={1.75} className="h-6 w-6 text-white" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
               Page not found
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
               The link you followed may be broken, or the page may have moved.
             </p>
             <Link to="/en" className="mt-6 inline-block">

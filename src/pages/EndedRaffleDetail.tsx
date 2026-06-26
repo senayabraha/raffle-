@@ -105,7 +105,7 @@ export default function EndedRaffleDetail() {
     return (
       <AppShell>
         <div className="grid min-h-[50vh] place-items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       </AppShell>
     );
@@ -116,17 +116,17 @@ export default function EndedRaffleDetail() {
       <AppShell>
         <Link
           to="/en/dashboard/ended"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
           Back to ended raffles
         </Link>
         <div className="glass flex flex-col items-center justify-center gap-3 py-24 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-subtle">
             <Award strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">Raffle not found</p>
-          <p className="max-w-sm text-sm text-zinc-500">
+          <p className="text-base font-semibold text-ink">Raffle not found</p>
+          <p className="max-w-sm text-sm text-ink-subtle">
             This ended raffle doesn't exist or isn't one of yours.
           </p>
         </div>
@@ -152,21 +152,21 @@ export default function EndedRaffleDetail() {
     <AppShell>
       <Link
         to="/en/dashboard/ended"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
         Back to ended raffles
       </Link>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
           <Trophy strokeWidth={1.5} className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tightest text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">
             {raffle.title}
           </h1>
-          <p className="text-sm text-zinc-500">Draw completed {drawnAt}</p>
+          <p className="text-sm text-ink-subtle">Draw completed {drawnAt}</p>
         </div>
         <Badge tone="neutral" className="ml-auto">
           Ended
@@ -178,7 +178,7 @@ export default function EndedRaffleDetail() {
         <div className="space-y-6 lg:col-span-2">
           {/* Winner */}
           <SpotlightCard className="overflow-hidden" lift={false}>
-            <div className="relative border-b border-white/[0.06] bg-gradient-to-br from-accent/15 via-transparent to-transparent p-6">
+            <div className="relative border-b border-line bg-gradient-to-br from-accent/15 via-transparent to-transparent p-6">
               <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-accent/25 blur-3xl" />
               <div className="relative flex items-center gap-4">
                 <div className="relative">
@@ -193,11 +193,11 @@ export default function EndedRaffleDetail() {
                   <p className="text-xs uppercase tracking-wider text-accent-soft">
                     {winner ? "Winner selected" : "Winner pending"}
                   </p>
-                  <p className="text-xl font-bold tracking-tight text-white">
+                  <p className="text-xl font-bold tracking-tight text-ink">
                     {winner?.name ?? "Being drawn"}
                   </p>
                   {winner?.ticket != null && (
-                    <p className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
+                    <p className="inline-flex items-center gap-1.5 text-sm text-ink-muted">
                       <Hash className="h-3.5 w-3.5" />
                       Winning ticket #{winner.ticket.toLocaleString()}
                     </p>
@@ -206,24 +206,24 @@ export default function EndedRaffleDetail() {
               </div>
             </div>
             {winner?.region && (
-              <div className="flex items-center gap-3 bg-obsidian/40 p-4 text-sm">
-                <MapPin strokeWidth={1.5} className="h-4 w-4 text-zinc-500" />
-                <span className="text-zinc-300">{winner.region}</span>
+              <div className="flex items-center gap-3 bg-app/40 p-4 text-sm">
+                <MapPin strokeWidth={1.5} className="h-4 w-4 text-ink-subtle" />
+                <span className="text-ink">{winner.region}</span>
               </div>
             )}
           </SpotlightCard>
 
           {/* Draw audit log */}
           <SpotlightCard className="p-6" lift={false}>
-            <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
+            <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
               <Fingerprint strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
               Draw audit log
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-ink-subtle">
               Every draw is logged for dispute evidence — the outcome can't be
               altered by anyone.
             </p>
-            <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10 font-mono text-xs">
+            <dl className="mt-4 space-y-px overflow-hidden rounded-xl border border-line font-mono text-xs">
               {[
                 ["method", raffle.audit?.method ?? "pending"],
                 ["seed", raffle.audit?.seed ?? "pending"],
@@ -241,10 +241,10 @@ export default function EndedRaffleDetail() {
               ].map(([k, v]) => (
                 <div
                   key={k}
-                  className="flex items-center justify-between gap-4 bg-white/[0.02] px-4 py-2.5"
+                  className="flex items-center justify-between gap-4 bg-surface px-4 py-2.5"
                 >
-                  <dt className="text-zinc-500">{k}</dt>
-                  <dd className="truncate text-zinc-300">{v}</dd>
+                  <dt className="text-ink-subtle">{k}</dt>
+                  <dd className="truncate text-ink">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -256,18 +256,18 @@ export default function EndedRaffleDetail() {
           <div className="space-y-4 lg:sticky lg:top-24">
             {/* Revenue summary */}
             <div className="glass-strong p-5">
-              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <p className="text-xs font-medium uppercase tracking-wider text-ink-subtle">
                 Revenue
               </p>
-              <p className="mt-1 text-3xl font-bold tracking-tight text-white">
+              <p className="mt-1 text-3xl font-bold tracking-tight text-ink">
                 {formatCurrency(hostNet)}
               </p>
-              <dl className="mt-4 space-y-1.5 border-t border-white/[0.06] pt-3 text-sm">
-                <div className="flex justify-between text-zinc-400">
+              <dl className="mt-4 space-y-1.5 border-t border-line pt-3 text-sm">
+                <div className="flex justify-between text-ink-muted">
                   <span>Gross sales</span>
                   <span className="tabular-nums">{formatCurrency(gross)}</span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-ink-muted">
                   <span>Commission (10%)</span>
                   <span className="tabular-nums">−{formatCurrency(commission)}</span>
                 </div>
@@ -289,7 +289,7 @@ export default function EndedRaffleDetail() {
                     Confirm within 7 days
                   </p>
                   <CountdownPills drawDate={deadline} />
-                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                  <p className="mt-3 text-xs leading-relaxed text-ink-subtle">
                     Confirm how the prize was delivered to the winner.
                   </p>
 
@@ -307,7 +307,7 @@ export default function EndedRaffleDetail() {
                               ? d.tone === "warn"
                                 ? "border-amber-400/50 bg-amber-400/10"
                                 : "border-emerald-400/50 bg-emerald-400/10"
-                              : "border-white/10 bg-white/[0.02] hover:border-white/20",
+                              : "border-line bg-surface hover:border-line",
                           )}
                         >
                           <d.icon
@@ -318,14 +318,14 @@ export default function EndedRaffleDetail() {
                                 ? d.tone === "warn"
                                   ? "text-amber-300"
                                   : "text-emerald-300"
-                                : "text-zinc-400",
+                                : "text-ink-muted",
                             )}
                           />
                           <span>
-                            <span className="block text-sm font-medium text-white">
+                            <span className="block text-sm font-medium text-ink">
                               {d.label}
                             </span>
-                            <span className="block text-xs leading-relaxed text-zinc-500">
+                            <span className="block text-xs leading-relaxed text-ink-subtle">
                               {d.desc}
                             </span>
                           </span>
@@ -361,7 +361,7 @@ export default function EndedRaffleDetail() {
                     <CheckCircle2 strokeWidth={1.5} className="h-5 w-5" />
                     <span className="font-semibold">Prize confirmed</span>
                   </div>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                     Delivery has been confirmed for this raffle.
                   </p>
                 </motion.div>

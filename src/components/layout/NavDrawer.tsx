@@ -84,7 +84,7 @@ export function NavDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="absolute inset-y-0 left-0 flex w-[75%] max-w-[360px] flex-col gap-2.5 overflow-y-auto border-r border-white/10 bg-obsidian-100/95 p-3 pb-4 backdrop-blur-xl shadow-soft-lift"
+            className="absolute inset-y-0 left-0 flex w-[75%] max-w-[360px] flex-col gap-2.5 overflow-y-auto border-r border-line bg-surface/95 p-3 pb-4 backdrop-blur-xl shadow-soft-lift"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
@@ -95,15 +95,15 @@ export function NavDrawer() {
               onClick={() => go("/en/become-a-host")}
               className="flex items-center justify-between rounded-xl border border-accent/20 bg-accent/[0.08] px-3.5 py-2 transition-all duration-300 hover:bg-accent/[0.14]"
             >
-              <span className="flex items-center gap-2.5 text-[13px] font-semibold text-white">
+              <span className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
                 <Sparkles strokeWidth={2} className="h-4 w-4 text-accent-soft" />
                 Host a raffle
               </span>
-              <ChevronRight strokeWidth={2} className="h-4 w-4 text-zinc-500" />
+              <ChevronRight strokeWidth={2} className="h-4 w-4 text-ink-subtle" />
             </button>
 
             {/* Hero banner */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-accent-gradient p-3.5">
+            <div className="relative overflow-hidden rounded-2xl border border-line bg-accent-gradient p-3.5">
               <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
               <div className="absolute -bottom-10 left-10 h-20 w-20 rounded-full bg-cyan-300/20 blur-2xl" />
               <PartyPopper strokeWidth={1.75} className="h-5 w-5 text-white/80" />
@@ -123,13 +123,13 @@ export function NavDrawer() {
             {session ? (
               <button
                 onClick={handleSignOut}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]"
+                className="flex items-center justify-between rounded-xl border border-line bg-surface px-3.5 py-2 transition-all duration-300 hover:border-line hover:bg-surface-2"
               >
-                <span className="flex items-center gap-2.5 text-[13px] font-semibold text-white">
+                <span className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
                   <LogOut strokeWidth={2} className="h-4 w-4 text-rose-300" />
                   Sign Out
                 </span>
-                <ChevronRight strokeWidth={2} className="h-4 w-4 text-zinc-500" />
+                <ChevronRight strokeWidth={2} className="h-4 w-4 text-ink-subtle" />
               </button>
             ) : (
               <div className="grid grid-cols-2 gap-2">
@@ -145,13 +145,13 @@ export function NavDrawer() {
                 </button>
                 <button
                   onClick={() => go("/en/login")}
-                  className="flex items-center justify-between gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-white transition-all duration-300 hover:border-white/20 hover:bg-white/[0.08]"
+                  className="flex items-center justify-between gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-ink transition-all duration-300 hover:border-line hover:bg-surface-2"
                 >
                   <span className="flex items-center gap-1.5 whitespace-nowrap text-[13px] font-semibold">
                     <LogIn strokeWidth={2} className="h-4 w-4 shrink-0" />
                     Sign In
                   </span>
-                  <ChevronRight strokeWidth={2} className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                  <ChevronRight strokeWidth={2} className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
                 </button>
               </div>
             )}
@@ -163,16 +163,16 @@ export function NavDrawer() {
                   key={item.label}
                   to={item.to}
                   onClick={close}
-                  className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]"
+                  className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2 transition-all duration-300 hover:border-line hover:bg-surface-2"
                 >
                   <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg", item.tint)}>
                     <item.icon strokeWidth={1.75} className="h-4 w-4" />
                   </span>
                   <span className="flex-1">
-                    <span className="block text-[13px] font-bold tracking-tight leading-tight text-white">
+                    <span className="block text-[13px] font-bold tracking-tight leading-tight text-ink">
                       {item.label}
                     </span>
-                    <span className="block text-[11px] leading-snug text-zinc-500">{item.desc}</span>
+                    <span className="block text-[11px] leading-snug text-ink-subtle">{item.desc}</span>
                   </span>
                   <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-md", item.tint)}>
                     <ChevronRight strokeWidth={2} className="h-3.5 w-3.5" />
@@ -181,18 +181,18 @@ export function NavDrawer() {
               ))}
 
               {/* Games — no live feature yet, shown as a coming-soon row */}
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 opacity-70">
+              <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2 opacity-70">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-500/10 text-cyan-300">
                   <Gamepad2 strokeWidth={1.75} className="h-4 w-4" />
                 </span>
                 <span className="flex-1">
-                  <span className="flex items-center gap-1.5 text-[13px] font-bold tracking-tight leading-tight text-white">
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tracking-tight leading-tight text-ink">
                     Games
                     <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-300">
                       Soon
                     </span>
                   </span>
-                  <span className="block text-[11px] leading-snug text-zinc-500">Play fun games and earn rewards</span>
+                  <span className="block text-[11px] leading-snug text-ink-subtle">Play fun games and earn rewards</span>
                 </span>
               </div>
             </nav>
@@ -207,13 +207,13 @@ export function NavDrawer() {
                 <Headphones strokeWidth={1.75} className="h-4 w-4" />
               </span>
               <span className="flex-1">
-                <span className="block text-[13px] font-bold tracking-tight leading-tight text-white">
+                <span className="block text-[13px] font-bold tracking-tight leading-tight text-ink">
                   Help Centre
                 </span>
-                <span className="block text-[11px] leading-snug text-zinc-500">We're here to help you 24/7</span>
+                <span className="block text-[11px] leading-snug text-ink-subtle">We're here to help you 24/7</span>
               </span>
-              <ChevronRight strokeWidth={2} className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.06] text-zinc-300">
+              <ChevronRight strokeWidth={2} className="h-3.5 w-3.5 text-ink-subtle" />
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-line bg-surface-2 text-ink">
                 <MessageSquare strokeWidth={1.75} className="h-3.5 w-3.5" />
               </span>
             </Link>

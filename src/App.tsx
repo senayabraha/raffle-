@@ -73,7 +73,7 @@ function NavDrawerGate() {
 function FullPageSpinner() {
   return (
     <div className="grid min-h-screen place-items-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function Stepper({
               disabled={i > current}
               className={cn(
                 "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-300 ease-premium disabled:cursor-not-allowed",
-                active ? "bg-white/[0.06]" : "hover:bg-white/[0.03]",
+                active ? "bg-surface-2" : "hover:bg-surface",
               )}
             >
               <span
@@ -37,7 +37,7 @@ export function Stepper({
                   "grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition-all duration-300",
                   done && "border-transparent bg-accent-gradient text-white",
                   active && "border-accent/60 bg-accent/15 text-accent-soft",
-                  !done && !active && "border-white/10 bg-white/[0.03] text-zinc-500",
+                  !done && !active && "border-line bg-surface text-ink-subtle",
                 )}
               >
                 {done ? <Check strokeWidth={3} className="h-3.5 w-3.5" /> : s.id}
@@ -46,12 +46,12 @@ export function Stepper({
                 <span
                   className={cn(
                     "block text-sm font-medium tracking-tight transition-colors",
-                    active || done ? "text-white" : "text-zinc-500",
+                    active || done ? "text-ink" : "text-ink-subtle",
                   )}
                 >
                   {s.title}
                 </span>
-                <span className="block truncate text-[11px] text-zinc-600">
+                <span className="block truncate text-[11px] text-ink-subtle">
                   {s.desc}
                 </span>
               </span>
@@ -72,7 +72,7 @@ export function StepperBar({ total, current }: { total: number; current: number 
           key={i}
           className={cn(
             "h-1.5 flex-1 rounded-full transition-all duration-500",
-            i <= current ? "bg-accent-gradient" : "bg-white/10",
+            i <= current ? "bg-accent-gradient" : "bg-surface-2",
           )}
         />
       ))}

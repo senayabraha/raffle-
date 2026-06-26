@@ -66,7 +66,7 @@ export default function RaffleManage() {
     return (
       <AppShell>
         <div className="grid min-h-[50vh] place-items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       </AppShell>
     );
@@ -77,14 +77,14 @@ export default function RaffleManage() {
       <AppShell>
         <Link
           to="/en/dashboard"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
           Back to dashboard
         </Link>
         <div className="glass flex flex-col items-center justify-center gap-3 py-24 text-center">
-          <p className="text-base font-semibold text-white">Raffle not found</p>
-          <p className="max-w-sm text-sm text-zinc-500">
+          <p className="text-base font-semibold text-ink">Raffle not found</p>
+          <p className="max-w-sm text-sm text-ink-subtle">
             This raffle doesn't exist or isn't one of yours.
           </p>
         </div>
@@ -96,21 +96,21 @@ export default function RaffleManage() {
     <AppShell>
       <Link
         to="/en/dashboard"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
         Back to dashboard
       </Link>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
           <Trophy strokeWidth={1.5} className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tightest text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">
             {raffle.title}
           </h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-ink-subtle">
             {raffle.ticketsSoldCount.toLocaleString()} tickets sold
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function RaffleManage() {
       </div>
 
       {/* Tab strip */}
-      <div className="mb-6 inline-flex rounded-xl border border-white/10 bg-white/[0.02] p-1">
+      <div className="mb-6 inline-flex rounded-xl border border-line bg-surface p-1">
         {tabs.map((t) => {
           const active = tab === t.key;
           return (
@@ -129,7 +129,7 @@ export default function RaffleManage() {
               type="button"
               onClick={() => setTab(t.key)}
               className={`focus-ring inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-300 ${
-                active ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:text-zinc-200"
+                active ? "bg-surface-2 text-ink" : "text-ink-muted hover:text-ink"
               }`}
             >
               <t.icon strokeWidth={1.5} className="h-4 w-4" />
@@ -201,7 +201,7 @@ function OverviewTab({ raffleId }: { raffleId: string }) {
           <SalesChart series={series} />
         ) : (
           <div className="flex h-44 flex-col items-center justify-center gap-2 text-center">
-            <p className="text-sm font-medium text-zinc-300">No sales in the last 14 days</p>
+            <p className="text-sm font-medium text-ink">No sales in the last 14 days</p>
           </div>
         )}
       </SpotlightCard>
@@ -316,7 +316,7 @@ function EditTab({
 
       {error && <p className="text-sm text-rose-300">{error}</p>}
 
-      <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
+      <div className="flex items-center justify-between gap-3 border-t border-line pt-5">
         <Button variant="primary" size="md" onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
@@ -357,7 +357,7 @@ function OrdersTab({ raffleId }: { raffleId: string }) {
   if (loading) {
     return (
       <div className="grid min-h-[30vh] place-items-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     );
   }
@@ -365,8 +365,8 @@ function OrdersTab({ raffleId }: { raffleId: string }) {
   if (orders.length === 0) {
     return (
       <div className="glass flex flex-col items-center justify-center gap-2 py-16 text-center">
-        <p className="text-sm font-medium text-zinc-300">No orders yet</p>
-        <p className="max-w-sm text-xs text-zinc-500">
+        <p className="text-sm font-medium text-ink">No orders yet</p>
+        <p className="max-w-sm text-xs text-ink-subtle">
           Entrant orders and contact details will show up here once tickets sell.
         </p>
       </div>
@@ -374,9 +374,9 @@ function OrdersTab({ raffleId }: { raffleId: string }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10">
+    <div className="overflow-hidden rounded-xl border border-line">
       <table className="w-full text-sm">
-        <thead className="bg-white/[0.03] text-left text-xs uppercase tracking-wider text-zinc-500">
+        <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-subtle">
           <tr>
             <th className="px-4 py-3">Entrant</th>
             <th className="px-4 py-3">Contact</th>
@@ -388,21 +388,21 @@ function OrdersTab({ raffleId }: { raffleId: string }) {
         <tbody className="divide-y divide-white/[0.06]">
           {orders.map((o) => (
             <tr key={o.paymentId}>
-              <td className="px-4 py-3 text-zinc-200">{o.contact?.fullName ?? "—"}</td>
-              <td className="px-4 py-3 text-zinc-400">
+              <td className="px-4 py-3 text-ink">{o.contact?.fullName ?? "—"}</td>
+              <td className="px-4 py-3 text-ink-muted">
                 {o.contact ? (
                   <>
                     <div>{o.contact.phone}</div>
-                    <div className="text-xs text-zinc-500">{o.contact.email}</div>
+                    <div className="text-xs text-ink-subtle">{o.contact.email}</div>
                   </>
                 ) : (
                   "—"
                 )}
               </td>
-              <td className="px-4 py-3 tabular-nums text-zinc-300">
+              <td className="px-4 py-3 tabular-nums text-ink">
                 {o.ticketNumbers.length}
               </td>
-              <td className="px-4 py-3 tabular-nums text-zinc-300">
+              <td className="px-4 py-3 tabular-nums text-ink">
                 {o.amountGross != null ? formatCurrency(o.amountGross) : "—"}
               </td>
               <td className="px-4 py-3">

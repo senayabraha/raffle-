@@ -66,10 +66,10 @@ export default function MyWinnings() {
         <Badge tone="accent">
           {winnings.length} {winnings.length === 1 ? "prize" : "prizes"} won
         </Badge>
-        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-white sm:text-5xl">
+        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-ink sm:text-5xl">
           My <span className="text-gradient">winnings</span>
         </h1>
-        <p className="mt-3 max-w-xl text-zinc-400">
+        <p className="mt-3 max-w-xl text-ink-muted">
           Accept or dispute a prize before its claim deadline.
         </p>
       </motion.div>
@@ -88,11 +88,11 @@ export default function MyWinnings() {
         </div>
       ) : winnings.length === 0 ? (
         <div className="glass flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-subtle">
             <Award strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">No wins yet</p>
-          <p className="max-w-xs text-sm text-zinc-500">
+          <p className="text-base font-semibold text-ink">No wins yet</p>
+          <p className="max-w-xs text-sm text-ink-subtle">
             When you win a raffle, your prize will show up here for you to accept or dispute.
           </p>
         </div>
@@ -114,12 +114,12 @@ export default function MyWinnings() {
                     <div>
                       <Link
                         to={`/en/raffle/${w.raffleSlug}`}
-                        className="block text-[15px] font-semibold leading-snug tracking-tight text-white transition-colors hover:text-accent-soft"
+                        className="block text-[15px] font-semibold leading-snug tracking-tight text-ink transition-colors hover:text-accent-soft"
                       >
                         {w.raffleTitle}
                       </Link>
                       {w.ticketNumber != null && (
-                        <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-zinc-400">
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-ink-muted">
                           <Hash className="h-3.5 w-3.5" />
                           Winning ticket #{w.ticketNumber}
                         </p>
@@ -132,12 +132,12 @@ export default function MyWinnings() {
                     <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-gradient text-white shadow-accent-glow">
                       <Trophy strokeWidth={1.75} className="h-5 w-5" />
                     </div>
-                    <div className="min-w-0 text-sm text-zinc-400">
+                    <div className="min-w-0 text-sm text-ink-muted">
                       {w.claimDeadline ? (
                         <p className="inline-flex items-center gap-1.5">
                           <Clock strokeWidth={1.5} className="h-3.5 w-3.5" />
                           {deadlinePassed ? "Deadline passed" : "Respond by"}{" "}
-                          <span className="font-medium text-zinc-200">
+                          <span className="font-medium text-ink">
                             {new Date(w.claimDeadline).toLocaleDateString("en-GB", {
                               day: "numeric",
                               month: "long",
@@ -152,7 +152,7 @@ export default function MyWinnings() {
                   </div>
 
                   {canRespond && (
-                    <div className="mt-4 flex gap-2 border-t border-white/[0.06] pt-3">
+                    <div className="mt-4 flex gap-2 border-t border-line pt-3">
                       <Button
                         variant="primary"
                         size="sm"

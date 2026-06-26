@@ -4,17 +4,123 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 import {
   getAdminFeaturedRaffles,
   searchRaffles,
   addFeaturedRaffle,
   removeFeaturedRaffle,
   reorderFeaturedRaffles,
+  getFeaturedSettings,
+  updateFeaturedSettings,
   type AdminFeaturedRaffle,
   type RaffleSearchResult,
+  type FeaturedSettings,
 } from "@/lib/featured";
 
 const MAX_FEATURED = 12;
+const MOBILE_OPTIONS = [1, 1.5, 2, 2.5, 3];
+const DESKTOP_OPTIONS = [1, 1.5, 2, 2.5, 3, 4, 5];
+
+function DisplaySettings() {
+  const [settings, setSettings] = useState<FeaturedSettings | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [savedField, setSavedField] = useState<"mobile" | "desktop" | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    getFeaturedSettings()
+      .then(setSettings)
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Failed to load display settings.");
+      });
+  }, []);
+
+  function flashSaved(field: "mobile" | "desktop") {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setSavedField(field);
+    savedTimerRef.current = setTimeout(() => setSavedField(null), 1500);
+  }
+
+  async function handleChange(field: "cards_per_screen_mobile" | "cards_per_screen_desktop", value: number) {
+    if (!settings) return;
+    const previous = settings;
+    setSettings({ ...settings, [field]: value });
+    try {
+      await updateFeaturedSettings({ [field]: value });
+      flashSaved(field === "cards_per_screen_mobile" ? "mobile" : "desktop");
+    } catch (err) {
+      setSettings(previous);
+      setError(err instanceof Error ? err.message : "Failed to update display settings.");
+    }
+  }
+
+  return (
+    <SpotlightCard lift={false} className="mt-6 p-5">
+      <CardHeader title="Display Settings" subtitle="Control how many cards are visible at once" />
+
+      {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
+
+      {!settings ? (
+        <div className="space-y-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="h-16 animate-pulse rounded-lg bg-surface" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-ink">Mobile — cards visible at once</p>
+              {savedField === "mobile" && <span className="text-xs text-emerald-400">Saved</span>}
+            </div>
+            <div className="mt-2 flex gap-1.5 rounded-xl border border-line bg-surface p-1">
+              {MOBILE_OPTIONS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleChange("cards_per_screen_mobile", value)}
+                  className={cn(
+                    "flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors",
+                    settings.cards_per_screen_mobile === value
+                      ? "bg-accent-gradient text-white"
+                      : "text-ink-subtle hover:bg-surface-2 hover:text-ink",
+                  )}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-ink">Desktop — cards visible at once</p>
+              {savedField === "desktop" && <span className="text-xs text-emerald-400">Saved</span>}
+            </div>
+            <div className="mt-2 flex gap-1.5 rounded-xl border border-line bg-surface p-1">
+              {DESKTOP_OPTIONS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleChange("cards_per_screen_desktop", value)}
+                  className={cn(
+                    "flex-1 rounded-lg py-1.5 text-sm font-medium transition-colors",
+                    settings.cards_per_screen_desktop === value
+                      ? "bg-accent-gradient text-white"
+                      : "text-ink-subtle hover:bg-surface-2 hover:text-ink",
+                  )}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </SpotlightCard>
+  );
+}
 
 export default function FeaturedRafflesAdmin() {
   const [featured, setFeatured] = useState<AdminFeaturedRaffle[]>([]);
@@ -109,6 +215,8 @@ export default function FeaturedRafflesAdmin() {
       </p>
 
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
+
+      <DisplaySettings />
 
       <SpotlightCard lift={false} className="mt-6 p-5">
         <CardHeader

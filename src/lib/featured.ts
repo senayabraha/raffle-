@@ -27,6 +27,11 @@ export interface RaffleSearchResult {
   title: string;
 }
 
+export interface FeaturedSettings {
+  cards_per_screen_mobile: number;
+  cards_per_screen_desktop: number;
+}
+
 type RaffleJoinRow = {
   id: string;
   title: string;
@@ -177,4 +182,21 @@ export async function reorderFeaturedRaffles(orderedIds: string[]): Promise<void
   const results = await Promise.all(updates);
   const failed = results.find((r) => r.error);
   if (failed?.error) throw failed.error;
+}
+
+/** Public: how many featured cards should be visible at once, per breakpoint. */
+export async function getFeaturedSettings(): Promise<FeaturedSettings> {
+  const { data, error } = await supabase
+    .from("featured_settings")
+    .select("cards_per_screen_mobile, cards_per_screen_desktop")
+    .eq("id", 1)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Admin: updates the cards-per-screen display settings. */
+export async function updateFeaturedSettings(data: Partial<FeaturedSettings>): Promise<void> {
+  const { error } = await supabase.from("featured_settings").update(data).eq("id", 1);
+  if (error) throw error;
 }

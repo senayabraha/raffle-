@@ -9,6 +9,7 @@ import {
   User,
   Cake,
   ArrowRight,
+  ChevronRight,
   Loader2,
   AlertCircle,
   MailCheck,
@@ -18,7 +19,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Form";
 import { useAuth } from "@/lib/auth";
@@ -28,21 +28,9 @@ import { cn } from "@/lib/utils";
 const HOST_HOME = "/en/dashboard";
 
 const steps = [
-  {
-    icon: PencilRuler,
-    title: "Create",
-    body: "List your prize, set ticket price and draw rules in minutes. No code, no fees up front.",
-  },
-  {
-    icon: Share2,
-    title: "Share",
-    body: "Get a unique link and a scannable QR code to share anywhere — online or in print.",
-  },
-  {
-    icon: Trophy,
-    title: "Draw",
-    body: "An automated, auditable RNG picks the winner. You can't influence it — and neither can we.",
-  },
+  { icon: PencilRuler, title: "Create" },
+  { icon: Share2, title: "Share" },
+  { icon: Trophy, title: "Draw" },
 ];
 
 /** Mirrors the DB check constraint: profiles.date_of_birth must be 18+ years ago. */
@@ -54,11 +42,56 @@ function isAdult(dateOfBirth: string) {
   return dob <= adultCutoff;
 }
 
+/** Two chevrons chasing each other left-to-right between adjacent steps. */
+function FlowArrow() {
+  return (
+    <div className="relative h-3.5 w-6 shrink-0 overflow-hidden">
+      {[0, 1].map((i) => (
+        <motion.span
+          key={i}
+          className="absolute inset-y-0 left-0 flex items-center"
+          initial={{ opacity: 0, x: -6 }}
+          animate={{ opacity: [0, 1, 0], x: [-6, 10] }}
+          transition={{
+            duration: 1.1,
+            repeat: Infinity,
+            delay: i * 0.45,
+            ease: "easeInOut",
+          }}
+        >
+          <ChevronRight strokeWidth={2.5} className="h-3.5 w-3.5 text-accent-soft" />
+        </motion.span>
+      ))}
+    </div>
+  );
+}
+
+/** Compact "Create → Share → Draw" strip with animated arrows, sized to never push the form off-screen. */
+function StepsStrip() {
+  return (
+    <div className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface/60 px-2.5 py-2">
+      {steps.map((step, i) => (
+        <div key={step.title} className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
+            <span className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
+              <step.icon strokeWidth={1.75} className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-[10px] font-semibold text-ink-subtle">{step.title}</span>
+          </div>
+          {i < steps.length - 1 && <FlowArrow />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Dedicated Host portal — the only page a "Host a raffle" entry point should
  * link to. One page, two tabs (sign in / sign up), both locked to the host
  * role: there's no role picker and no third-party auth, because every
- * visitor here already knows why they came.
+ * visitor here already knows why they came. Fields are deliberately blank
+ * (autoComplete="off" + unique names) so a browser's saved credentials never
+ * pre-fill either tab.
  */
 export default function HostLogin() {
   const navigate = useNavigate();
@@ -160,18 +193,18 @@ export default function HostLogin() {
     <div className="relative min-h-screen overflow-x-hidden">
       <AuroraBackground />
 
-      <div className="relative mx-auto flex max-w-sm flex-col px-5 pt-16 pb-4 sm:pt-20">
-        <Link to="/en" className="mb-8 flex items-center gap-2.5 self-center">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
-            <Sparkles strokeWidth={2} className="h-[18px] w-[18px] text-white" />
+      <div className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-4">
+        <Link to="/en" className="mx-auto mb-3 flex items-center gap-2">
+          <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient shadow-accent-glow">
+            <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-[15px] font-bold tracking-tight text-ink">Raffall</span>
+          <span className="text-sm font-bold tracking-tight text-ink">Raffall</span>
         </Link>
 
         {checkEmail ? (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line bg-surface p-8 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient shadow-accent-glow">
-              <MailCheck strokeWidth={1.5} className="h-7 w-7 text-white" />
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface p-6 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-gradient shadow-accent-glow">
+              <MailCheck strokeWidth={1.5} className="h-6 w-6 text-white" />
             </span>
             <p className="text-sm leading-relaxed text-ink">
               We sent a confirmation link to{" "}
@@ -192,14 +225,7 @@ export default function HostLogin() {
           </div>
         ) : (
           <>
-            <h1 className="text-center text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              Host portal
-            </h1>
-            <p className="mt-2 text-center text-sm text-ink-muted">
-              Sign in or create an account to start hosting raffles.
-            </p>
-
-            <div className="mt-7 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1">
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1">
               {(["signin", "signup"] as const).map((t) => (
                 <button
                   key={t}
@@ -218,46 +244,50 @@ export default function HostLogin() {
             </div>
 
             {error && (
-              <div className="mt-5 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 p-2.5 text-xs text-rose-200">
                 <AlertCircle strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0" />
                 {error}
               </div>
             )}
 
             {tab === "signin" ? (
-              <form onSubmit={signIn} className="mt-5 space-y-4">
-                <Field label="Email" htmlFor="email">
+              <form onSubmit={signIn} autoComplete="off" className="mt-2.5 space-y-2">
+                <Field label="Email" htmlFor="host-signin-email">
                   <div className="relative">
                     <Mail
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="email"
+                      id="host-signin-email"
+                      name="host-signin-email"
                       type="email"
                       required
+                      autoComplete="off"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="pl-11"
+                      className="h-10 pl-11"
                     />
                   </div>
                 </Field>
 
-                <Field label="Password" htmlFor="password">
+                <Field label="Password" htmlFor="host-signin-password">
                   <div className="relative">
                     <Lock
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="password"
+                      id="host-signin-password"
+                      name="host-signin-password"
                       type={showPw ? "text" : "password"}
                       required
+                      autoComplete="off"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="px-11"
+                      placeholder="Password"
+                      className="h-10 px-11"
                     />
                     <button
                       type="button"
@@ -274,7 +304,7 @@ export default function HostLogin() {
                   </div>
                 </Field>
 
-                <div className="flex items-center justify-end text-sm">
+                <div className="flex items-center justify-end text-xs">
                   <button
                     type="button"
                     onClick={forgotPassword}
@@ -286,7 +316,7 @@ export default function HostLogin() {
                 </div>
 
                 {resetSent && (
-                  <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+                  <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-2.5 text-xs text-emerald-200">
                     Check {email} for a link to reset your password.
                   </p>
                 )}
@@ -299,90 +329,98 @@ export default function HostLogin() {
                     </>
                   ) : (
                     <>
-                      Log in to Host portal
+                      Sign in
                       <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
                     </>
                   )}
                 </Button>
               </form>
             ) : (
-              <form onSubmit={signUp} className="mt-5 space-y-4">
-                <Field label="Full name" htmlFor="name">
+              <form onSubmit={signUp} autoComplete="off" className="mt-2.5 space-y-2">
+                <Field label="Full name" htmlFor="host-signup-name">
                   <div className="relative">
                     <User
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="name"
+                      id="host-signup-name"
+                      name="host-signup-name"
                       required
+                      autoComplete="off"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Jordan Miller"
-                      className="pl-11"
+                      className="h-10 pl-11"
                     />
                   </div>
                 </Field>
 
-                <Field label="Email" htmlFor="signup-email">
+                <Field label="Email" htmlFor="host-signup-email">
                   <div className="relative">
                     <Mail
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="signup-email"
+                      id="host-signup-email"
+                      name="host-signup-email"
                       type="email"
                       required
+                      autoComplete="off"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="pl-11"
+                      className="h-10 pl-11"
                     />
                   </div>
                 </Field>
 
-                <Field label="Password" htmlFor="signup-password" hint="8+ characters">
+                <Field label="Password" htmlFor="host-signup-password" hint="8+ characters">
                   <div className="relative">
                     <Lock
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="signup-password"
+                      id="host-signup-password"
+                      name="host-signup-password"
                       type="password"
                       required
                       minLength={8}
+                      autoComplete="off"
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="pl-11"
+                      placeholder="Password"
+                      className="h-10 pl-11"
                     />
                   </div>
                 </Field>
 
-                <Field label="Date of birth" htmlFor="dob" hint="You must be 18+">
+                <Field label="Date of birth" htmlFor="host-signup-dob" hint="You must be 18+">
                   <div className="relative">
                     <Cake
                       strokeWidth={1.5}
                       className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
                     />
                     <Input
-                      id="dob"
+                      id="host-signup-dob"
+                      name="host-signup-dob"
                       type="date"
                       required
+                      autoComplete="off"
                       value={dateOfBirth}
                       onChange={(e) => setDateOfBirth(e.target.value)}
-                      className="pl-11"
+                      className="h-10 pl-11"
                     />
                   </div>
                 </Field>
 
-                <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-ink-muted">
+                <label className="flex cursor-pointer items-start gap-2 text-[11px] leading-snug text-ink-muted">
                   <input
                     type="checkbox"
                     required
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-line bg-surface accent-[#8b5cf6]"
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-line bg-surface accent-[#8b5cf6]"
                   />
                   I agree to the{" "}
                   <Link to="/en/terms" className="text-accent-soft hover:text-ink">Terms</Link> &amp;{" "}
@@ -404,50 +442,11 @@ export default function HostLogin() {
                 </Button>
               </form>
             )}
+
+            <StepsStrip />
           </>
         )}
       </div>
-
-      {/* ---- How it works (moved here from the homepage) ---- */}
-      <section className="relative mx-auto max-w-5xl px-5 py-16">
-        <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
-            Live in three steps
-          </h2>
-          <p className="mt-3 text-ink-muted">
-            From idea to a fully-running, fair draw — without the busywork.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <SpotlightCard className="h-full p-6">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
-                    <step.icon strokeWidth={1.5} className="h-5 w-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-ink-subtle">
-                    0{i + 1}
-                  </span>
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight text-ink">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                  {step.body}
-                </p>
-              </SpotlightCard>
-            </motion.div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

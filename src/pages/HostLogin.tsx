@@ -9,7 +9,7 @@ import {
   User,
   Cake,
   ArrowRight,
-  ChevronRight,
+  ChevronDown,
   Loader2,
   AlertCircle,
   MailCheck,
@@ -28,9 +28,21 @@ import { cn } from "@/lib/utils";
 const HOST_HOME = "/en/dashboard";
 
 const steps = [
-  { icon: PencilRuler, title: "Create" },
-  { icon: Share2, title: "Share" },
-  { icon: Trophy, title: "Draw" },
+  {
+    icon: PencilRuler,
+    title: "Create",
+    body: "List your prize, set ticket price and draw rules in minutes. No code, no fees up front.",
+  },
+  {
+    icon: Share2,
+    title: "Share",
+    body: "Get a unique link and a scannable QR code to share anywhere — online or in print.",
+  },
+  {
+    icon: Trophy,
+    title: "Draw",
+    body: "An automated, auditable RNG picks the winner. You can't influence it — and neither can we.",
+  },
 ];
 
 /** Mirrors the DB check constraint: profiles.date_of_birth must be 18+ years ago. */
@@ -42,16 +54,16 @@ function isAdult(dateOfBirth: string) {
   return dob <= adultCutoff;
 }
 
-/** Two chevrons chasing each other left-to-right between adjacent steps. */
+/** Two chevrons chasing each other top-to-bottom between adjacent steps. */
 function FlowArrow() {
   return (
-    <div className="relative h-3.5 w-6 shrink-0 overflow-hidden">
+    <div className="relative ml-4 h-5 w-3.5 shrink-0 overflow-hidden">
       {[0, 1].map((i) => (
         <motion.span
           key={i}
-          className="absolute inset-y-0 left-0 flex items-center"
-          initial={{ opacity: 0, x: -6 }}
-          animate={{ opacity: [0, 1, 0], x: [-6, 10] }}
+          className="absolute inset-x-0 top-0 flex justify-center"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: [0, 1, 0], y: [-4, 14] }}
           transition={{
             duration: 1.1,
             repeat: Infinity,
@@ -59,24 +71,27 @@ function FlowArrow() {
             ease: "easeInOut",
           }}
         >
-          <ChevronRight strokeWidth={2.5} className="h-3.5 w-3.5 text-accent-soft" />
+          <ChevronDown strokeWidth={2.5} className="h-3.5 w-3.5 text-accent-soft" />
         </motion.span>
       ))}
     </div>
   );
 }
 
-/** Compact "Create → Share → Draw" strip with animated arrows, sized to never push the form off-screen. */
+/** Compact vertical "Create → Share → Draw" list with animated down-arrows and short explanations. */
 function StepsStrip() {
   return (
-    <div className="mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-line bg-surface/60 px-2.5 py-2">
+    <div className="mt-3 rounded-xl border border-line bg-surface/60 px-3 py-2.5">
       {steps.map((step, i) => (
-        <div key={step.title} className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-1">
-            <span className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
+        <div key={step.title}>
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
               <step.icon strokeWidth={1.75} className="h-3.5 w-3.5" />
             </span>
-            <span className="text-[10px] font-semibold text-ink-subtle">{step.title}</span>
+            <div className="pt-0.5">
+              <p className="text-[11px] font-semibold text-ink">{step.title}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-ink-subtle">{step.body}</p>
+            </div>
           </div>
           {i < steps.length - 1 && <FlowArrow />}
         </div>
@@ -97,8 +112,8 @@ export default function HostLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setLoginContext, authError, clearAuthError } = useAuth();
-  const [tab, setTab] = useState<"signin" | "signup">(
-    searchParams.get("tab") === "signup" ? "signup" : "signin",
+  const [tab, setTab] = useState<"signin" | "signup" | null>(
+    searchParams.get("tab") === "signup" ? "signup" : null,
   );
 
   // Sign in state
@@ -193,7 +208,7 @@ export default function HostLogin() {
     <div className="relative min-h-screen overflow-x-hidden">
       <AuroraBackground />
 
-      <div className="relative mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-4">
+      <div className="relative mx-auto flex min-h-screen max-w-sm flex-col px-5 pt-10 pb-4">
         <Link to="/en" className="mx-auto mb-3 flex items-center gap-2">
           <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient shadow-accent-glow">
             <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />
@@ -250,7 +265,7 @@ export default function HostLogin() {
               </div>
             )}
 
-            {tab === "signin" ? (
+            {tab === "signin" && (
               <form onSubmit={signIn} autoComplete="off" className="mt-2.5 space-y-2">
                 <Field label="Email" htmlFor="host-signin-email">
                   <div className="relative">
@@ -335,7 +350,9 @@ export default function HostLogin() {
                   )}
                 </Button>
               </form>
-            ) : (
+            )}
+
+            {tab === "signup" && (
               <form onSubmit={signUp} autoComplete="off" className="mt-2.5 space-y-2">
                 <Field label="Full name" htmlFor="host-signup-name">
                   <div className="relative">

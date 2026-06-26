@@ -24,7 +24,7 @@ export default function AdminLayout() {
   const { signOut } = useAuth();
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="dark flex min-h-screen bg-zinc-950">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-white/[0.015] px-4 py-5 backdrop-blur-md lg:flex">
         <div className="px-2 pb-6">
           <p className="text-[15px] font-bold tracking-tight text-white">Raffall</p>

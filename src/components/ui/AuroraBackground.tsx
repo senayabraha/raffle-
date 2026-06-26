@@ -45,7 +45,7 @@ export function AuroraBackground() {
       {/* Faint grid texture */}
       <div className="absolute inset-0 bg-grid opacity-60" />
       {/* Top fade to keep header crisp */}
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-obsidian to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-app to-transparent" />
     </div>
   );
 }

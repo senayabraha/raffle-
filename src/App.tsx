@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ModeProvider } from "@/lib/mode";
+import { ThemeProvider } from "@/lib/theme";
 import { DrawerProvider, useDrawer } from "@/lib/drawer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Tables } from "@/lib/database.types";
@@ -141,6 +142,7 @@ function RequireEntrantContext({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <ErrorBoundary>
+    <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
         <ModeProvider>
@@ -291,6 +293,7 @@ export default function App() {
         </ModeProvider>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
     </ErrorBoundary>
   );
 }

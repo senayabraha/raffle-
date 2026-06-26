@@ -61,7 +61,7 @@ export default function Landing() {
           variants={fade}
           initial="hidden"
           animate="show"
-          className="mx-auto mt-6 max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-white sm:text-7xl sm:leading-[1.02]"
+          className="mx-auto mt-6 max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-ink sm:text-7xl sm:leading-[1.02]"
         >
           Host raffles that{" "}
           <span className="text-gradient">give back</span> and earn from your
@@ -73,7 +73,7 @@ export default function Landing() {
           variants={fade}
           initial="hidden"
           animate="show"
-          className="mx-auto mt-6 max-w-xl text-lg text-zinc-400"
+          className="mx-auto mt-6 max-w-xl text-lg text-ink-muted"
         >
           The premium marketplace for prize competitions. List a prize, sell
           tickets, and run a transparent draw — with funds held safely in escrow
@@ -107,7 +107,7 @@ export default function Landing() {
           variants={fade}
           initial="hidden"
           animate="show"
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-500"
+          className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-subtle"
         >
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck strokeWidth={1.5} className="h-4 w-4 text-emerald-400" />
@@ -123,10 +123,10 @@ export default function Landing() {
       {/* ---- How it works ---- */}
       <section id="how" className="mx-auto max-w-5xl px-5 py-16">
         <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold tracking-tightest text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
             Live in three steps
           </h2>
-          <p className="mt-3 text-zinc-400">
+          <p className="mt-3 text-ink-muted">
             From idea to a fully-running, fair draw — without the busywork.
           </p>
         </div>
@@ -143,17 +143,17 @@ export default function Landing() {
             >
               <SpotlightCard className="h-full p-6">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
                     <step.icon strokeWidth={1.5} className="h-5 w-5" />
                   </div>
-                  <span className="text-xs font-semibold text-zinc-600">
+                  <span className="text-xs font-semibold text-ink-subtle">
                     0{i + 1}
                   </span>
                 </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight text-white">
+                <h3 className="mt-4 text-lg font-semibold tracking-tight text-ink">
                   {step.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                   {step.body}
                 </p>
               </SpotlightCard>
@@ -168,11 +168,11 @@ export default function Landing() {
           <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-accent/30 blur-3xl" />
           <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
           <div className="relative">
-            <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tightest text-white sm:text-5xl sm:leading-[1.05]">
+            <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
               Turn your audience into{" "}
               <span className="text-gradient">your next win</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-zinc-400">
+            <p className="mx-auto mt-4 max-w-md text-ink-muted">
               Start free with commission as low as 8%. No setup fees, no
               monthly minimum.
             </p>
@@ -185,7 +185,7 @@ export default function Landing() {
               </Link>
               <Link
                 to="/en/pricing"
-                className="text-sm font-medium text-accent-soft transition-colors hover:text-white"
+                className="text-sm font-medium text-accent-deep transition-colors hover:text-ink dark:text-accent-soft dark:hover:text-white"
               >
                 See how commission works →
               </Link>
@@ -197,18 +197,18 @@ export default function Landing() {
       {/* ---- Footer ---- */}
       <footer className="mx-auto max-w-5xl px-5 py-10">
         <div className="h-px divider-faded" />
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 text-sm text-zinc-500 sm:flex-row">
+        <div className="mt-6 flex flex-col items-center justify-between gap-4 text-sm text-ink-subtle sm:flex-row">
           <div className="flex items-center gap-2">
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient">
               <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="font-semibold text-zinc-300">Raffall</span>
+            <span className="font-semibold text-ink">Raffall</span>
             <span>© 2026</span>
           </div>
           <div className="flex gap-5">
-            <Link to="/en/terms" className="transition-colors hover:text-white">Terms & fees</Link>
-            <Link to="/en/privacy" className="transition-colors hover:text-white">Privacy</Link>
-            <Link to="/en/contact" className="transition-colors hover:text-white">Contact</Link>
+            <Link to="/en/terms" className="transition-colors hover:text-ink">Terms & fees</Link>
+            <Link to="/en/privacy" className="transition-colors hover:text-ink">Privacy</Link>
+            <Link to="/en/contact" className="transition-colors hover:text-ink">Contact</Link>
           </div>
         </div>
       </footer>

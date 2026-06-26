@@ -1,7 +1,18 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      Apply the saved theme before first paint to avoid a flash. Light is the
+      default; only a stored "dark" choice adds the class.
+    -->
+    <script>
+      try {
+        if (localStorage.getItem("raffall.theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090b" />

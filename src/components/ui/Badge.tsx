@@ -6,11 +6,11 @@ const badgeVariants = cva(
   {
     variants: {
       tone: {
-        live: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-        accent: "border-accent/30 bg-accent/10 text-accent-soft",
-        neutral: "border-white/10 bg-white/[0.04] text-zinc-300",
-        warning: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-        info: "border-cyan-400/30 bg-cyan-400/10 text-cyan-300",
+        live: "border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300",
+        accent: "border-accent/30 bg-accent/10 text-accent-deep dark:text-accent-soft",
+        neutral: "border-line bg-surface-2 text-ink-muted",
+        warning: "border-amber-400/30 bg-amber-400/10 text-amber-600 dark:text-amber-300",
+        info: "border-cyan-400/30 bg-cyan-400/10 text-cyan-600 dark:text-cyan-300",
       },
     },
     defaultVariants: { tone: "neutral" },

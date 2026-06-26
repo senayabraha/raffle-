@@ -7,7 +7,7 @@ import { MarketingNav } from "@/components/layout/MarketingNav";
 /** Public layout: aurora bg + floating glass nav + footer. */
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="dark relative min-h-screen overflow-x-hidden bg-app">
       <AuroraBackground />
       <MarketingNav />
       <main className="mx-auto max-w-6xl px-5 pt-28 sm:pt-32">{children}</main>

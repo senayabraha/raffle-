@@ -22,13 +22,13 @@ const PREMIUM_EASE = [0.16, 1, 0.3, 1] as const;
 const ctaButtons = (
   <>
     <Link to="/en/become-a-host">
-      <Button variant="primary" size="lg" className="w-full sm:w-auto">
+      <Button variant="primary" size="lg" className="w-auto">
         <Sparkles strokeWidth={1.5} className="h-5 w-5" />
-        Start hosting free
+        Start hosting
       </Button>
     </Link>
     <Link to="/en/public-raffles/live">
-      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+      <Button variant="secondary" size="lg" className="w-auto">
         Browse raffles
         <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
       </Button>
@@ -75,7 +75,7 @@ function HeroFallback() {
         variants={fade}
         initial="hidden"
         animate="show"
-        className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+        className="mt-9 flex flex-row items-center justify-center gap-3"
       >
         {ctaButtons}
       </motion.div>
@@ -173,7 +173,7 @@ export function HeroCarousel() {
               {slide.sub_copy && (
                 <p className="mx-auto mt-6 max-w-xl text-lg text-white/80">{slide.sub_copy}</p>
               )}
-              <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <div className="mt-9 flex flex-row items-center justify-center gap-3">
                 {ctaButtons}
               </div>
             </div>

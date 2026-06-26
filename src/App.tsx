@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { ModeProvider } from "@/lib/mode";
 import { DrawerProvider, useDrawer } from "@/lib/drawer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Tables } from "@/lib/database.types";
@@ -141,6 +142,7 @@ export default function App() {
     <ErrorBoundary>
     <AuthProvider>
       <BrowserRouter>
+        <ModeProvider>
         <DrawerProvider>
         <NavDrawerGate />
         <Suspense fallback={<FullPageSpinner />}>
@@ -284,6 +286,7 @@ export default function App() {
           </Routes>
         </Suspense>
         </DrawerProvider>
+        </ModeProvider>
       </BrowserRouter>
     </AuthProvider>
     </ErrorBoundary>

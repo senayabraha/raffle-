@@ -90,6 +90,13 @@ export default {
           "70%": { boxShadow: "0 0 0 10px rgba(139,92,246,0)" },
           "100%": { boxShadow: "0 0 0 0 rgba(139,92,246,0)" },
         },
+        // Track is rendered as the card list duplicated back-to-back, so a
+        // translate of exactly -50% lines the second copy up with where the
+        // first one started — a seamless infinite loop.
+        "featured-slide": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both",
@@ -97,6 +104,7 @@ export default {
         shimmer: "shimmer 1.8s infinite",
         aurora: "aurora 18s ease-in-out infinite",
         "pulse-ring": "pulse-ring 2.4s cubic-bezier(0.4,0,0.6,1) infinite",
+        "featured-slide": "featured-slide 20s linear infinite",
       },
       transitionTimingFunction: {
         premium: "cubic-bezier(0.16, 1, 0.3, 1)",

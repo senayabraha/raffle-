@@ -141,6 +141,35 @@ export type Database = {
           },
         ]
       }
+      featured_raffles: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          raffle_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order: number
+          id?: string
+          raffle_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          raffle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_raffles_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: true
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_settings: {
         Row: {
           id: number

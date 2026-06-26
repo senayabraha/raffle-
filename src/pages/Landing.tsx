@@ -4,6 +4,7 @@ import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { MarketingNav } from "@/components/layout/MarketingNav";
 import { Button } from "@/components/ui/Button";
 import { HeroCarousel } from "@/components/HeroCarousel";
+import { FeaturedRafflesCarousel } from "@/components/FeaturedRafflesCarousel";
 
 export default function Landing() {
   return (
@@ -45,6 +46,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ---- Featured raffles ---- */}
+      <FeaturedRafflesCarousel />
 
       {/* ---- Footer ---- */}
       <footer className="mx-auto max-w-5xl px-5 py-10">

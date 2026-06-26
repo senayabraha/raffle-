@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/Button";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { FeaturedRafflesCarousel } from "@/components/FeaturedRafflesCarousel";
 import { HowItWorks } from "@/components/HowItWorks";
+import { useSiteScale } from "@/hooks/useSiteScale";
 
 export default function Landing() {
+  const { currentScale } = useSiteScale();
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden" style={{ zoom: currentScale }}>
       <AuroraBackground />
       <MarketingNav />
 

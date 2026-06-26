@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
+import { useSiteScale } from "@/hooks/useSiteScale";
 
 const proofs = [
   { icon: ShieldCheck, text: "Escrow-protected payouts" },
@@ -18,8 +19,10 @@ export function AuthLayout({
   title: string;
   subtitle: string;
 }) {
+  const { currentScale } = useSiteScale();
+
   return (
-    <div className="relative grid min-h-screen lg:grid-cols-2">
+    <div className="relative grid min-h-screen lg:grid-cols-2" style={{ zoom: currentScale }}>
       <AuroraBackground />
 
       {/* Brand / proof panel */}

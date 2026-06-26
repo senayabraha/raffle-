@@ -24,6 +24,7 @@ import { Field, Input } from "@/components/ui/Form";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { useSiteScale } from "@/hooks/useSiteScale";
 
 const HOST_HOME = "/en/dashboard";
 
@@ -120,6 +121,7 @@ function StepsStrip() {
 export default function HostLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { currentScale } = useSiteScale();
   const { setLoginContext, authError, clearAuthError } = useAuth();
   const [tab, setTab] = useState<"signin" | "signup" | null>(
     searchParams.get("tab") === "signup" ? "signup" : null,
@@ -214,7 +216,7 @@ export default function HostLogin() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden" style={{ zoom: currentScale }}>
       <AuroraBackground />
 
       <div className="relative mx-auto flex min-h-screen max-w-sm flex-col px-5 pt-10 pb-4">

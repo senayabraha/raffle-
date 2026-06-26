@@ -170,6 +170,24 @@ export type Database = {
           },
         ]
       }
+      featured_settings: {
+        Row: {
+          cards_per_screen_desktop: number
+          cards_per_screen_mobile: number
+          id: number
+        }
+        Insert: {
+          cards_per_screen_desktop?: number
+          cards_per_screen_mobile?: number
+          id?: number
+        }
+        Update: {
+          cards_per_screen_desktop?: number
+          cards_per_screen_mobile?: number
+          id?: number
+        }
+        Relationships: []
+      }
       hero_settings: {
         Row: {
           id: number

@@ -1,11 +1,15 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useFeaturedRaffles } from "@/hooks/useFeaturedRaffles";
 import type { FeaturedRaffleCard } from "@/lib/featured";
 import { formatCurrency, cn } from "@/lib/utils";
 
-const CARD_WIDTH_CLASS = "w-[40%] shrink-0 sm:w-[260px]";
+// Matches Tailwind's default `md` breakpoint, used to decide which
+// cards-per-screen setting (mobile vs desktop) is currently active.
+const MD_BREAKPOINT_PX = 768;
+
+const CARD_BASE_CLASS = "shrink-0";
 
 function formatDrawDate(iso: string | null): string {
   if (!iso) return "TBD";
@@ -16,7 +20,15 @@ function formatDrawDate(iso: string | null): string {
   });
 }
 
-function RaffleCard({ raffle, snap }: { raffle: FeaturedRaffleCard; snap: boolean }) {
+function RaffleCard({
+  raffle,
+  snap,
+  widthPct,
+}: {
+  raffle: FeaturedRaffleCard;
+  snap: boolean;
+  widthPct: number;
+}) {
   const pct =
     raffle.total_tickets && raffle.total_tickets > 0
       ? Math.min((raffle.tickets_sold / raffle.total_tickets) * 100, 100)
@@ -26,8 +38,9 @@ function RaffleCard({ raffle, snap }: { raffle: FeaturedRaffleCard; snap: boolea
     <Link
       to={`/en/raffle/${raffle.slug}`}
       draggable={false}
+      style={{ flex: `0 0 ${widthPct}%` }}
       className={cn(
-        CARD_WIDTH_CLASS,
+        CARD_BASE_CLASS,
         "flex flex-col bg-surface shadow-glass transition-transform duration-300 ease-premium hover:scale-[1.02]",
         snap && "snap-start",
       )}
@@ -82,7 +95,10 @@ function FeaturedRafflesSkeleton() {
       <h2 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">Featured Raffles</h2>
       <div className="mt-5 flex gap-3 overflow-hidden">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className={cn(CARD_WIDTH_CLASS, "animate-pulse bg-surface-2")}>
+          <div
+            key={i}
+            className={cn(CARD_BASE_CLASS, "w-[40%] animate-pulse bg-surface-2 sm:w-[260px]")}
+          >
             <div className="h-[170px] w-full bg-surface sm:h-[143px]" />
             <div className="space-y-2 p-3.5">
               <div className="h-3.5 w-3/4 rounded bg-surface" />
@@ -97,12 +113,22 @@ function FeaturedRafflesSkeleton() {
 }
 
 export function FeaturedRafflesCarousel() {
-  const { raffles, loading, error } = useFeaturedRaffles();
+  const { raffles, settings, loading, error } = useFeaturedRaffles();
   const [manual, setManual] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= MD_BREAKPOINT_PX,
+  );
   const manualRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ startX: 0, startScroll: 0, dragging: false, moved: false });
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= MD_BREAKPOINT_PX);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const switchToManual = useCallback(() => {
     if (manualRef.current) return;
@@ -161,6 +187,10 @@ export function FeaturedRafflesCarousel() {
   if (loading) return <FeaturedRafflesSkeleton />;
   if (error || raffles.length === 0) return null;
 
+  const cardsPerScreen = isDesktop
+    ? settings?.cards_per_screen_desktop ?? 4
+    : settings?.cards_per_screen_mobile ?? 2.5;
+  const widthPct = 100 / cardsPerScreen;
   const cards = [...raffles, ...raffles];
 
   return (
@@ -176,7 +206,7 @@ export function FeaturedRafflesCarousel() {
       >
         <div ref={trackRef} className={cn("flex gap-3", !manual && "animate-featured-slide")}>
           {cards.map((raffle, i) => (
-            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={manual} />
+            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={manual} widthPct={widthPct} />
           ))}
         </div>
       </div>

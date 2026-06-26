@@ -15,6 +15,9 @@ export default function Landing() {
       {/* ---- Hero ---- */}
       <HeroCarousel />
 
+      {/* ---- Featured raffles ---- */}
+      <FeaturedRafflesCarousel />
+
       {/* ---- CTA ---- */}
       <section id="pricing" className="mx-auto max-w-5xl px-5 py-16">
         <div className="glass-strong relative overflow-hidden rounded-3xl px-8 py-14 text-center">
@@ -46,9 +49,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* ---- Featured raffles ---- */}
-      <FeaturedRafflesCarousel />
 
       {/* ---- Footer ---- */}
       <footer className="mx-auto max-w-5xl px-5 py-10">

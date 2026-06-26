@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { getFeaturedRaffles, type FeaturedRaffleCard } from "@/lib/featured";
+import {
+  getFeaturedRaffles,
+  getFeaturedSettings,
+  type FeaturedRaffleCard,
+  type FeaturedSettings,
+} from "@/lib/featured";
 
 interface UseFeaturedRafflesResult {
   raffles: FeaturedRaffleCard[];
+  settings: FeaturedSettings | null;
   loading: boolean;
   error: string | null;
 }
@@ -10,15 +16,17 @@ interface UseFeaturedRafflesResult {
 /** Public, anon-key read of the homepage's featured raffle carousel feed. */
 export function useFeaturedRaffles(): UseFeaturedRafflesResult {
   const [raffles, setRaffles] = useState<FeaturedRaffleCard[]>([]);
+  const [settings, setSettings] = useState<FeaturedSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    getFeaturedRaffles()
-      .then((rows) => {
+    Promise.all([getFeaturedRaffles(), getFeaturedSettings()])
+      .then(([rows, settingsRow]) => {
         if (!active) return;
         setRaffles(rows);
+        setSettings(settingsRow);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -31,5 +39,5 @@ export function useFeaturedRaffles(): UseFeaturedRafflesResult {
     };
   }, []);
 
-  return { raffles, loading, error };
+  return { raffles, settings, loading, error };
 }

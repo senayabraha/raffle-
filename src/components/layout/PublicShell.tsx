@@ -3,11 +3,14 @@ import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { MarketingNav } from "@/components/layout/MarketingNav";
+import { useSiteScale } from "@/hooks/useSiteScale";
 
-/** Public layout: aurora bg + floating glass nav + footer. */
+/** Public layout: aurora bg + floating glass nav + footer. Scaled site-wide by the admin-controlled zoom factor. */
 export function PublicShell({ children }: { children: ReactNode }) {
+  const { currentScale } = useSiteScale();
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-app">
+    <div className="relative min-h-screen overflow-x-hidden bg-app" style={{ zoom: currentScale }}>
       <AuroraBackground />
       <MarketingNav />
       <main className="mx-auto max-w-6xl px-5 pt-28 sm:pt-32">{children}</main>

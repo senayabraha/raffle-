@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck, Sparkles, Zap } from "lucide-react";
@@ -6,7 +6,10 @@ import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useHeroCarousel } from "@/hooks/useHeroCarousel";
+import type { HeroSlide } from "@/lib/hero";
 import { cn } from "@/lib/utils";
+
+const FALLBACK_TEXT_HEIGHT = 120;
 
 const fade = {
   hidden: { opacity: 0, y: 24 },
@@ -108,12 +111,75 @@ function HeroSkeleton() {
   );
 }
 
+/** Headline + sub-copy + CTA row for a single slide, shared by the visible block and the offscreen measurement probes. */
+function SlideText({ slide }: { slide: HeroSlide }) {
+  return (
+    <>
+      <div>
+        {slide.headline && (
+          <h1 className="text-balance text-3xl font-extrabold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
+            {slide.headline}
+          </h1>
+        )}
+        {slide.sub_copy && (
+          <p
+            className={cn(
+              "mx-auto max-w-xl text-base text-ink-muted sm:text-lg",
+              slide.headline ? "mt-4" : "mt-0",
+            )}
+          >
+            {slide.sub_copy}
+          </p>
+        )}
+      </div>
+      <div className="mt-auto flex w-full flex-row gap-3 pt-6">
+        <Link to="/en/become-a-host" className="w-1/2">
+          <Button variant="primary" size="lg" className="w-full">
+            <Sparkles strokeWidth={1.5} className="h-5 w-5" />
+            Start hosting
+          </Button>
+        </Link>
+        <Link to="/en/public-raffles/live" className="w-1/2">
+          <Button variant="secondary" size="lg" className="w-full">
+            Browse raffles
+            <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+          </Button>
+        </Link>
+      </div>
+    </>
+  );
+}
+
 export function HeroCarousel() {
   const { slides, settings, loading, error } = useHeroCarousel();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [textHeight, setTextHeight] = useState<number | null>(null);
+  const [measuring, setMeasuring] = useState(true);
+  const probeRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const direction = settings?.transition_direction === "vertical" ? "vertical" : "horizontal";
   const intervalMs = settings?.rotation_interval_ms ?? 1500;
+
+  // Re-measure whenever the slide content or viewport changes.
+  useLayoutEffect(() => {
+    if (loading || slides.length === 0) return;
+    setMeasuring(true);
+  }, [slides, loading]);
+
+  useLayoutEffect(() => {
+    if (!measuring) return;
+    const heights = probeRefs.current.map((el) => el?.scrollHeight ?? 0);
+    const max = Math.max(...heights, 0);
+    if (max > 0) setTextHeight(max);
+    setMeasuring(false);
+  }, [measuring]);
+
+  useEffect(() => {
+    if (loading || slides.length === 0) return;
+    const handleResize = () => setMeasuring(true);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [loading, slides.length]);
 
   useEffect(() => {
     if (slides.length < 2) return;
@@ -138,7 +204,7 @@ export function HeroCarousel() {
   const goNext = () => setActiveIndex((i) => (i + 1) % slides.length);
 
   return (
-    <section className="relative mx-auto min-h-[760px] max-w-5xl pt-36 pb-20 sm:min-h-[900px] sm:pt-44">
+    <section className="relative mx-auto max-w-5xl pt-4 pb-6">
       <div className="relative mx-4 aspect-video overflow-hidden shadow-lg sm:mx-auto sm:max-w-4xl">
         <AnimatePresence mode="wait">
           <motion.div
@@ -207,39 +273,32 @@ export function HeroCarousel() {
         )}
       </div>
 
-      <div className="mx-auto mt-6 flex min-h-[160px] max-w-xl flex-col items-center px-5 text-center">
-        <div>
-          {slide.headline && (
-            <h1 className="text-balance text-3xl font-extrabold tracking-tightest text-ink sm:text-5xl sm:leading-[1.05]">
-              {slide.headline}
-            </h1>
-          )}
-          {slide.sub_copy && (
-            <p
-              className={cn(
-                "mx-auto max-w-xl text-base text-ink-muted sm:text-lg",
-                slide.headline ? "mt-4" : "mt-0",
-              )}
-            >
-              {slide.sub_copy}
-            </p>
-          )}
-        </div>
-        <div className="mt-auto flex w-full flex-row gap-3 pt-6">
-          <Link to="/en/become-a-host" className="w-1/2">
-            <Button variant="primary" size="lg" className="w-full">
-              <Sparkles strokeWidth={1.5} className="h-5 w-5" />
-              Start hosting
-            </Button>
-          </Link>
-          <Link to="/en/public-raffles/live" className="w-1/2">
-            <Button variant="secondary" size="lg" className="w-full">
-              Browse raffles
-              <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
-            </Button>
-          </Link>
-        </div>
+      <div
+        className="mx-auto mt-6 flex max-w-xl flex-col items-center px-5 text-center"
+        style={{ height: textHeight ?? FALLBACK_TEXT_HEIGHT }}
+      >
+        <SlideText slide={slide} />
       </div>
+
+      {measuring && (
+        <div
+          className="pointer-events-none absolute left-0 top-0 w-full opacity-0"
+          style={{ visibility: "hidden", zIndex: -1 }}
+          aria-hidden="true"
+        >
+          {slides.map((s, i) => (
+            <div
+              key={s.id}
+              ref={(el) => {
+                probeRefs.current[i] = el;
+              }}
+              className="mx-auto flex max-w-xl flex-col items-center px-5 text-center"
+            >
+              <SlideText slide={s} />
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

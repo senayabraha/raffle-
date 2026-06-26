@@ -55,6 +55,8 @@ type RaffleRowWithHost = {
   draw_date: string | null;
   image_urls: string[] | null;
   prize_value: number | null;
+  suspension_status: "active" | "temporary" | "permanent";
+  suspended_until: string | null;
   host: { full_name: string | null } | { full_name: string | null }[] | null;
 };
 
@@ -91,26 +93,31 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
       row.draw_date ??
       new Date(Date.now() + 7 * 86_400_000).toISOString(),
     bundles: parseBundles(row.bundle_rules),
+    suspensionStatus: row.suspension_status,
+    suspendedUntil: row.suspended_until,
   };
 }
 
 const HOST_SELECT =
-  "id, slug, title, description, category, visibility, status, ticket_price, ticket_cap, tickets_sold_count, bundle_rules, draw_date, image_urls, prize_value, host:profiles!raffles_host_id_fkey(full_name)";
+  "id, slug, title, description, category, visibility, status, ticket_price, ticket_cap, tickets_sold_count, bundle_rules, draw_date, image_urls, prize_value, suspension_status, suspended_until, host:profiles!raffles_host_id_fkey(full_name)";
 
-/** Fetches live, public raffles for the marketplace. */
+/** Fetches live, public raffles for the marketplace. Suspended raffles are
+ * hidden from the listing, but remain reachable via their direct link. */
 export async function fetchPublicRaffles(): Promise<MarketplaceRaffle[]> {
   const { data, error } = await supabase
     .from("raffles")
     .select(HOST_SELECT)
     .eq("visibility", "public")
     .eq("status", "live")
+    .eq("suspension_status", "active")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];
   return (data as unknown as RaffleRowWithHost[]).map(mapRaffleRow);
 }
 
-/** Fetches a single raffle by slug for the listing page. */
+/** Fetches a single raffle by slug for the listing page. Suspended raffles
+ * are still returned here so the detail page can show the suspended state. */
 export async function fetchRaffleBySlug(
   slug: string,
 ): Promise<MarketplaceRaffle | null> {

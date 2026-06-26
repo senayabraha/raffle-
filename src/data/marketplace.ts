@@ -26,6 +26,9 @@ export interface MarketplaceRaffle {
   /** ISO date string for the draw. */
   drawDate: string;
   bundles: { qty: number; free: number }[];
+  /** Standing flag layered on top of `status` — see admin suspension migration. */
+  suspensionStatus: "active" | "temporary" | "permanent";
+  suspendedUntil: string | null;
 }
 
 export const categories = [

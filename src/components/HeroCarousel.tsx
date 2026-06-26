@@ -161,7 +161,7 @@ export function HeroCarousel() {
             ) : slide.media_url ? (
               <img
                 src={slide.media_url}
-                alt={slide.headline}
+                alt={slide.headline ?? ""}
                 className="absolute inset-0 h-full w-full object-cover"
               />
             ) : (

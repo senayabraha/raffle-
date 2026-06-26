@@ -54,48 +54,57 @@ function isAdult(dateOfBirth: string) {
   return dob <= adultCutoff;
 }
 
-/** Two chevrons chasing each other top-to-bottom between adjacent steps. */
+/** Two chevrons chasing each other top-to-bottom between adjacent step cards. */
 function FlowArrow() {
   return (
-    <div className="relative ml-4 h-5 w-3.5 shrink-0 overflow-hidden">
+    <div className="relative flex h-7 w-6 shrink-0 items-center justify-center overflow-hidden">
       {[0, 1].map((i) => (
         <motion.span
           key={i}
           className="absolute inset-x-0 top-0 flex justify-center"
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: [0, 1, 0], y: [-4, 14] }}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: [0, 1, 0], y: [-6, 20] }}
           transition={{
-            duration: 1.1,
+            duration: 1.2,
             repeat: Infinity,
-            delay: i * 0.45,
+            delay: i * 0.5,
             ease: "easeInOut",
           }}
         >
-          <ChevronDown strokeWidth={2.5} className="h-3.5 w-3.5 text-accent-soft" />
+          <ChevronDown strokeWidth={2.5} className="h-5 w-5 text-accent-soft" />
         </motion.span>
       ))}
     </div>
   );
 }
 
-/** Compact vertical "Create → Share → Draw" list with animated down-arrows and short explanations. */
+/** Individual step cards (~40% larger than the prior compact strip), linked by animated falling arrows. */
 function StepsStrip() {
   return (
-    <div className="mt-3 rounded-xl border border-line bg-surface/60 px-3 py-2.5">
-      {steps.map((step, i) => (
-        <div key={step.title}>
-          <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
-              <step.icon strokeWidth={1.75} className="h-3.5 w-3.5" />
-            </span>
-            <div className="pt-0.5">
-              <p className="text-[11px] font-semibold text-ink">{step.title}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-ink-subtle">{step.body}</p>
+    <div className="mt-5">
+      <h2 className="text-center text-xl font-extrabold tracking-tight text-ink">
+        Live in <span className="text-gradient">three simple steps</span>
+      </h2>
+      <div className="mt-4 flex flex-col items-center">
+        {steps.map((step, i) => (
+          <div key={step.title} className="w-full">
+            <div className="flex items-start gap-3.5 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
+                <step.icon strokeWidth={1.75} className="h-[22px] w-[22px] text-white" />
+              </span>
+              <div className="pt-0.5">
+                <p className="text-[15px] font-bold tracking-tight text-ink">{step.title}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{step.body}</p>
+              </div>
             </div>
+            {i < steps.length - 1 && (
+              <div className="flex justify-center">
+                <FlowArrow />
+              </div>
+            )}
           </div>
-          {i < steps.length - 1 && <FlowArrow />}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

@@ -25,6 +25,7 @@ export default function FeaturedRafflesAdmin() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RaffleSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function load() {
@@ -43,16 +44,11 @@ export default function FeaturedRafflesAdmin() {
   useEffect(load, []);
 
   useEffect(() => {
+    if (!browsing) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
     setSearching(true);
     debounceRef.current = setTimeout(() => {
-      searchRaffles(trimmed)
+      searchRaffles(query.trim())
         .then(setResults)
         .catch((err: unknown) => {
           setError(err instanceof Error ? err.message : "Failed to search raffles.");
@@ -62,7 +58,7 @@ export default function FeaturedRafflesAdmin() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, browsing]);
 
   async function handleReorder(id: string, direction: "up" | "down") {
     const index = featured.findIndex((f) => f.id === id);
@@ -96,6 +92,7 @@ export default function FeaturedRafflesAdmin() {
       await addFeaturedRaffle(raffleId, featured.length + 1);
       setQuery("");
       setResults([]);
+      setBrowsing(false);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add featured raffle.");
@@ -178,21 +175,25 @@ export default function FeaturedRafflesAdmin() {
       </SpotlightCard>
 
       {featured.length < MAX_FEATURED && (
-        <SpotlightCard lift={false} className="mt-6 p-5">
-          <CardHeader title="Add a raffle" subtitle="Search live raffles by title" />
+        <SpotlightCard lift={false} className="mt-6 overflow-visible p-5">
+          <CardHeader title="Add a raffle" subtitle="Browse or search currently live raffles" />
           <div className="relative">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search raffle titles…"
+              onFocus={() => setBrowsing(true)}
+              onBlur={() => setTimeout(() => setBrowsing(false), 150)}
+              placeholder="Search raffle titles, or click to browse…"
               className="h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
             />
-            {query.trim() && (
+            {browsing && (
               <div className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-xl border border-line bg-surface shadow-glass">
                 {searching ? (
-                  <div className="p-3 text-sm text-ink-subtle">Searching…</div>
+                  <div className="p-3 text-sm text-ink-subtle">Loading…</div>
                 ) : results.length === 0 ? (
-                  <div className="p-3 text-sm text-ink-subtle">No matching raffles.</div>
+                  <div className="p-3 text-sm text-ink-subtle">
+                    {query.trim() ? "No matching raffles." : "No currently live raffles."}
+                  </div>
                 ) : (
                   results.map((result) => {
                     const alreadyFeatured = featured.some((f) => f.raffle_id === result.id);

@@ -84,7 +84,7 @@ export default function BecomeHost() {
             no setup fees.
           </p>
           <div className="mt-6 flex flex-col gap-3">
-            <Link to="/en/register">
+            <Link to="/en/host/login?tab=signup">
               <Button variant="primary" size="lg" className="w-full">
                 Create a host account
                 <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />

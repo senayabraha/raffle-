@@ -1,37 +1,10 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-  PencilRuler,
-  Share2,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { MarketingNav } from "@/components/layout/MarketingNav";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-
-const steps = [
-  {
-    icon: PencilRuler,
-    title: "Create",
-    body: "List your prize, set ticket price and draw rules in minutes. No code, no fees up front.",
-  },
-  {
-    icon: Share2,
-    title: "Share",
-    body: "Get a unique link and a scannable QR code to share anywhere — online or in print.",
-  },
-  {
-    icon: Trophy,
-    title: "Draw",
-    body: "An automated, auditable RNG picks the winner. You can't influence it — and neither can we.",
-  },
-];
 
 const fade = {
   hidden: { opacity: 0, y: 24 },
@@ -118,48 +91,6 @@ export default function Landing() {
             Automated, auditable draws
           </span>
         </motion.div>
-      </section>
-
-      {/* ---- How it works ---- */}
-      <section id="how" className="mx-auto max-w-5xl px-5 py-16">
-        <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
-            Live in three steps
-          </h2>
-          <p className="mt-3 text-ink-muted">
-            From idea to a fully-running, fair draw — without the busywork.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {steps.map((step, i) => (
-            <motion.div
-              key={step.title}
-              custom={i}
-              variants={fade}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-            >
-              <SpotlightCard className="h-full p-6">
-                <div className="flex items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface-2 text-accent-deep dark:text-accent-soft">
-                    <step.icon strokeWidth={1.5} className="h-5 w-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-ink-subtle">
-                    0{i + 1}
-                  </span>
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight text-ink">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                  {step.body}
-                </p>
-              </SpotlightCard>
-            </motion.div>
-          ))}
-        </div>
       </section>
 
       {/* ---- CTA ---- */}

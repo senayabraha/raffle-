@@ -7,7 +7,7 @@ import { useMode } from "@/lib/mode";
 import { useDrawer } from "@/lib/drawer";
 
 const baseLinks: { label: string; href?: string; to?: string }[] = [
-  { label: "How it works", href: "/en#how" },
+  { label: "How it works", to: "/en/host/login" },
   { label: "Marketplace", to: "/en/public-raffles/live" },
   { label: "Pricing", to: "/en/pricing" },
 ];
@@ -107,7 +107,7 @@ export function MarketingNav() {
                   Log in
                 </Button>
               </Link>
-              <Link to="/en/register">
+              <Link to="/en/host/login">
                 <Button variant="primary" size="sm">
                   Host a raffle
                 </Button>

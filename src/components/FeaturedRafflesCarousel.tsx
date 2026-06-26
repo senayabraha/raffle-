@@ -119,15 +119,13 @@ function FeaturedRafflesSkeleton() {
 
 export function FeaturedRafflesCarousel() {
   const { raffles, settings, loading, error } = useFeaturedRaffles();
-  const [manual, setManual] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= MD_BREAKPOINT_PX,
   );
   const [containerWidth, setContainerWidth] = useState(0);
-  const manualRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef({ startX: 0, startScroll: 0, dragging: false, moved: false });
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= MD_BREAKPOINT_PX);
@@ -152,58 +150,21 @@ export function FeaturedRafflesCarousel() {
     return () => observer.disconnect();
   }, [loading]);
 
-  const switchToManual = useCallback(() => {
-    if (manualRef.current) return;
-    manualRef.current = true;
-
+  // Pausing/resuming only ever toggles `animation-play-state` — the
+  // carousel always keeps auto-scrolling once the user lets go, no matter
+  // how they interacted with it while held.
+  const pause = useCallback(() => {
     const track = trackRef.current;
-    const container = containerRef.current;
-    if (track && container) {
-      const computed = window.getComputedStyle(track).transform;
-      let translateX = 0;
-      const match = computed && computed !== "none" ? /matrix\(([^)]+)\)/.exec(computed) : null;
-      if (match) {
-        const parts = match[1].split(",").map(Number);
-        translateX = parts[4] ?? 0;
-      }
-      track.style.animation = "none";
-      track.style.transform = "none";
-      container.scrollLeft = Math.max(0, -translateX);
-    }
-    setManual(true);
+    if (track) track.style.animationPlayState = "paused";
+    setPaused(true);
   }, []);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const resume = useCallback(() => {
     const container = containerRef.current;
-    if (!container || !dragRef.current.dragging) return;
-    const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 4) dragRef.current.moved = true;
-    container.scrollLeft = dragRef.current.startScroll - dx;
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    dragRef.current.dragging = false;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
-  }, [handleMouseMove]);
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      switchToManual();
-      const container = containerRef.current;
-      if (!container) return;
-      dragRef.current = { startX: e.clientX, startScroll: container.scrollLeft, dragging: true, moved: false };
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    },
-    [switchToManual, handleMouseMove, handleMouseUp],
-  );
-
-  const handleClickCapture = useCallback((e: React.MouseEvent) => {
-    if (dragRef.current.moved) {
-      e.preventDefault();
-      dragRef.current.moved = false;
-    }
+    const track = trackRef.current;
+    if (container) container.scrollLeft = 0;
+    if (track) track.style.animationPlayState = "running";
+    setPaused(false);
   }, []);
 
   if (loading) return <FeaturedRafflesSkeleton />;
@@ -221,14 +182,16 @@ export function FeaturedRafflesCarousel() {
 
       <div
         ref={containerRef}
-        onTouchStart={switchToManual}
-        onMouseDown={handleMouseDown}
-        onClickCapture={handleClickCapture}
-        className={cn("mt-5", manual ? "snap-x snap-mandatory overflow-x-scroll" : "overflow-x-hidden")}
+        onTouchStart={pause}
+        onTouchEnd={resume}
+        onMouseDown={pause}
+        onMouseUp={resume}
+        onMouseLeave={resume}
+        className={cn("mt-5", paused ? "snap-x snap-mandatory overflow-x-auto" : "overflow-x-hidden")}
       >
-        <div ref={trackRef} className={cn("flex w-max", !manual && "animate-featured-slide")}>
+        <div ref={trackRef} className="flex w-max animate-featured-slide">
           {cards.map((raffle, i) => (
-            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={manual} cardWidth={cardWidth} />
+            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={paused} cardWidth={cardWidth} />
           ))}
         </div>
       </div>

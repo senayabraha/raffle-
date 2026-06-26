@@ -82,7 +82,7 @@ export default function HostLogin() {
     <AuthLayout title="Host portal" subtitle="Log in to manage your raffles and payouts.">
       <GoogleButton label="Continue with Google" onClick={google} />
 
-      <div className="my-5 flex items-center gap-3 text-xs text-zinc-600">
+      <div className="my-5 flex items-center gap-3 text-xs text-ink-subtle">
         <span className="h-px flex-1 divider-faded" />
         or
         <span className="h-px flex-1 divider-faded" />
@@ -100,7 +100,7 @@ export default function HostLogin() {
           <div className="relative">
             <Mail
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="email"
@@ -118,7 +118,7 @@ export default function HostLogin() {
           <div className="relative">
             <Lock
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="password"
@@ -132,7 +132,7 @@ export default function HostLogin() {
             <button
               type="button"
               onClick={() => setShowPw((v) => !v)}
-              className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition-colors hover:text-zinc-200"
+              className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-subtle transition-colors hover:text-ink"
               aria-label={showPw ? "Hide password" : "Show password"}
             >
               {showPw ? (
@@ -145,10 +145,10 @@ export default function HostLogin() {
         </Field>
 
         <div className="flex items-center justify-between text-sm">
-          <label className="flex cursor-pointer items-center gap-2 text-zinc-400">
+          <label className="flex cursor-pointer items-center gap-2 text-ink-muted">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-white/20 bg-white/[0.03] accent-[#8b5cf6]"
+              className="h-4 w-4 rounded border-line bg-surface accent-[#8b5cf6]"
             />
             Remember me
           </label>
@@ -156,7 +156,7 @@ export default function HostLogin() {
             type="button"
             onClick={forgotPassword}
             disabled={resetting}
-            className="font-medium text-accent-soft transition-colors hover:text-white disabled:opacity-60"
+            className="font-medium text-accent-soft transition-colors hover:text-ink disabled:opacity-60"
           >
             {resetting ? "Sending…" : "Forgot password?"}
           </button>
@@ -183,15 +183,15 @@ export default function HostLogin() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-zinc-400">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         New to Raffall?{" "}
-        <Link to="/en/register" className="font-medium text-accent-soft transition-colors hover:text-white">
+        <Link to="/en/register" className="font-medium text-accent-soft transition-colors hover:text-ink">
           Create an account
         </Link>
       </p>
-      <p className="mt-2 text-center text-xs text-zinc-500">
+      <p className="mt-2 text-center text-xs text-ink-subtle">
         Entering raffles?{" "}
-        <Link to="/en/login" className="font-medium text-accent-soft transition-colors hover:text-white">
+        <Link to="/en/login" className="font-medium text-accent-soft transition-colors hover:text-ink">
           Go to entrant login
         </Link>
       </p>

@@ -29,7 +29,7 @@ function DashboardDrawerGate() {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <DashboardDrawerProvider>
-      <div className="relative flex min-h-screen">
+      <div className="relative flex min-h-screen bg-app">
         <AuroraBackground />
         <Sidebar />
         <DashboardDrawerGate />

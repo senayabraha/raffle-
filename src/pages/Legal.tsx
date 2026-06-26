@@ -18,10 +18,10 @@ export default function Legal({ title }: { title: string }) {
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
               <Scale strokeWidth={1.75} className="h-6 w-6 text-white" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
               {title}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
               This page is being finalized. Check back shortly, or reach out
               if you need this information sooner.
             </p>

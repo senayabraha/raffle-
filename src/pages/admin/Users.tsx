@@ -55,8 +55,8 @@ export default function Users() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white">Users</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">Users</h1>
+      <p className="mt-1 text-sm text-ink-subtle">
         Most recent 200 registered accounts, for support lookups and role auditing.
       </p>
 
@@ -65,12 +65,12 @@ export default function Users() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or email"
-          className="h-10 min-w-[240px] flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+          className="h-10 min-w-[240px] flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white focus-ring"
+          className="h-10 rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring"
         >
           <option value="all">All roles</option>
           {roles.map((r) => (
@@ -86,14 +86,14 @@ export default function Users() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.03]" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
             ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                <tr className="text-xs uppercase tracking-wide text-ink-subtle">
                   <th className="py-2 pr-4">Name</th>
                   <th className="py-2 pr-4">Email</th>
                   <th className="py-2 pr-4">Role</th>
@@ -107,9 +107,9 @@ export default function Users() {
                   <tr
                     key={u.id}
                     onClick={() => setSelected(u)}
-                    className="cursor-pointer border-t border-white/[0.06] text-zinc-300 transition-colors hover:bg-white/[0.03]"
+                    className="cursor-pointer border-t border-line text-ink transition-colors hover:bg-surface"
                   >
-                    <td className="py-3 pr-4 font-medium text-white">{u.fullName ?? "—"}</td>
+                    <td className="py-3 pr-4 font-medium text-ink">{u.fullName ?? "—"}</td>
                     <td className="py-3 pr-4">{u.email ?? "—"}</td>
                     <td className="py-3 pr-4">
                       <Badge tone={ROLE_TONE[u.role] ?? "neutral"}>{u.role}</Badge>
@@ -195,17 +195,17 @@ function UserDetailModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">{user.fullName ?? "Unnamed user"}</h2>
-            <p className="text-xs text-zinc-500">{user.email ?? "No email on file"}</p>
+            <h2 className="text-lg font-semibold text-ink">{user.fullName ?? "Unnamed user"}</h2>
+            <p className="text-xs text-ink-subtle">{user.email ?? "No email on file"}</p>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+          <button onClick={onClose} className="text-ink-subtle hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="mt-5 space-y-4">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Role</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">Role</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {ROLES.map((r) => (
                 <Button
@@ -222,7 +222,7 @@ function UserDetailModal({
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">
               Subscription tier
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -241,7 +241,7 @@ function UserDetailModal({
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-subtle">
               Account standing
             </p>
             <div className="mt-2">
@@ -272,18 +272,18 @@ function UserDetailModal({
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason for any change above (required, recorded in the audit log)"
             rows={2}
-            className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
           />
 
           {error && <p className="text-sm text-rose-400">{error}</p>}
 
-          <div className="border-t border-white/[0.06] pt-4">
+          <div className="border-t border-line pt-4">
             <Button size="sm" variant="ghost" disabled={exporting} onClick={runExport}>
               <Download className="h-4 w-4" />
               {exporting ? "Exporting…" : "Export subject-access data"}
             </Button>
             {exported && (
-              <pre className="mt-3 max-h-48 overflow-auto rounded-xl border border-white/10 bg-black/30 p-3 text-xs text-zinc-400">
+              <pre className="mt-3 max-h-48 overflow-auto rounded-xl border border-line bg-black/30 p-3 text-xs text-ink-muted">
                 {JSON.stringify(exported, null, 2)}
               </pre>
             )}

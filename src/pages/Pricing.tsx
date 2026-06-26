@@ -29,10 +29,10 @@ export default function Pricing() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="mb-10 text-center"
       >
-        <h1 className="text-4xl font-bold tracking-tightest text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tightest text-ink sm:text-5xl">
           Simple, <span className="text-gradient">commission-based</span> pricing
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-zinc-400">
+        <p className="mx-auto mt-3 max-w-xl text-ink-muted">
           No subscriptions, no tiers to pick between. We only make money when your
           raffle does.
         </p>
@@ -50,10 +50,10 @@ export default function Pricing() {
               <div className="grid h-10 w-10 place-items-center rounded-xl border border-accent/30 bg-accent/10 text-accent-soft">
                 <item.icon strokeWidth={1.5} className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-base font-semibold tracking-tight text-white">
+              <h3 className="mt-4 text-base font-semibold tracking-tight text-ink">
                 {item.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
             </SpotlightCard>
           </motion.div>
         ))}
@@ -63,10 +63,10 @@ export default function Pricing() {
         <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-accent/30 blur-3xl" />
         <div className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="relative">
-          <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tightest text-white sm:text-4xl">
+          <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
             Ready to launch your first raffle?
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-zinc-400">
+          <p className="mx-auto mt-3 max-w-md text-ink-muted">
             Set your ticket price, draw date and you're live — commission is deducted
             automatically at payout.
           </p>

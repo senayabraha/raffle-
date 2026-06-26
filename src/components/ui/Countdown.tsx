@@ -13,7 +13,7 @@ export function CountdownPills({ drawDate }: { drawDate: string }) {
 
   if (c.done) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-zinc-300">
+      <div className="rounded-xl border border-line bg-surface px-4 py-3 text-sm font-medium text-ink">
         Draw closed — winner being selected
       </div>
     );
@@ -26,10 +26,10 @@ export function CountdownPills({ drawDate }: { drawDate: string }) {
           key={u.label}
           className="glass flex flex-col items-center justify-center py-3"
         >
-          <span className="text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl">
+          <span className="text-2xl font-bold tabular-nums tracking-tight text-ink sm:text-3xl">
             {String(u.value).padStart(2, "0")}
           </span>
-          <span className="mt-0.5 text-[10px] uppercase tracking-wider text-zinc-500">
+          <span className="mt-0.5 text-[10px] uppercase tracking-wider text-ink-subtle">
             {u.label}
           </span>
         </div>

@@ -256,11 +256,11 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_active_mode: string
           role: Database["public"]["Enums"]["user_role"]
           status: string
           stripe_customer_id: string | null
           subscription_tier: Database["public"]["Enums"]["subscription_tier"]
-          trustpilot_score: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -268,11 +268,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_active_mode?: string
           role?: Database["public"]["Enums"]["user_role"]
           status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
-          trustpilot_score?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -280,11 +280,11 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_active_mode?: string
           role?: Database["public"]["Enums"]["user_role"]
           status?: string
           stripe_customer_id?: string | null
           subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
-          trustpilot_score?: number | null
         }
         Relationships: []
       }
@@ -557,6 +557,10 @@ export type Database = {
       get_checkout_status: { Args: { p_payment_id: string }; Returns: Json }
       purchase_tickets: {
         Args: { p_qty: number; p_raffle_id: string }
+        Returns: Json
+      }
+      request_host_access: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       respond_to_win: {

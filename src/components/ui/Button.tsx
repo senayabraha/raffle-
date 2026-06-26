@@ -10,10 +10,10 @@ const buttonVariants = cva(
         primary:
           "bg-accent-gradient text-white shadow-accent-glow hover:brightness-110 hover:shadow-[0_10px_40px_-6px_rgba(139,92,246,0.6)]",
         secondary:
-          "border border-white/10 bg-white/[0.04] text-white backdrop-blur-md hover:bg-white/[0.08] hover:border-white/20",
-        ghost: "text-zinc-300 hover:bg-white/[0.06] hover:text-white",
+          "border border-line bg-surface text-ink backdrop-blur-md hover:bg-surface-2",
+        ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
         outline:
-          "border border-accent/40 text-accent-soft hover:bg-accent/10 hover:border-accent/70",
+          "border border-accent/40 text-accent-deep dark:text-accent-soft hover:bg-accent/10 hover:border-accent/70",
       },
       size: {
         sm: "h-9 px-3.5 text-sm",

@@ -282,7 +282,7 @@ export default function CreateRaffle() {
   if (loadingDraft) {
     return (
       <AppShell>
-        <div className="flex min-h-[40vh] items-center justify-center text-zinc-400">
+        <div className="flex min-h-[40vh] items-center justify-center text-ink-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
       </AppShell>
@@ -295,15 +295,15 @@ export default function CreateRaffle() {
       <div className="mb-7">
         <button
           onClick={exitToDashboard}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-white"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
           Back to dashboard
         </button>
-        <h1 className="text-3xl font-bold tracking-tightest text-white sm:text-4xl">
+        <h1 className="text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
           Create a <span className="text-gradient">raffle</span>
         </h1>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-ink-muted">
           Set up your prize competition in a few steps — you can edit anything
           before it goes live.
         </p>
@@ -311,8 +311,8 @@ export default function CreateRaffle() {
 
       {/* Mobile progress */}
       <div className="mb-6 lg:hidden">
-        <div className="mb-2 flex items-center justify-between text-xs text-zinc-400">
-          <span className="font-medium text-white">{steps[step].title}</span>
+        <div className="mb-2 flex items-center justify-between text-xs text-ink-muted">
+          <span className="font-medium text-ink">{steps[step].title}</span>
           <span>
             Step {step + 1} of {steps.length}
           </span>
@@ -365,7 +365,7 @@ export default function CreateRaffle() {
             )}
 
             {/* Nav */}
-            <div className="mt-8 flex items-center justify-between border-t border-white/[0.06] pt-5">
+            <div className="mt-8 flex items-center justify-between border-t border-line pt-5">
               <Button
                 variant="ghost"
                 size="md"
@@ -376,7 +376,7 @@ export default function CreateRaffle() {
                 <ArrowLeft strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 Back
               </Button>
-              <span className="hidden text-xs text-zinc-500 sm:block">
+              <span className="hidden text-xs text-ink-subtle sm:block">
                 Step {step + 1} of {steps.length}
               </span>
               <div className="flex items-center gap-2">
@@ -440,10 +440,10 @@ function StepHeader({ index }: { index: number }) {
       <Badge tone="accent">
         Step {index + 1} · {steps[index].title}
       </Badge>
-      <h2 className="mt-3 text-xl font-bold tracking-tight text-white">
+      <h2 className="mt-3 text-xl font-bold tracking-tight text-ink">
         {headings[index].title}
       </h2>
-      <p className="mt-1 text-sm text-zinc-400">{headings[index].sub}</p>
+      <p className="mt-1 text-sm text-ink-muted">{headings[index].sub}</p>
     </div>
   );
 }
@@ -507,8 +507,8 @@ function StepBody({
                   className={cn(
                     "focus-ring rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-300",
                     draft.category === c
-                      ? "border-accent/50 bg-accent/15 text-white shadow-accent-glow"
-                      : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-zinc-100",
+                      ? "border-accent/50 bg-accent/15 text-ink shadow-accent-glow"
+                      : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
                   )}
                 >
                   {c}
@@ -535,11 +535,11 @@ function StepBody({
               {imagePreviews.map((src, i) => (
                 <div
                   key={src}
-                  className="group relative aspect-square overflow-hidden rounded-lg border border-white/10"
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-line"
                 >
                   <img src={src} alt="" className="h-full w-full object-cover" />
                   {i === 0 && (
-                    <span className="absolute left-1 top-1 rounded-full bg-obsidian/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-200">
+                    <span className="absolute left-1 top-1 rounded-full bg-app/80 px-1.5 py-0.5 text-[10px] font-medium text-ink">
                       Cover
                     </span>
                   )}
@@ -547,7 +547,7 @@ function StepBody({
                     type="button"
                     onClick={() => onRemoveImage(i)}
                     aria-label="Remove image"
-                    className="focus-ring absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-obsidian/80 text-zinc-200 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="focus-ring absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-app/80 text-ink opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <X strokeWidth={2} className="h-3.5 w-3.5" />
                   </button>
@@ -557,16 +557,16 @@ function StepBody({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="focus-ring group flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/[0.02] text-center transition-all duration-300 hover:border-accent/40 hover:bg-white/[0.04]"
+                  className="focus-ring group flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line bg-surface text-center transition-all duration-300 hover:border-accent/40 hover:bg-surface"
                 >
-                  <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
+                  <span className="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface text-accent-soft transition-transform duration-300 group-hover:-translate-y-0.5">
                     <UploadCloud strokeWidth={1.5} className="h-4 w-4" />
                   </span>
-                  <span className="text-[11px] font-medium text-zinc-300">Add photo</span>
+                  <span className="text-[11px] font-medium text-ink">Add photo</span>
                 </button>
               )}
             </div>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-ink-subtle">
               First photo is the cover. PNG or JPG, up to 8MB each.
             </p>
           </Field>
@@ -630,10 +630,10 @@ function StepBody({
             />
           </Field>
 
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center justify-between rounded-xl border border-line bg-surface p-4">
             <div>
-              <p className="text-sm font-medium text-zinc-200">Unlimited tickets</p>
-              <p className="text-xs text-zinc-500">No cap — sell as many as you can</p>
+              <p className="text-sm font-medium text-ink">Unlimited tickets</p>
+              <p className="text-xs text-ink-subtle">No cap — sell as many as you can</p>
             </div>
             <Switch checked={draft.unlimited} onChange={(v) => set({ unlimited: v })} />
           </div>
@@ -649,10 +649,10 @@ function StepBody({
             </Field>
           )}
 
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center justify-between rounded-xl border border-line bg-surface p-4">
             <div>
-              <p className="text-sm font-medium text-zinc-200">Bundle deal</p>
-              <p className="text-xs text-zinc-500">Reward bulk buyers with free tickets</p>
+              <p className="text-sm font-medium text-ink">Bundle deal</p>
+              <p className="text-xs text-ink-subtle">Reward bulk buyers with free tickets</p>
             </div>
             <Switch
               checked={draft.bundlesEnabled}
@@ -681,9 +681,9 @@ function StepBody({
                 </Field>
               </div>
               {!errors.bundle && (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-ink-subtle">
                   Effective price per ticket with this bundle:{" "}
-                  <span className="font-medium text-zinc-300">
+                  <span className="font-medium text-ink">
                     {formatCurrency(effectivePricePerTicket(draft))}
                   </span>
                 </p>
@@ -740,7 +740,7 @@ function StepBody({
               onChange={(e) => set({ minTicketTarget: Number(e.target.value) })}
             />
           </Field>
-          <p className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-400">
+          <p className="flex items-start gap-2 rounded-xl border border-line bg-surface p-3 text-xs leading-relaxed text-ink-muted">
             <Check strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
             The draw uses an automated, auditable RNG. Neither you nor Raffall can
             influence the outcome.
@@ -825,11 +825,11 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
 
   return (
     <>
-      <dl className="divide-y divide-white/[0.06] overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+      <dl className="divide-y divide-white/[0.06] overflow-hidden rounded-xl border border-line bg-surface">
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 px-4 py-2.5">
-            <dt className="text-xs text-zinc-500">{k}</dt>
-            <dd className="truncate text-sm font-medium text-zinc-200">{v}</dd>
+            <dt className="text-xs text-ink-subtle">{k}</dt>
+            <dd className="truncate text-sm font-medium text-ink">{v}</dd>
           </div>
         ))}
       </dl>
@@ -849,7 +849,7 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
             />
           )}
           <Row label="Platform commission (10%)" value={`−${formatCurrency(platformCut)}`} muted />
-          <div className="mt-1 flex items-center justify-between border-t border-white/10 pt-2 font-bold text-white">
+          <div className="mt-1 flex items-center justify-between border-t border-line pt-2 font-bold text-ink">
             <span>You earn (held in escrow)</span>
             <span className="tabular-nums text-emerald-300">{formatCurrency(hostNet)}</span>
           </div>
@@ -862,8 +862,8 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
 function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className={muted ? "text-zinc-400" : "text-zinc-300"}>{label}</span>
-      <span className={cn("tabular-nums", muted ? "text-zinc-400" : "text-white")}>{value}</span>
+      <span className={muted ? "text-ink-muted" : "text-ink"}>{label}</span>
+      <span className={cn("tabular-nums", muted ? "text-ink-muted" : "text-ink")}>{value}</span>
     </div>
   );
 }
@@ -888,11 +888,11 @@ function PublishedScreen({ draft, slug }: { draft: RaffleDraft; slug: string | n
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          <h1 className="mt-7 text-3xl font-bold tracking-tightest text-white sm:text-4xl">
+          <h1 className="mt-7 text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
             You're <span className="text-gradient">live!</span>
           </h1>
-          <p className="mt-3 text-zinc-400">
-            <span className="font-medium text-zinc-200">
+          <p className="mt-3 text-ink-muted">
+            <span className="font-medium text-ink">
               {draft.title || "Your raffle"}
             </span>{" "}
             is now {draft.visibility === "public" ? "on the marketplace" : "ready to share"}.

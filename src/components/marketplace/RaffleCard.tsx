@@ -31,11 +31,11 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
               )}
             />
           )}
-          <div className="absolute inset-0 bg-obsidian/20" />
+          <div className="absolute inset-0 bg-app/20" />
           {!raffle.image && (
             <Icon
               strokeWidth={1.25}
-              className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-white/80 drop-shadow-lg transition-transform duration-500 ease-premium group-hover:scale-110"
+              className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-ink/80 drop-shadow-lg transition-transform duration-500 ease-premium group-hover:scale-110"
             />
           )}
 
@@ -59,16 +59,16 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
 
         {/* Body */}
         <div className="flex flex-1 flex-col p-4">
-          <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+          <span className="text-[11px] uppercase tracking-wider text-ink-subtle">
             {raffle.category}
           </span>
-          <h3 className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-white">
+          <h3 className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-ink">
             {raffle.title}
           </h3>
 
           {/* Host */}
-          <div className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-white/[0.06] text-[9px] font-bold text-accent-soft">
+          <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface-2 text-[9px] font-bold text-accent-soft">
               {raffle.hostInitials}
             </span>
             <span className="truncate">{raffle.host}</span>
@@ -76,7 +76,7 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
 
           {/* Progress */}
           <div className="mt-3.5">
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
@@ -85,7 +85,7 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <div className="mt-1.5 flex justify-between text-[11px] text-zinc-500">
+            <div className="mt-1.5 flex justify-between text-[11px] text-ink-subtle">
               <span className={cn(almostGone && "font-medium text-amber-300")}>
                 {almostGone ? "Almost gone" : `${Math.round(pct)}% sold`}
               </span>
@@ -96,15 +96,15 @@ export function RaffleCard({ raffle }: { raffle: MarketplaceRaffle }) {
           </div>
 
           {/* Footer */}
-          <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
+          <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <div>
-              <p className="text-[11px] text-zinc-500">From</p>
-              <p className="text-base font-bold tracking-tight text-white">
+              <p className="text-[11px] text-ink-subtle">From</p>
+              <p className="text-base font-bold tracking-tight text-ink">
                 {formatCurrency(raffle.ticketPrice)}
-                <span className="text-xs font-normal text-zinc-500"> /ticket</span>
+                <span className="text-xs font-normal text-ink-subtle"> /ticket</span>
               </p>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
               <Clock strokeWidth={1.5} className="h-3.5 w-3.5 text-accent-soft" />
               <CountdownInline drawDate={raffle.drawDate} />
             </div>

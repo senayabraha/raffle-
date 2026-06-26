@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, Ticket, LogOut } from "lucide-react";
+import { Menu, Ticket, LogOut, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/lib/auth";
+import { useMode } from "@/lib/mode";
 import { useDrawer } from "@/lib/drawer";
 
 const baseLinks: { label: string; href?: string; to?: string }[] = [
@@ -13,10 +15,12 @@ const baseLinks: { label: string; href?: string; to?: string }[] = [
 export function MarketingNav() {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
+  const { canHost, setMode, switching } = useMode();
   const { open: openDrawer } = useDrawer();
-  // Signed-out visitors go straight to the Host portal, not the entrant
-  // login, since landing on the dashboard requires Host-context auth.
-  const links = [...baseLinks, { label: "Hosts", to: session ? "/en/dashboard" : "/en/host/login" }];
+  // One predictable host entry point for everyone: the become-a-host page
+  // routes signed-out visitors to sign up, upgrades entrants, and sends
+  // existing hosts straight to their dashboard.
+  const links = [...baseLinks, { label: "Hosts", to: "/en/become-a-host" }];
 
   async function handleSignOut() {
     await signOut();
@@ -34,7 +38,7 @@ export function MarketingNav() {
           >
             <Menu strokeWidth={2} className="h-4 w-4" />
           </button>
-          <Link to="/en" className="text-[15px] font-bold tracking-tight text-white">
+          <Link to="/en" className="text-[15px] font-bold tracking-tight text-ink">
             Raffall
           </Link>
         </div>
@@ -45,7 +49,7 @@ export function MarketingNav() {
               <Link
                 key={l.label}
                 to={l.to}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors duration-300 hover:text-white"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors duration-300 hover:text-ink"
               >
                 {l.label}
               </Link>
@@ -53,7 +57,7 @@ export function MarketingNav() {
               <a
                 key={l.label}
                 href={l.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors duration-300 hover:text-white"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors duration-300 hover:text-ink"
               >
                 {l.label}
               </a>
@@ -62,6 +66,7 @@ export function MarketingNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {session ? (
             <>
               <Link to="/en/tickets">
@@ -70,15 +75,27 @@ export function MarketingNav() {
                   My tickets
                 </Button>
               </Link>
-              <Link to="/en/dashboard">
-                <Button variant="primary" size="sm">
-                  Dashboard
+              {canHost ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setMode("host")}
+                  disabled={switching}
+                >
+                  <ArrowLeftRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                  Switch to hosting
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/en/become-a-host">
+                  <Button variant="primary" size="sm">
+                    Host a raffle
+                  </Button>
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 title="Sign out"
-                className="focus-ring grid h-9 w-9 place-items-center rounded-lg text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-rose-300"
+                className="focus-ring grid h-9 w-9 place-items-center rounded-lg text-ink-subtle transition-colors hover:bg-surface-2 hover:text-rose-400"
               >
                 <LogOut strokeWidth={1.5} className="h-4 w-4" />
               </button>

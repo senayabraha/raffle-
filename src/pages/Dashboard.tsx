@@ -63,6 +63,9 @@ export default function Dashboard() {
   const totals = data?.totals;
   const salesSeries = data?.salesSeries ?? new Array(14).fill(0);
   const hasSales = salesSeries.some((v) => v > 0);
+  // Brand-new host: loaded, but no raffles yet. Show a focused first-run
+  // panel instead of a grid of empty stat cards.
+  const isFirstRun = !loading && (data?.raffles.length ?? 0) === 0;
 
   const stats = [
     {
@@ -112,13 +115,13 @@ export default function Dashboard() {
             <Badge tone="accent" dot>
               Live now
             </Badge>
-            <span className="text-xs text-zinc-500">{todayLabel}</span>
+            <span className="text-xs text-ink-subtle">{todayLabel}</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tightest text-white sm:text-[2.5rem] sm:leading-[1.05]">
+          <h1 className="text-3xl font-bold tracking-tightest text-ink sm:text-[2.5rem] sm:leading-[1.05]">
             Welcome back,{" "}
             <span className="text-gradient capitalize">{firstName}</span>
           </h1>
-          <p className="mt-2 max-w-md text-sm text-zinc-400">
+          <p className="mt-2 max-w-md text-sm text-ink-muted">
             {loading
               ? "Loading your latest numbers…"
               : totals && totals.ticketsSold > 0
@@ -127,7 +130,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-zinc-400">
+          <span className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink-muted">
             <Clock strokeWidth={1.5} className="h-[18px] w-[18px]" />
             Last 14 days
           </span>
@@ -140,7 +143,38 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
+      {/* ---- First-run onboarding ---- */}
+      {isFirstRun && (
+        <motion.div custom={1} variants={fadeUp} initial="hidden" animate="show">
+          <div className="glass-strong relative overflow-hidden rounded-2xl p-8 sm:p-10">
+            <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-accent/25 blur-3xl" />
+            <div className="relative max-w-lg">
+              <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
+                <Sparkles strokeWidth={1.75} className="h-6 w-6 text-white" />
+              </span>
+              <h2 className="mt-5 text-2xl font-bold tracking-tight text-ink">
+                Create your first raffle
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                You don't have any raffles yet. Set a prize, choose how the draw
+                ends, and publish — your sales, entrants and escrow will all show
+                up here once tickets start moving.
+              </p>
+              <div className="mt-6">
+                <Link to="/en/dashboard/create">
+                  <Button variant="primary" size="lg">
+                    <Sparkles strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                    Create your first raffle
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* ---- Bento grid ---- */}
+      {!isFirstRun && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Row 1 — stat cards */}
         {stats.map((s, i) => (
@@ -180,16 +214,16 @@ export default function Dashboard() {
             {hasSales ? (
               <>
                 <SalesChart series={salesSeries} />
-                <div className="mt-3 text-right text-[10px] text-zinc-600">
+                <div className="mt-3 text-right text-[10px] text-ink-subtle">
                   Last 14 days
                 </div>
               </>
             ) : (
               <div className="flex h-44 flex-col items-center justify-center gap-2 text-center">
-                <p className="text-sm font-medium text-zinc-300">
+                <p className="text-sm font-medium text-ink">
                   No sales in the last 14 days
                 </p>
-                <p className="max-w-xs text-xs text-zinc-500">
+                <p className="max-w-xs text-xs text-ink-subtle">
                   Ticket sales will chart here once entrants start joining your
                   raffles.
                 </p>
@@ -212,10 +246,10 @@ export default function Dashboard() {
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
                 <ShieldCheck strokeWidth={1.75} className="h-5 w-5 text-white" />
               </div>
-              <h3 className="mt-4 text-[15px] font-semibold tracking-tight text-white">
+              <h3 className="mt-4 text-[15px] font-semibold tracking-tight text-ink">
                 Raffall Guarantee
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
                 You have 7 days after a draw to confirm prize delivery. Miss
                 the window and the guarantee pays the winner 75% of gross
                 revenue — you forfeit the rest.
@@ -269,6 +303,7 @@ export default function Dashboard() {
           </SpotlightCard>
         </motion.div>
       </div>
+      )}
     </AppShell>
   );
 }

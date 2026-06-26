@@ -34,6 +34,20 @@ export default {
           deep: "#7c3aed",
           glow: "#c4b5fd",
         },
+        // Semantic, theme-aware tokens (flip between light/dark via the
+        // `.dark` class on <html>). Defined as RGB channels in index.css so
+        // Tailwind's `/<alpha>` opacity modifiers keep working.
+        app: "rgb(var(--bg) / <alpha-value>)",
+        surface: {
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          2: "rgb(var(--surface-2) / <alpha-value>)",
+        },
+        line: "rgb(var(--line) / <alpha-value>)",
+        ink: {
+          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
+          muted: "rgb(var(--ink-muted) / <alpha-value>)",
+          subtle: "rgb(var(--ink-subtle) / <alpha-value>)",
+        },
       },
       borderRadius: {
         xl: "0.875rem",

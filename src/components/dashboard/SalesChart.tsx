@@ -22,11 +22,11 @@ export function SalesChart({ series }: { series: number[] }) {
               className={
                 isPeak
                   ? "w-full rounded-t-md bg-accent-gradient shadow-accent-glow"
-                  : "w-full rounded-t-md bg-white/10 transition-colors duration-300 group-hover:bg-accent/50"
+                  : "w-full rounded-t-md bg-surface-2 transition-colors duration-300 group-hover:bg-accent/50"
               }
             />
             {/* Tooltip */}
-            <span className="pointer-events-none absolute -top-7 rounded-md border border-white/10 bg-obsidian/90 px-1.5 py-0.5 text-[10px] font-medium text-white opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100">
+            <span className="pointer-events-none absolute -top-7 rounded-md border border-line bg-app/90 px-1.5 py-0.5 text-[10px] font-medium text-ink opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100">
               {v.toLocaleString()}
             </span>
           </div>

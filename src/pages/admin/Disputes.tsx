@@ -23,8 +23,8 @@ export default function Disputes() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white">Disputes</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">Disputes</h1>
+      <p className="mt-1 text-sm text-ink-subtle">
         Prizes currently disputed by the winning entrant — the resolution queue.
       </p>
 
@@ -33,16 +33,16 @@ export default function Disputes() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.03]" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
             ))}
           </div>
         ) : disputes.length === 0 ? (
-          <p className="text-sm text-zinc-500">No open disputes right now.</p>
+          <p className="text-sm text-ink-subtle">No open disputes right now.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                <tr className="text-xs uppercase tracking-wide text-ink-subtle">
                   <th className="py-2 pr-4">Raffle</th>
                   <th className="py-2 pr-4">Winner</th>
                   <th className="py-2 pr-4">Ticket</th>
@@ -52,8 +52,8 @@ export default function Disputes() {
               </thead>
               <tbody>
                 {disputes.map((d) => (
-                  <tr key={d.winnerId} className="border-t border-white/[0.06] text-zinc-300">
-                    <td className="py-3 pr-4 font-medium text-white">{d.raffleTitle}</td>
+                  <tr key={d.winnerId} className="border-t border-line text-ink">
+                    <td className="py-3 pr-4 font-medium text-ink">{d.raffleTitle}</td>
                     <td className="py-3 pr-4">{d.winnerName}</td>
                     <td className="py-3 pr-4">#{d.ticketNumber ?? "—"}</td>
                     <td className="py-3 pr-4">
@@ -124,12 +124,12 @@ function ResolveModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">{dispute.raffleTitle}</h2>
-            <p className="text-xs text-zinc-500">
+            <h2 className="text-lg font-semibold text-ink">{dispute.raffleTitle}</h2>
+            <p className="text-xs text-ink-subtle">
               {dispute.winnerName} · ticket #{dispute.ticketNumber ?? "—"}
             </p>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+          <button onClick={onClose} className="text-ink-subtle hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -140,11 +140,11 @@ function ResolveModal({
             className={`w-full rounded-xl border p-4 text-left transition-colors ${
               decision === "uphold_host"
                 ? "border-accent/60 bg-accent/10"
-                : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                : "border-line bg-surface hover:border-line"
             }`}
           >
-            <p className="text-sm font-semibold text-white">Uphold host</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="text-sm font-semibold text-ink">Uphold host</p>
+            <p className="mt-1 text-xs text-ink-subtle">
               Prize is accepted as delivered. Winner moves to "accepted", raffle to "confirmed".
             </p>
           </button>
@@ -153,11 +153,11 @@ function ResolveModal({
             className={`w-full rounded-xl border p-4 text-left transition-colors ${
               decision === "uphold_entrant"
                 ? "border-accent/60 bg-accent/10"
-                : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                : "border-line bg-surface hover:border-line"
             }`}
           >
-            <p className="text-sm font-semibold text-white">Uphold entrant</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="text-sm font-semibold text-ink">Uphold entrant</p>
+            <p className="mt-1 text-xs text-ink-subtle">
               Entrant is compensated, same as the automated guarantee path. Winner moves to
               "compensated", raffle to "revoked", payments to "compensated".
             </p>
@@ -169,7 +169,7 @@ function ResolveModal({
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason for this decision (required, recorded in the audit log)"
           rows={3}
-          className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+          className="mt-4 w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
         />
 
         {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}

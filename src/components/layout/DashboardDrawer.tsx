@@ -35,7 +35,7 @@ export function DashboardDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label="Dashboard menu"
-            className="absolute inset-y-0 left-0 flex w-[75%] max-w-[320px] flex-col gap-1 overflow-y-auto border-r border-white/10 bg-obsidian-100/95 p-3 pb-4 backdrop-blur-xl shadow-soft-lift"
+            className="absolute inset-y-0 left-0 flex w-[75%] max-w-[320px] flex-col gap-1 overflow-y-auto border-r border-line bg-surface/95 p-3 pb-4 backdrop-blur-xl shadow-soft-lift"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
@@ -43,13 +43,13 @@ export function DashboardDrawer() {
           >
             <div className="flex items-center justify-between px-2 pb-4">
               <div className="leading-tight">
-                <p className="text-[15px] font-bold tracking-tight text-white">Raffall</p>
-                <p className="text-[11px] text-zinc-500">Host Studio</p>
+                <p className="text-[15px] font-bold tracking-tight text-ink">Raffall</p>
+                <p className="text-[11px] text-ink-subtle">Host Studio</p>
               </div>
               <button
                 onClick={close}
                 aria-label="Close menu"
-                className="focus-ring grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]"
+                className="focus-ring grid h-9 w-9 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2"
               >
                 <X strokeWidth={1.5} className="h-[18px] w-[18px]" />
               </button>
@@ -71,7 +71,7 @@ export function DashboardDrawer() {
 
             <button
               onClick={handleSignOut}
-              className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-rose-300"
+              className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:bg-surface hover:text-rose-300"
             >
               <LogOut strokeWidth={1.5} className="h-[18px] w-[18px]" />
               Sign out

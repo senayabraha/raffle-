@@ -87,13 +87,13 @@ export default function Register() {
   if (checkEmail) {
     return (
       <AuthLayout title="Check your inbox" subtitle="One quick step to finish up.">
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-line bg-surface p-8 text-center">
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient shadow-accent-glow">
             <MailCheck strokeWidth={1.5} className="h-7 w-7 text-white" />
           </span>
-          <p className="text-sm leading-relaxed text-zinc-300">
+          <p className="text-sm leading-relaxed text-ink">
             We sent a confirmation link to{" "}
-            <span className="font-semibold text-white">{email}</span>. Click it to
+            <span className="font-semibold text-ink">{email}</span>. Click it to
             activate your account, then log in.
           </p>
           <Link to="/en/login" className="w-full">
@@ -113,7 +113,7 @@ export default function Register() {
     >
       <GoogleButton label="Sign up with Google" onClick={google} />
 
-      <div className="my-5 flex items-center gap-3 text-xs text-zinc-600">
+      <div className="my-5 flex items-center gap-3 text-xs text-ink-subtle">
         <span className="h-px flex-1 divider-faded" />
         or
         <span className="h-px flex-1 divider-faded" />
@@ -142,7 +142,7 @@ export default function Register() {
           <div className="relative">
             <User
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="name"
@@ -159,7 +159,7 @@ export default function Register() {
           <div className="relative">
             <Mail
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="email"
@@ -177,7 +177,7 @@ export default function Register() {
           <div className="relative">
             <Lock
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="password"
@@ -196,7 +196,7 @@ export default function Register() {
           <div className="relative">
             <Cake
               strokeWidth={1.5}
-              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-zinc-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-subtle"
             />
             <Input
               id="dob"
@@ -209,15 +209,15 @@ export default function Register() {
           </div>
         </Field>
 
-        <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-zinc-400">
+        <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-ink-muted">
           <input
             type="checkbox"
             required
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/[0.03] accent-[#8b5cf6]"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-line bg-surface accent-[#8b5cf6]"
           />
           I agree to the{" "}
-          <Link to="/en/terms" className="text-accent-soft hover:text-white">Terms</Link> &amp;{" "}
-          <Link to="/en/privacy" className="text-accent-soft hover:text-white">Privacy Policy</Link>.
+          <Link to="/en/terms" className="text-accent-soft hover:text-ink">Terms</Link> &amp;{" "}
+          <Link to="/en/privacy" className="text-accent-soft hover:text-ink">Privacy Policy</Link>.
         </label>
 
         <Button type="submit" variant="primary" size="lg" disabled={loading} className="w-full">
@@ -235,9 +235,9 @@ export default function Register() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-zinc-400">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link to="/en/login" className="font-medium text-accent-soft transition-colors hover:text-white">
+        <Link to="/en/login" className="font-medium text-accent-soft transition-colors hover:text-ink">
           Log in
         </Link>
       </p>

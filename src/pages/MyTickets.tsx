@@ -43,10 +43,10 @@ export default function MyTickets() {
           {totalTickets} {totalTickets === 1 ? "ticket" : "tickets"} across{" "}
           {groups.length} {groups.length === 1 ? "raffle" : "raffles"}
         </Badge>
-        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-white sm:text-5xl">
+        <h1 className="mt-4 text-4xl font-bold tracking-tightest text-ink sm:text-5xl">
           My <span className="text-gradient">tickets</span>
         </h1>
-        <p className="mt-3 max-w-xl text-zinc-400">
+        <p className="mt-3 max-w-xl text-ink-muted">
           Every entry you've made, with live draw countdowns. Good luck!
         </p>
       </motion.div>
@@ -59,11 +59,11 @@ export default function MyTickets() {
         </div>
       ) : groups.length === 0 ? (
         <div className="glass flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-surface text-ink-subtle">
             <Ticket strokeWidth={1.5} className="h-7 w-7" />
           </div>
-          <p className="text-base font-semibold text-white">No tickets yet</p>
-          <p className="max-w-xs text-sm text-zinc-500">
+          <p className="text-base font-semibold text-ink">No tickets yet</p>
+          <p className="max-w-xs text-sm text-ink-subtle">
             Browse the marketplace and enter your first raffle to see it here.
           </p>
           <Link to="/en/public-raffles/live" className="mt-1">
@@ -85,12 +85,12 @@ export default function MyTickets() {
               <SpotlightCard className="h-full p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-[11px] uppercase tracking-wider text-zinc-500">
+                    <span className="text-[11px] uppercase tracking-wider text-ink-subtle">
                       {g.category}
                     </span>
                     <Link
                       to={`/en/raffle/${g.slug}`}
-                      className="mt-1 block text-[15px] font-semibold leading-snug tracking-tight text-white transition-colors hover:text-accent-soft"
+                      className="mt-1 block text-[15px] font-semibold leading-snug tracking-tight text-ink transition-colors hover:text-accent-soft"
                     >
                       {g.title}
                     </Link>
@@ -111,10 +111,10 @@ export default function MyTickets() {
                       {g.count === 1 ? "ticket" : "tickets"}
                     </span>
                   </div>
-                  <div className="min-w-0 text-sm text-zinc-400">
+                  <div className="min-w-0 text-sm text-ink-muted">
                     <p>
                       Numbers{" "}
-                      <span className="font-medium text-zinc-200">
+                      <span className="font-medium text-ink">
                         {g.numbers.slice(0, 6).map((n) => `#${n}`).join(", ")}
                         {g.numbers.length > 6 ? ` +${g.numbers.length - 6} more` : ""}
                       </span>
@@ -128,8 +128,8 @@ export default function MyTickets() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3 text-sm">
-                  <span className="inline-flex items-center gap-1.5 text-zinc-400">
+                <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-sm">
+                  <span className="inline-flex items-center gap-1.5 text-ink-muted">
                     {g.status === "ended" ? (
                       <>
                         <Trophy strokeWidth={1.5} className="h-4 w-4 text-amber-400" />
@@ -140,7 +140,7 @@ export default function MyTickets() {
                         <Clock strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
                         Draws in{" "}
                         {g.drawDate ? (
-                          <CountdownInline drawDate={g.drawDate} className="text-zinc-200" />
+                          <CountdownInline drawDate={g.drawDate} className="text-ink" />
                         ) : (
                           "soon"
                         )}
@@ -149,14 +149,14 @@ export default function MyTickets() {
                   </span>
                   <Link
                     to={`/en/raffle/${g.slug}`}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-accent-soft transition-colors hover:text-white"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-accent-soft transition-colors hover:text-ink"
                   >
                     View
                     <ArrowRight strokeWidth={1.5} className="h-3.5 w-3.5" />
                   </Link>
                 </div>
 
-                <p className="mt-2 text-[11px] text-zinc-600">
+                <p className="mt-2 text-[11px] text-ink-subtle">
                   {formatCurrency(g.ticketPrice)} per ticket
                 </p>
               </SpotlightCard>

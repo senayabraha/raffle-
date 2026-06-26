@@ -62,20 +62,20 @@ export default function CheckoutSuccess() {
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-rose-400/30 bg-rose-400/10 text-rose-300">
                 <AlertCircle strokeWidth={1.75} className="h-7 w-7" />
               </div>
-              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
                 Couldn't load your receipt
               </h1>
-              <p className="mt-2 text-sm text-zinc-400">{error}</p>
+              <p className="mt-2 text-sm text-ink-muted">{error}</p>
             </>
           ) : !status || status.status === "pending" || status.status === "failed" ? (
             <>
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient text-white shadow-accent-glow">
                 <Loader2 strokeWidth={1.75} className="h-7 w-7 animate-spin" />
               </div>
-              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
                 {status?.status === "failed" ? "Payment didn't go through" : "Confirming your payment…"}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                 {status?.status === "failed"
                   ? "The payment provider reported this transaction as unsuccessful. No tickets were issued."
                   : "Hang tight — we're confirming this with your payment provider. This usually takes a few seconds."}
@@ -86,28 +86,28 @@ export default function CheckoutSuccess() {
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-accent-gradient text-white shadow-accent-glow">
                 <Check strokeWidth={2} className="h-7 w-7" />
               </div>
-              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+              <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
                 You're in — good luck!
               </h1>
-              <p className="mt-2 text-sm text-zinc-400">{status.raffle_title}</p>
+              <p className="mt-2 text-sm text-ink-muted">{status.raffle_title}</p>
 
-              <div className="mt-6 space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left text-sm">
-                <div className="flex justify-between text-zinc-400">
+              <div className="mt-6 space-y-2 rounded-xl border border-line bg-surface p-4 text-left text-sm">
+                <div className="flex justify-between text-ink-muted">
                   <span>Tickets</span>
-                  <span className="font-medium text-zinc-200">
+                  <span className="font-medium text-ink">
                     {status.paid}
                     {status.free > 0 ? ` + ${status.free} free` : ""}
                   </span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div className="flex justify-between text-ink-muted">
                   <span>Ticket numbers</span>
-                  <span className="font-medium text-zinc-200">
+                  <span className="font-medium text-ink">
                     {status.ticket_numbers.length > 6
                       ? `#${status.ticket_numbers[0]}–#${status.ticket_numbers[status.ticket_numbers.length - 1]}`
                       : status.ticket_numbers.map((n) => `#${n}`).join(", ")}
                   </span>
                 </div>
-                <div className="flex justify-between border-t border-white/[0.06] pt-2 font-bold text-white">
+                <div className="flex justify-between border-t border-line pt-2 font-bold text-ink">
                   <span>Amount paid</span>
                   <span>{formatCurrency(status.amount)}</span>
                 </div>
@@ -120,7 +120,7 @@ export default function CheckoutSuccess() {
                 </p>
               )}
 
-              <p className="mt-4 text-xs text-zinc-500">
+              <p className="mt-4 text-xs text-ink-subtle">
                 A confirmation email is on its way to you.
               </p>
 

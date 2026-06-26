@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, type ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { ModeProvider } from "@/lib/mode";
+import { ThemeProvider } from "@/lib/theme";
 import { DrawerProvider, useDrawer } from "@/lib/drawer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { Tables } from "@/lib/database.types";
@@ -29,6 +31,7 @@ const RaffleDetail = lazy(() => import("@/pages/RaffleDetail"));
 const Login = lazy(() => import("@/pages/Login"));
 const HostLogin = lazy(() => import("@/pages/HostLogin"));
 const Register = lazy(() => import("@/pages/Register"));
+const BecomeHost = lazy(() => import("@/pages/BecomeHost"));
 const MyTickets = lazy(() => import("@/pages/MyTickets"));
 const MyWinnings = lazy(() => import("@/pages/MyWinnings"));
 const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
@@ -70,7 +73,7 @@ function NavDrawerGate() {
 function FullPageSpinner() {
   return (
     <div className="grid min-h-screen place-items-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
     </div>
   );
 }
@@ -139,8 +142,10 @@ function RequireEntrantContext({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <ErrorBoundary>
+    <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
+        <ModeProvider>
         <DrawerProvider>
         <NavDrawerGate />
         <Suspense fallback={<FullPageSpinner />}>
@@ -151,6 +156,7 @@ export default function App() {
             <Route path="/en/login" element={<Login />} />
             <Route path="/en/host/login" element={<HostLogin />} />
             <Route path="/en/register" element={<Register />} />
+            <Route path="/en/become-a-host" element={<BecomeHost />} />
             {/* Host dashboard (authenticated, Host-portal context only) */}
             <Route
               path="/en/dashboard/create"
@@ -284,8 +290,10 @@ export default function App() {
           </Routes>
         </Suspense>
         </DrawerProvider>
+        </ModeProvider>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
     </ErrorBoundary>
   );
 }

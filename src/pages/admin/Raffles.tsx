@@ -55,8 +55,8 @@ export default function Raffles() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-white">Raffles</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">Raffles</h1>
+      <p className="mt-1 text-sm text-ink-subtle">
         Every raffle on the platform, regardless of host or visibility.
       </p>
 
@@ -65,12 +65,12 @@ export default function Raffles() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by title or host email"
-          className="h-10 min-w-[240px] flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+          className="h-10 min-w-[240px] flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white focus-ring"
+          className="h-10 rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring"
         >
           <option value="all">All statuses</option>
           {statuses.map((s) => (
@@ -86,14 +86,14 @@ export default function Raffles() {
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-white/[0.03]" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
             ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-zinc-500">
+                <tr className="text-xs uppercase tracking-wide text-ink-subtle">
                   <th className="py-2 pr-4">Title</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Host</th>
@@ -108,15 +108,15 @@ export default function Raffles() {
                   <tr
                     key={r.id}
                     onClick={() => setSelected(r)}
-                    className="cursor-pointer border-t border-white/[0.06] text-zinc-300 transition-colors hover:bg-white/[0.03]"
+                    className="cursor-pointer border-t border-line text-ink transition-colors hover:bg-surface"
                   >
-                    <td className="py-3 pr-4 font-medium text-white">{r.title}</td>
+                    <td className="py-3 pr-4 font-medium text-ink">{r.title}</td>
                     <td className="py-3 pr-4">
                       <Badge tone={STATUS_TONE[r.status] ?? "neutral"}>{r.status}</Badge>
                     </td>
                     <td className="py-3 pr-4">
                       <p>{r.hostName}</p>
-                      <p className="text-xs text-zinc-500">{r.hostEmail ?? "—"}</p>
+                      <p className="text-xs text-ink-subtle">{r.hostEmail ?? "—"}</p>
                     </td>
                     <td className="py-3 pr-4">{formatCurrency(r.ticketPrice)}</td>
                     <td className="py-3 pr-4">{r.ticketsSold}</td>
@@ -206,31 +206,31 @@ function RaffleDetailModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">{raffle.title}</h2>
-            <p className="text-xs text-zinc-500">Draw audit trail</p>
+            <h2 className="text-lg font-semibold text-ink">{raffle.title}</h2>
+            <p className="text-xs text-ink-subtle">Draw audit trail</p>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+          <button onClick={onClose} className="text-ink-subtle hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="mt-5">
           {loading ? (
-            <div className="h-20 animate-pulse rounded-lg bg-white/[0.03]" />
+            <div className="h-20 animate-pulse rounded-lg bg-surface" />
           ) : rows.length === 0 ? (
-            <p className="text-sm text-zinc-500">No draw has run for this raffle yet.</p>
+            <p className="text-sm text-ink-subtle">No draw has run for this raffle yet.</p>
           ) : (
             <div className="space-y-3">
               {rows.map((row, i) => (
-                <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm">
-                  <div className="flex items-center justify-between text-xs text-zinc-500">
+                <div key={i} className="rounded-xl border border-line bg-surface p-4 text-sm">
+                  <div className="flex items-center justify-between text-xs text-ink-subtle">
                     <span>{new Date(row.createdAt).toLocaleString()}</span>
                     <span>{row.method}</span>
                   </div>
-                  <p className="mt-2 text-zinc-300">
+                  <p className="mt-2 text-ink">
                     Drawn ticket #{row.drawnTicketNumber ?? "—"} of {row.entries} entries
                   </p>
-                  <p className="mt-1 break-all text-xs text-zinc-500">Seed: {row.seed}</p>
+                  <p className="mt-1 break-all text-xs text-ink-subtle">Seed: {row.seed}</p>
                 </div>
               ))}
             </div>
@@ -238,8 +238,8 @@ function RaffleDetailModal({
         </div>
 
         {canModerate && (
-          <div className="mt-6 border-t border-white/[0.06] pt-5">
-            <p className="text-sm font-semibold text-white">Moderate this raffle</p>
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="text-sm font-semibold text-ink">Moderate this raffle</p>
             <div className="mt-3 flex gap-3">
               <Button
                 size="sm"
@@ -263,7 +263,7 @@ function RaffleDetailModal({
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Reason (required, recorded in the audit log)"
                   rows={2}
-                  className="mt-3 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus-ring"
+                  className="mt-3 w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus-ring"
                 />
                 {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
                 <div className="mt-3 flex justify-end gap-3">

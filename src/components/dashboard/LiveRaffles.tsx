@@ -19,11 +19,11 @@ export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
   if (raffles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-        <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-500">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink-subtle">
           <Ticket strokeWidth={1.5} className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-zinc-300">No raffles yet</p>
-        <p className="max-w-[14rem] text-xs text-zinc-500">
+        <p className="text-sm font-medium text-ink">No raffles yet</p>
+        <p className="max-w-[14rem] text-xs text-ink-subtle">
           Create your first raffle to start tracking live sales and escrow here.
         </p>
       </div>
@@ -51,15 +51,15 @@ export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
                     ? `/en/dashboard/ended/${r.id}`
                     : `/en/dashboard/raffles/${r.id}`
               }
-              className="group flex items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-all duration-300 ease-premium hover:border-white/15 hover:bg-white/[0.05]"
+              className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-3 transition-all duration-300 ease-premium hover:border-line hover:bg-surface"
             >
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-accent-soft">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line bg-surface text-accent-soft">
                 <Icon strokeWidth={1.5} className="h-5 w-5" />
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold tracking-tight text-white">
+                  <p className="truncate text-sm font-semibold tracking-tight text-ink">
                     {r.title}
                   </p>
                   <Badge tone={meta.tone} dot={meta.dot} className="shrink-0">
@@ -69,7 +69,7 @@ export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
 
                 {/* Progress */}
                 <div className="mt-2 flex items-center gap-3">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
                     <div
                       className={cn(
                         "h-full rounded-full",
@@ -78,22 +78,22 @@ export function LiveRaffles({ raffles }: { raffles: HostRaffleSummary[] }) {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="shrink-0 text-[11px] tabular-nums text-zinc-500">
+                  <span className="shrink-0 text-[11px] tabular-nums text-ink-subtle">
                     {formatCompact(r.sold)}/{formatCompact(r.cap)}
                   </span>
                 </div>
               </div>
 
               <div className="hidden shrink-0 text-right sm:block">
-                <p className="text-sm font-semibold tabular-nums text-white">
+                <p className="text-sm font-semibold tabular-nums text-ink">
                   {formatCurrency(r.revenue)}
                 </p>
-                <p className="text-[11px] text-zinc-500">escrowed</p>
+                <p className="text-[11px] text-ink-subtle">escrowed</p>
               </div>
 
               <ArrowUpRight
                 strokeWidth={1.5}
-                className="h-4 w-4 shrink-0 text-zinc-600 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-soft"
+                className="h-4 w-4 shrink-0 text-ink-subtle transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent-soft"
               />
             </Link>
           </motion.li>

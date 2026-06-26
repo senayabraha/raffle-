@@ -19,10 +19,10 @@ export default function ComingSoon({ title }: { title: string }) {
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
               <Hammer strokeWidth={1.75} className="h-6 w-6 text-white" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-white">
+            <h1 className="mt-5 text-2xl font-bold tracking-tightest text-ink">
               {title}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
               This area is coming soon. We're still building it — check back
               shortly.
             </p>

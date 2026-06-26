@@ -26,7 +26,7 @@ import { fetchHeroSettings, updateHeroSettings } from "@/lib/hero";
 import { formatCurrency, formatCompact, formatRelativeTime } from "@/lib/utils";
 
 const SCALE_MIN = 0.65;
-const SCALE_MAX = 1.0;
+const SCALE_MAX = 1.3;
 const SCALE_STEP = 0.01;
 
 interface SiteScaleValues {

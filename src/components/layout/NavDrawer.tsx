@@ -14,6 +14,7 @@ import {
   LogIn,
   LogOut,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { useDrawer } from "@/lib/drawer";
 import { useAuth } from "@/lib/auth";
@@ -52,7 +53,7 @@ const navItems = [
 
 export function NavDrawer() {
   const { isOpen, close } = useDrawer();
-  const { session, signOut } = useAuth();
+  const { session, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   function go(to: string) {
@@ -101,6 +102,20 @@ export function NavDrawer() {
               </span>
               <ChevronRight strokeWidth={2} className="h-4 w-4 text-ink-subtle" />
             </button>
+
+            {/* Admin entry — only visible to admins */}
+            {profile?.role === "admin" && (
+              <button
+                onClick={() => go("/en/admin")}
+                className="flex items-center justify-between rounded-xl border border-line bg-surface px-3.5 py-2 transition-all duration-300 hover:border-line hover:bg-surface-2"
+              >
+                <span className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
+                  <ShieldCheck strokeWidth={2} className="h-4 w-4 text-accent-soft" />
+                  Admin
+                </span>
+                <ChevronRight strokeWidth={2} className="h-4 w-4 text-ink-subtle" />
+              </button>
+            )}
 
             {/* Hero banner */}
             <div className="relative overflow-hidden rounded-2xl border border-line bg-accent-gradient p-3.5">

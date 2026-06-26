@@ -1,19 +1,9 @@
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/AuroraBackground";
 import { MarketingNav } from "@/components/layout/MarketingNav";
 import { Button } from "@/components/ui/Button";
 import { HeroCarousel } from "@/components/HeroCarousel";
-
-const fade = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] },
-  }),
-};
 
 export default function Landing() {
   return (

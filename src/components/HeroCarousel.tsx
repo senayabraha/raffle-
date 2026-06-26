@@ -1,0 +1,202 @@
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
+import { ArrowRight, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { AuroraBackground } from "@/components/ui/AuroraBackground";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { useHeroCarousel } from "@/hooks/useHeroCarousel";
+import { cn } from "@/lib/utils";
+
+const fade = {
+  hidden: { opacity: 0, y: 24 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] },
+  }),
+};
+
+const PREMIUM_EASE = [0.16, 1, 0.3, 1] as const;
+
+const ctaButtons = (
+  <>
+    <Link to="/en/become-a-host">
+      <Button variant="primary" size="lg" className="w-full sm:w-auto">
+        <Sparkles strokeWidth={1.5} className="h-5 w-5" />
+        Start hosting free
+      </Button>
+    </Link>
+    <Link to="/en/public-raffles/live">
+      <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+        Browse raffles
+        <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+      </Button>
+    </Link>
+  </>
+);
+
+/** The original static hero, used when there are no active CMS slides. */
+function HeroFallback() {
+  return (
+    <section className="relative mx-auto max-w-5xl px-5 pt-36 pb-20 text-center sm:pt-44">
+      <motion.div custom={0} variants={fade} initial="hidden" animate="show">
+        <Badge tone="accent" dot className="mx-auto">
+          Escrow-protected · Fully automated draws
+        </Badge>
+      </motion.div>
+
+      <motion.h1
+        custom={1}
+        variants={fade}
+        initial="hidden"
+        animate="show"
+        className="mx-auto mt-6 max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-ink sm:text-7xl sm:leading-[1.02]"
+      >
+        Host raffles that{" "}
+        <span className="text-gradient">give back</span> and earn from your
+        audience
+      </motion.h1>
+
+      <motion.p
+        custom={2}
+        variants={fade}
+        initial="hidden"
+        animate="show"
+        className="mx-auto mt-6 max-w-xl text-lg text-ink-muted"
+      >
+        The premium marketplace for prize competitions. List a prize, sell
+        tickets, and run a transparent draw — with funds held safely in escrow
+        until your winner confirms.
+      </motion.p>
+
+      <motion.div
+        custom={3}
+        variants={fade}
+        initial="hidden"
+        animate="show"
+        className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+      >
+        {ctaButtons}
+      </motion.div>
+
+      <motion.div
+        custom={4}
+        variants={fade}
+        initial="hidden"
+        animate="show"
+        className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-subtle"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck strokeWidth={1.5} className="h-4 w-4 text-emerald-400" />
+          Funds held in escrow until your winner confirms
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Zap strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+          Automated, auditable draws
+        </span>
+      </motion.div>
+    </section>
+  );
+}
+
+function HeroSkeleton() {
+  return (
+    <section className="relative mx-auto max-w-5xl px-5 pt-36 pb-20 sm:pt-44">
+      <div className="mx-auto h-[420px] w-full max-w-3xl animate-pulse rounded-3xl bg-surface-2" />
+    </section>
+  );
+}
+
+export function HeroCarousel() {
+  const { slides, settings, loading, error } = useHeroCarousel();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const direction = settings?.transition_direction === "vertical" ? "vertical" : "horizontal";
+  const intervalMs = settings?.rotation_interval_ms ?? 1500;
+
+  useEffect(() => {
+    if (slides.length < 2) return;
+    const id = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % slides.length);
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [slides.length, intervalMs]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [slides.length]);
+
+  if (loading) return <HeroSkeleton />;
+  if (error || slides.length === 0) return <HeroFallback />;
+
+  const slide = slides[activeIndex];
+  const offset = direction === "vertical" ? { y: 40 } : { x: 60 };
+  const exitOffset = direction === "vertical" ? { y: -40 } : { x: -60 };
+
+  return (
+    <section className="relative isolate overflow-hidden">
+      <div className="relative h-[640px] w-full sm:h-[720px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            initial={{ opacity: 0, ...offset }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, ...exitOffset }}
+            transition={{ duration: 0.6, ease: PREMIUM_EASE }}
+            className="absolute inset-0"
+          >
+            {slide.media_type === "video" && slide.media_url ? (
+              <video
+                src={slide.media_url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : slide.media_url ? (
+              <img
+                src={slide.media_url}
+                alt={slide.headline}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <AuroraBackground />
+            )}
+            <div className="absolute inset-0 bg-black/50" />
+
+            <div className="relative z-10 mx-auto flex h-full max-w-5xl flex-col items-center justify-center px-5 text-center">
+              <h1 className="max-w-3xl text-balance text-5xl font-extrabold tracking-tightest text-white sm:text-7xl sm:leading-[1.02]">
+                {slide.headline}
+              </h1>
+              {slide.sub_copy && (
+                <p className="mx-auto mt-6 max-w-xl text-lg text-white/80">{slide.sub_copy}</p>
+              )}
+              <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                {ctaButtons}
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {slides.length > 1 && (
+          <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center gap-2">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-label={`Go to slide ${i + 1}`}
+                onClick={() => setActiveIndex(i)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  i === activeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60",
+                )}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

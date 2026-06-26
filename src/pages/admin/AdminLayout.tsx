@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   LogOut,
   TrendingUp,
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -18,6 +19,7 @@ const adminNav = [
   { to: "/en/admin/users", label: "Users", icon: Users },
   { to: "/en/admin/disputes", label: "Disputes", icon: ShieldAlert },
   { to: "/en/admin/hosts", label: "Host risk", icon: TrendingUp },
+  { to: "/en/admin/hero", label: "Hero Carousel", icon: Image },
 ];
 
 export default function AdminLayout() {

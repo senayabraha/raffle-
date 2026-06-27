@@ -1,4 +1,13 @@
-import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useFeaturedRaffles } from "@/hooks/useFeaturedRaffles";
@@ -198,7 +207,11 @@ export function FeaturedRafflesCarousel() {
   // which means percentage-based card widths can no longer resolve against
   // the visible viewport. Re-runs once `loading` flips to false, since the
   // container only mounts once the skeleton is replaced by the real markup.
-  useEffect(() => {
+  // Uses `useLayoutEffect` (not `useEffect`) so the real `clientWidth` is
+  // measured and applied before the browser paints — otherwise `cardWidth`
+  // briefly resolves to 0 (from the initial `containerWidth` state) and the
+  // cards flash in at zero width for a frame on every mount.
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const updateWidth = () => setContainerWidth(container.clientWidth);

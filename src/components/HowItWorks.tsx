@@ -1,13 +1,11 @@
 import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
-import { Search, Ticket, Trophy, Gift, Megaphone, Wallet, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TabKey = "win" | "host";
 
 interface Step {
   number: number;
-  icon: LucideIcon;
+  emoji: string;
   title: string;
   description: string;
 }
@@ -16,19 +14,19 @@ const STEPS: Record<TabKey, Step[]> = {
   win: [
     {
       number: 1,
-      icon: Search,
+      emoji: "🔍",
       title: "Browse raffles",
       description: "Find a prize you want to win from our live listings.",
     },
     {
       number: 2,
-      icon: Ticket,
+      emoji: "🎫",
       title: "Buy tickets",
       description: "Choose how many tickets to enter with — more tickets, better odds.",
     },
     {
       number: 3,
-      icon: Trophy,
+      emoji: "🏆",
       title: "Win prizes",
       description: "A transparent automated draw picks the winner fairly.",
     },
@@ -36,19 +34,19 @@ const STEPS: Record<TabKey, Step[]> = {
   host: [
     {
       number: 1,
-      icon: Gift,
+      emoji: "🎁",
       title: "List a prize",
       description: "Describe your prize, set a ticket price, and go live in minutes.",
     },
     {
       number: 2,
-      icon: Megaphone,
+      emoji: "📣",
       title: "Share your raffle",
       description: "Share your link and sell tickets to your audience.",
     },
     {
       number: 3,
-      icon: Wallet,
+      emoji: "👛",
       title: "Get paid",
       description: "Funds are held in escrow and released to you when your winner confirms.",
     },
@@ -56,15 +54,19 @@ const STEPS: Record<TabKey, Step[]> = {
 };
 
 function StepCard({ step }: { step: Step }) {
-  const Icon = step.icon;
   return (
-    <div className="rounded-2xl bg-surface-2 p-6">
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-accent-gradient text-xs font-bold text-white">
+    <div className="flex items-center gap-5 rounded-2xl bg-surface-2 p-6">
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-gradient text-base font-bold text-white">
         {step.number}
       </span>
-      <Icon strokeWidth={1.5} className="mt-3 h-7 w-7 text-accent-deep dark:text-accent-soft" />
-      <h3 className="mt-3 text-base font-bold text-ink">{step.title}</h3>
-      <p className="mt-1.5 text-sm text-ink-muted">{step.description}</p>
+      <span className="h-12 w-px shrink-0 bg-line" aria-hidden="true" />
+      <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent/10 text-4xl">
+        {step.emoji}
+      </span>
+      <div>
+        <h3 className="text-lg font-bold text-ink">{step.title}</h3>
+        <p className="mt-1.5 text-sm text-ink-muted">{step.description}</p>
+      </div>
     </div>
   );
 }
@@ -120,20 +122,12 @@ export function HowItWorks() {
 
       <div
         className={cn(
-          "mt-8 grid grid-cols-1 gap-6 text-left transition-opacity duration-300 sm:grid-cols-3 sm:gap-4",
+          "mt-8 flex flex-col gap-4 text-left transition-opacity duration-300",
           visible ? "opacity-100" : "opacity-0",
         )}
       >
-        {steps.map((step, i) => (
-          <div key={step.title} className="relative">
-            <StepCard step={step} />
-            {i < steps.length - 1 && (
-              <ChevronRight
-                strokeWidth={1.5}
-                className="absolute -right-2 top-10 hidden h-5 w-5 -translate-y-1/2 text-ink-subtle sm:block"
-              />
-            )}
-          </div>
+        {steps.map((step) => (
+          <StepCard key={step.title} step={step} />
         ))}
       </div>
     </section>

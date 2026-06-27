@@ -20,31 +20,13 @@ const MD_BREAKPOINT_PX = 768;
 
 // Gap between cards. Applied as a trailing margin on every card (rather than
 // flex `gap`) so the two duplicated copies are exactly symmetric — required
-// for the `translateX(-50%)` loop animation to land precisely on the seam.
+// for the autoplay loop's `scrollLeft` wraparound to land precisely on the
+// seam between the two copies.
 const CARD_GAP_PX = 12;
 
 const CARD_BASE_CLASS = "shrink-0";
 
 const DEFAULT_SCROLL_DURATION_SECONDS = 20;
-
-// Rendered once, outside the animated track, so the keyframes and the
-// track's animation-name/timing-function/iteration-count never change
-// across re-renders — only `animation-play-state` (pause/resume) and
-// `animation-duration` (admin speed setting) are ever touched, and both
-// are applied imperatively via refs rather than through React state, so a
-// parent re-render can never restart the animation from 0%.
-const FEATURED_TRACK_KEYFRAMES = `
-@keyframes featured-slide {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.featured-track-anim {
-  animation-name: featured-slide;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-duration: ${DEFAULT_SCROLL_DURATION_SECONDS}s;
-}
-`;
 
 function formatDrawDate(iso: string | null): string {
   if (!iso) return "TBD";
@@ -57,11 +39,9 @@ function formatDrawDate(iso: string | null): string {
 
 function RaffleCard({
   raffle,
-  snap,
   cardWidth,
 }: {
   raffle: FeaturedRaffleCard;
-  snap: boolean;
   cardWidth: number;
 }) {
   const pct =
@@ -76,8 +56,7 @@ function RaffleCard({
       style={{ flex: `0 0 ${cardWidth}px`, width: cardWidth, marginRight: CARD_GAP_PX }}
       className={cn(
         CARD_BASE_CLASS,
-        "flex flex-col bg-surface shadow-glass transition-transform duration-300 ease-premium hover:scale-[1.02]",
-        snap && "snap-start",
+        "snap-start flex flex-col bg-surface shadow-glass transition-transform duration-300 ease-premium hover:scale-[1.02]",
       )}
     >
       <div className="h-[170px] w-full shrink-0 overflow-hidden bg-surface-2 sm:h-[143px]">
@@ -127,22 +106,23 @@ function RaffleCard({
 interface FeaturedTrackProps {
   cards: FeaturedRaffleCard[];
   cardWidth: number;
-  snap: boolean;
 }
 
 // Isolated from the parent's state changes (resize, settings load, etc.) via
 // React.memo so that re-renders of FeaturedRafflesCarousel don't remount or
 // otherwise touch this element — the only thing that ever mutates the DOM
-// node directly is the pause/resume/speed logic in the parent, via `ref`.
+// node directly is the autoplay rAF loop in the parent, via `ref` (it scrolls
+// the *container*, not this track, so this element never needs to re-render
+// for autoplay to advance).
 const FeaturedTrack = memo(
   forwardRef<HTMLDivElement, FeaturedTrackProps>(function FeaturedTrack(
-    { cards, cardWidth, snap },
+    { cards, cardWidth },
     ref,
   ) {
     return (
-      <div ref={ref} className="featured-track-anim flex w-max">
+      <div ref={ref} className="flex w-max">
         {cards.map((raffle, i) => (
-          <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={snap} cardWidth={cardWidth} />
+          <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} cardWidth={cardWidth} />
         ))}
       </div>
     );
@@ -181,18 +161,12 @@ export function FeaturedRafflesCarousel() {
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const lastTimestampRef = useRef<number | null>(null);
 
   const cards = useMemo(() => [...raffles, ...raffles], [raffles]);
 
-  // Settings load after mount (or change via the admin panel's preview), so
-  // the duration is applied imperatively to the track's `style` rather than
-  // through a prop — that keeps `animation-name` stable on the memoized
-  // track and only ever updates the duration, never resetting the loop.
   const scrollDuration = settings?.scroll_duration_seconds ?? DEFAULT_SCROLL_DURATION_SECONDS;
-  useEffect(() => {
-    const track = trackRef.current;
-    if (track) track.style.animationDuration = `${scrollDuration}s`;
-  }, [scrollDuration]);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= MD_BREAKPOINT_PX);
@@ -202,15 +176,15 @@ export function FeaturedRafflesCarousel() {
   }, []);
 
   // Card width is derived from the visible container's pixel width rather
-  // than a CSS percentage: the track's box is sized to its content (two
-  // copies back to back) so `translateX(-50%)` lands exactly on the seam,
-  // which means percentage-based card widths can no longer resolve against
-  // the visible viewport. Re-runs once `loading` flips to false, since the
-  // container only mounts once the skeleton is replaced by the real markup.
-  // Uses `useLayoutEffect` (not `useEffect`) so the real `clientWidth` is
-  // measured and applied before the browser paints — otherwise `cardWidth`
-  // briefly resolves to 0 (from the initial `containerWidth` state) and the
-  // cards flash in at zero width for a frame on every mount.
+  // than a CSS percentage, since the track's box is sized to its content
+  // (two copies back to back) and the autoplay loop wraps `scrollLeft` at
+  // exactly half that width. Re-runs once `loading` flips to false, since
+  // the container only mounts once the skeleton is replaced by the real
+  // markup. Uses `useLayoutEffect` (not `useEffect`) so the real
+  // `clientWidth` is measured and applied before the browser paints —
+  // otherwise `cardWidth` briefly resolves to 0 (from the initial
+  // `containerWidth` state) and the cards flash in at zero width for a
+  // frame on every mount.
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -221,55 +195,53 @@ export function FeaturedRafflesCarousel() {
     return () => observer.disconnect();
   }, [loading]);
 
-  // Pausing/resuming toggles `animation-play-state` AND the container's
-  // scrollability, both applied imperatively via refs in the same tick as
-  // the touch/mouse event — not via the `paused` state's re-render. Native
-  // touch-scrolling only works while `overflow-x` is `auto`; if that switch
-  // waited on a React re-render (as it used to, driven purely by the
-  // `paused` class below), the container was still `overflow-x: hidden` for
-  // the first render cycle after `touchstart`, so the browser dropped the
-  // opening part of every swipe — felt like the carousel lagging behind the
-  // finger and getting stuck before suddenly catching up.
-  const pause = useCallback(() => {
-    const track = trackRef.current;
-    const container = containerRef.current;
-    if (track) track.style.animationPlayState = "paused";
-    if (container) {
-      container.style.overflowX = "auto";
-      container.style.scrollSnapType = "x proximity";
-    }
-    setPaused(true);
-  }, []);
-
-  const resume = useCallback(() => {
-    const container = containerRef.current;
-    const track = trackRef.current;
-    if (container) {
-      container.scrollLeft = 0;
-      container.style.overflowX = "hidden";
-      container.style.scrollSnapType = "";
-    }
-    if (track) {
-      // Force a synchronous layout recalculation before flipping back to
-      // "running" — without this the browser doesn't always kick a
-      // paused CSS animation back into motion on release.
-      track.getBoundingClientRect();
-      track.style.animationPlayState = "running";
-    }
-    setPaused(false);
-  }, []);
-
-  if (loading) return <FeaturedRafflesSkeleton />;
-  if (error || raffles.length === 0) return null;
-
   const cardsPerScreen = isDesktop
     ? settings?.cards_per_screen_desktop ?? 4
     : settings?.cards_per_screen_mobile ?? 2.5;
   const cardWidth = containerWidth > 0 ? containerWidth / cardsPerScreen - CARD_GAP_PX : 0;
+  const halfWidth = raffles.length * (cardWidth + CARD_GAP_PX);
+
+  // Autoplay advances the container's native `scrollLeft` (instead of
+  // animating a CSS `transform`) so manual touch/mouse dragging and
+  // autoplay share one coordinate system. That's the fix for the "stuck/
+  // stacked" drag bug: there's no separate transform offset to reconcile
+  // against the user's scroll position, so pausing on touch/mouse-down and
+  // resuming on release never has to snap anything back — it just stops
+  // and restarts this loop from wherever `scrollLeft` already is.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (paused || !container || halfWidth <= 0) return;
+
+    lastTimestampRef.current = null;
+    const speedPxPerSec = halfWidth / scrollDuration;
+
+    const step = (timestamp: number) => {
+      if (lastTimestampRef.current !== null) {
+        const dt = (timestamp - lastTimestampRef.current) / 1000;
+        container.scrollLeft += speedPxPerSec * dt;
+        // The two halves of the track are pixel-identical duplicates, so
+        // wrapping by `halfWidth` at any point is a seamless jump.
+        while (container.scrollLeft >= halfWidth) container.scrollLeft -= halfWidth;
+      }
+      lastTimestampRef.current = timestamp;
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [paused, halfWidth, scrollDuration]);
+
+  const pause = useCallback(() => setPaused(true), []);
+  const resume = useCallback(() => setPaused(false), []);
+
+  if (loading) return <FeaturedRafflesSkeleton />;
+  if (error || raffles.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-5xl px-5 py-10">
-      <style>{FEATURED_TRACK_KEYFRAMES}</style>
       <h2 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">Featured Raffles</h2>
 
       <div
@@ -279,12 +251,15 @@ export function FeaturedRafflesCarousel() {
         onMouseDown={pause}
         onMouseUp={resume}
         onMouseLeave={resume}
-        className={cn(
-          "mt-5 touch-pan-x [-webkit-overflow-scrolling:touch]",
-          paused ? "snap-x snap-proximity overflow-x-auto" : "overflow-x-hidden",
-        )}
+        // No `touch-action` override: the default lets the browser pick the
+        // right scroll target per-gesture — a horizontal drag scrolls this
+        // (native `overflow-x: auto`) container, a vertical drag passes
+        // through to the page. The previous `touch-action: pan-x` disabled
+        // that disambiguation and made every touch on this section eat
+        // vertical page scrolling.
+        className="mt-5 touch-auto snap-x snap-proximity overflow-x-auto [-webkit-overflow-scrolling:touch]"
       >
-        <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} snap={paused} />
+        <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} />
       </div>
     </section>
   );

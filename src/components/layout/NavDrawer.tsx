@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useDrawer } from "@/lib/drawer";
 import { useAuth } from "@/lib/auth";
+import { useSiteScale } from "@/hooks/useSiteScale";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -54,6 +55,7 @@ const navItems = [
 export function NavDrawer() {
   const { isOpen, close } = useDrawer();
   const { session, profile, signOut } = useAuth();
+  const { currentScale } = useSiteScale();
   const navigate = useNavigate();
 
   function go(to: string) {
@@ -86,6 +88,7 @@ export function NavDrawer() {
             aria-modal="true"
             aria-label="Navigation menu"
             className="absolute inset-y-0 left-0 flex w-[75%] max-w-[360px] flex-col gap-2.5 overflow-y-auto border-r border-line bg-surface/95 p-3 pb-4 backdrop-blur-xl shadow-soft-lift"
+            style={{ zoom: currentScale }}
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}

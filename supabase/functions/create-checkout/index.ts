@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   try {
     const checkoutUrl =
       provider === "chapa"
-        ? await initChapa({ paymentId, amount, email, phone, fullName, returnUrl, supabaseUrl })
+        ? await initChapa({ paymentId, raffleId, amount, email, phone, fullName, returnUrl, supabaseUrl })
         : await initTelebirr({ paymentId, amount, phone, returnUrl });
 
     return json({ paymentId, checkoutUrl });
@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
 
 async function initChapa(opts: {
   paymentId: string;
+  raffleId: string;
   amount: number;
   email: string;
   phone: string;
@@ -124,6 +125,15 @@ async function initChapa(opts: {
       tx_ref: opts.paymentId,
       callback_url: `${opts.supabaseUrl}/functions/v1/verify-payment`,
       return_url: opts.returnUrl,
+      customization: {
+        title: "Raffle entry",
+        description: "Raffle ticket purchase",
+      },
+      // Surfaced in the Chapa dashboard for reconciliation/traceability.
+      meta: {
+        payment_id: opts.paymentId,
+        raffle_id: opts.raffleId,
+      },
     }),
   });
   const data = await res.json();

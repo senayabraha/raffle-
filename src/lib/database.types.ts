@@ -315,7 +315,6 @@ export type Database = {
           provider_ref: string | null
           raffle_id: string
           status: Database["public"]["Enums"]["payment_status"]
-          stripe_payment_id: string | null
         }
         Insert: {
           amount_gross?: number | null
@@ -329,7 +328,6 @@ export type Database = {
           provider_ref?: string | null
           raffle_id: string
           status?: Database["public"]["Enums"]["payment_status"]
-          stripe_payment_id?: string | null
         }
         Update: {
           amount_gross?: number | null
@@ -343,7 +341,6 @@ export type Database = {
           provider_ref?: string | null
           raffle_id?: string
           status?: Database["public"]["Enums"]["payment_status"]
-          stripe_payment_id?: string | null
         }
         Relationships: [
           {

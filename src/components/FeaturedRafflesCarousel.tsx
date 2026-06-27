@@ -257,7 +257,17 @@ export function FeaturedRafflesCarousel() {
         // through to the page. The previous `touch-action: pan-x` disabled
         // that disambiguation and made every touch on this section eat
         // vertical page scrolling.
-        className="mt-5 touch-auto snap-x snap-proximity overflow-x-auto [-webkit-overflow-scrolling:touch]"
+        //
+        // `snap-x`/`snap-proximity` is only applied while `paused` (i.e.
+        // while the user has a finger/mouse down on it) — scroll-snap left
+        // on permanently fights the autoplay loop's per-frame `scrollLeft`
+        // writes, snapping back to the nearest card edge every frame, which
+        // looked like the strip not sliding at all. Snapping only matters
+        // for letting a manual drag settle on release.
+        className={cn(
+          "mt-5 touch-auto overflow-x-auto [-webkit-overflow-scrolling:touch]",
+          paused && "snap-x snap-proximity",
+        )}
       >
         <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} />
       </div>

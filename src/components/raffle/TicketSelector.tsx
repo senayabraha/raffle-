@@ -48,10 +48,17 @@ const providers: { id: PaymentProvider; label: string; available: boolean }[] = 
   { id: "telebirr", label: "Telebirr", available: false },
 ];
 
-export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
+export function TicketSelector({
+  raffle,
+  qty,
+  onQtyChange,
+}: {
+  raffle: MarketplaceRaffle;
+  qty: number;
+  onQtyChange: (n: number) => void;
+}) {
   const { profile, user } = useAuth();
   const [step, setStep] = useState<"select" | "contact">("select");
-  const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,7 +145,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
               <label className="text-xs font-medium text-ink-muted">Quantity</label>
               <div className="mt-2 flex items-center gap-3">
                 <button
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  onClick={() => onQtyChange(Math.max(1, qty - 1))}
                   disabled={closed}
                   className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
                 >
@@ -148,7 +155,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                   {qty}
                 </div>
                 <button
-                  onClick={() => setQty((q) => q + 1)}
+                  onClick={() => onQtyChange(qty + 1)}
                   disabled={closed}
                   className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
                 >
@@ -161,7 +168,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
                 {quickPicks.map((n) => (
                   <button
                     key={n}
-                    onClick={() => setQty(n)}
+                    onClick={() => onQtyChange(n)}
                     disabled={closed}
                     className={cn(
                       "focus-ring rounded-lg border py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-40",

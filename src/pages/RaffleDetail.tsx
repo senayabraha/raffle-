@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
@@ -16,15 +16,51 @@ import {
   QrCode,
   Download,
   ShieldAlert,
-  Users,
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { CountdownPills } from "@/components/ui/Countdown";
+import { Button } from "@/components/ui/Button";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
 import { type MarketplaceRaffle } from "@/data/marketplace";
 import { fetchRaffleBySlug, fetchRaffleEntrants, type RaffleEntrant } from "@/lib/raffles";
-import { formatCompact, cn } from "@/lib/utils";
+import { formatCompact, formatCurrency, cn } from "@/lib/utils";
+
+function RecentEntrantTicker({ entrants }: { entrants: RaffleEntrant[] }) {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (entrants.length <= 1) return;
+    const id = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % entrants.length);
+        setVisible(true);
+      }, 400);
+    }, 3500);
+    return () => clearInterval(id);
+  }, [entrants.length]);
+
+  const e = entrants[idx];
+  if (!e) return null;
+
+  return (
+    <div
+      className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-opacity duration-300"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-gradient text-[10px] font-bold text-white">
+        {e.initials}
+      </span>
+      <p className="text-sm text-ink">
+        <span className="font-semibold">{e.name.split(/\s+/)[0]}</span>
+        {" just entered"}
+        <span className="ml-1 text-ink-subtle text-xs">· moments ago</span>
+      </p>
+    </div>
+  );
+}
 
 export default function RaffleDetail() {
   const { slug } = useParams();
@@ -35,7 +71,10 @@ export default function RaffleDetail() {
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [entrants, setEntrants] = useState<RaffleEntrant[]>([]);
+  const [qty, setQty] = useState(5);
   const qrRef = useRef<HTMLDivElement>(null);
+  const ticketSectionRef = useRef<HTMLDivElement>(null);
+  const [showSticky, setShowSticky] = useState(false);
 
   const shareUrl =
     typeof window !== "undefined" ? window.location.href : "";
@@ -99,6 +138,30 @@ export default function RaffleDetail() {
     };
   }, [raffle]);
 
+  // Toggle the mobile sticky CTA when the ticket panel scrolls out of view.
+  useEffect(() => {
+    const el = ticketSectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const free = useMemo(() => {
+    if (!raffle) return 0;
+    let f = 0;
+    for (const b of raffle.bundles) {
+      if (qty >= b.qty) f = Math.max(f, Math.floor(qty / b.qty) * b.free);
+    }
+    return f;
+  }, [qty, raffle]);
+
+  const total = qty * (raffle?.ticketPrice ?? 0);
+  const totalTickets = qty + free;
+
   if (resolving) {
     return (
       <PublicShell>
@@ -153,8 +216,8 @@ export default function RaffleDetail() {
             )}
           </div>
 
-          {/* Title + host */}
-          <div>
+          {/* Prize info */}
+          <SpotlightCard className="p-6" lift={false}>
             <span className="text-xs uppercase tracking-wider text-ink-subtle">
               {raffle.category}
             </span>
@@ -165,22 +228,22 @@ export default function RaffleDetail() {
               <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-gradient text-xs font-bold text-white">
                 {raffle.hostInitials}
               </span>
-              <div className="text-sm">
+              <div className="flex items-center gap-2">
                 <p className="font-semibold text-ink">{raffle.host}</p>
-                <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
-                  <ShieldAlert strokeWidth={1.5} className="h-3 w-3" />
-                  Identity not verified by እድል44
-                </p>
+                {raffle.hostVerified && (
+                  <div
+                    title="Identity verified by እድል44"
+                    className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5"
+                  >
+                    <Check strokeWidth={2.5} className="h-3 w-3 text-blue-400" />
+                    <span className="text-[11px] font-semibold text-blue-400">Verified</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* About */}
-          <SpotlightCard className="p-6" lift={false}>
-            <h2 className="text-[15px] font-semibold tracking-tight text-ink">
-              About this prize
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            <hr className="my-5 border-line" />
+            <p className="text-sm leading-relaxed text-ink-muted">
               {raffle.description}
             </p>
             {raffle.bundles.length > 0 && (
@@ -200,25 +263,7 @@ export default function RaffleDetail() {
 
           {/* Recent entries */}
           {entrants.length > 0 && (
-            <SpotlightCard className="p-6" lift={false}>
-              <h2 className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
-                <Users strokeWidth={1.5} className="h-[18px] w-[18px] text-accent-soft" />
-                Recent entries
-              </h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {entrants.map((e) => (
-                  <span
-                    key={e.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink"
-                  >
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-accent-gradient text-[10px] font-bold text-white">
-                      {e.initials}
-                    </span>
-                    {e.name.split(/\s+/)[0]}
-                  </span>
-                ))}
-              </div>
-            </SpotlightCard>
+            <RecentEntrantTicker entrants={entrants} />
           )}
         </motion.div>
 
@@ -263,7 +308,9 @@ export default function RaffleDetail() {
 
             {/* Ticket selector */}
             {raffle.suspensionStatus === "active" ? (
-              <TicketSelector raffle={raffle} />
+              <div ref={ticketSectionRef}>
+                <TicketSelector raffle={raffle} qty={qty} onQtyChange={setQty} />
+              </div>
             ) : (
               <div className="glass-strong flex items-start gap-3 p-5">
                 <ShieldAlert strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
@@ -344,6 +391,37 @@ export default function RaffleDetail() {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* Sticky mobile CTA */}
+      <div
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
+          "border-t border-line bg-app/90 backdrop-blur-md px-4 py-3",
+          "flex items-center gap-3 transition-transform duration-300",
+          showSticky ? "translate-y-0" : "translate-y-full"
+        )}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-ink-subtle">
+            {totalTickets} ticket{totalTickets !== 1 ? "s" : ""}
+            {free > 0 && (
+              <span className="text-emerald-400"> (+{free} free)</span>
+            )}
+          </p>
+          <p className="text-base font-bold tabular-nums text-ink">
+            {formatCurrency(total)}
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="md"
+          onClick={() => {
+            ticketSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          Enter raffle →
+        </Button>
       </div>
     </PublicShell>
   );

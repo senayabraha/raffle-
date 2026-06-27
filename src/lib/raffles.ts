@@ -85,6 +85,7 @@ export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
     prizeValue: row.prize_value != null ? Number(row.prize_value) : null,
     host: hostName,
     hostInitials: initials || "RH",
+    hostVerified: false,
     status: row.status === "ended" ? "ended" : "live",
     ticketPrice: Number(row.ticket_price),
     sold: row.tickets_sold_count,

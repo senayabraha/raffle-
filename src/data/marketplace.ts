@@ -19,6 +19,7 @@ export interface MarketplaceRaffle {
   prizeValue: number | null;
   host: string;
   hostInitials: string;
+  hostVerified: boolean;
   status: RaffleStatus;
   ticketPrice: number;
   sold: number;

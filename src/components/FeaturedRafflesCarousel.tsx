@@ -163,6 +163,7 @@ export function FeaturedRafflesCarousel() {
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
+  const scrollPosRef = useRef(0);
 
   const cards = useMemo(() => [...raffles, ...raffles], [raffles]);
 
@@ -208,20 +209,34 @@ export function FeaturedRafflesCarousel() {
   // against the user's scroll position, so pausing on touch/mouse-down and
   // resuming on release never has to snap anything back — it just stops
   // and restarts this loop from wherever `scrollLeft` already is.
+  //
+  // The per-frame step is tracked in `scrollPosRef` (a float) rather than
+  // read back from `container.scrollLeft` each frame: the DOM rounds
+  // `scrollLeft` to whole pixels, and at typical autoplay speeds the
+  // per-frame delta is well under 1px, so reading the rounded value back
+  // truncated almost every frame's movement — the strip only advanced
+  // roughly once every couple of frames instead of gliding continuously,
+  // i.e. it stuttered instead of sliding like a conveyor belt. Keeping the
+  // accumulator in JS (and only ever writing, never reading, `scrollLeft`
+  // inside the loop) keeps the sub-pixel remainder intact across frames.
   useEffect(() => {
     const container = containerRef.current;
     if (paused || !container || halfWidth <= 0) return;
 
+    // Re-sync to the real scroll position in case the user dragged it
+    // (or the browser clamped it) since the last time this loop ran.
+    scrollPosRef.current = container.scrollLeft;
     lastTimestampRef.current = null;
     const speedPxPerSec = halfWidth / scrollDuration;
 
     const step = (timestamp: number) => {
       if (lastTimestampRef.current !== null) {
         const dt = (timestamp - lastTimestampRef.current) / 1000;
-        container.scrollLeft += speedPxPerSec * dt;
+        scrollPosRef.current += speedPxPerSec * dt;
         // The two halves of the track are pixel-identical duplicates, so
         // wrapping by `halfWidth` at any point is a seamless jump.
-        while (container.scrollLeft >= halfWidth) container.scrollLeft -= halfWidth;
+        while (scrollPosRef.current >= halfWidth) scrollPosRef.current -= halfWidth;
+        container.scrollLeft = scrollPosRef.current;
       }
       lastTimestampRef.current = timestamp;
       rafRef.current = requestAnimationFrame(step);
@@ -248,6 +263,13 @@ export function FeaturedRafflesCarousel() {
         ref={containerRef}
         onTouchStart={pause}
         onTouchEnd={resume}
+        // A vertical swipe that starts on this element (the exact gesture
+        // bug #2 above is about) fires `touchstart` — pausing autoplay —
+        // but the browser then cancels the touch sequence in favor of
+        // native page scroll instead of ever firing `touchend`, so without
+        // this handler `paused` got stuck `true` forever and the carousel
+        // looked permanently frozen after the first such swipe.
+        onTouchCancel={resume}
         onMouseDown={pause}
         onMouseUp={resume}
         onMouseLeave={resume}

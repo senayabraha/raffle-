@@ -1,14 +1,58 @@
-// Webhook receiver for Chapa payment callbacks. Re-verifies the
-// transaction directly with Chapa (never trusts the webhook body alone),
-// finalizes the checkout (allocates tickets), and emails a receipt.
+// Webhook receiver for Chapa payment callbacks. Verifies the Chapa
+// signature header (HMAC-SHA256 with the webhook secret), then re-verifies
+// the transaction directly with Chapa (never trusts the webhook body
+// alone), finalizes the checkout (allocates tickets), and emails a receipt.
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const encoder = new TextEncoder();
+
+/** Lowercase hex HMAC-SHA256 of `message` keyed by `secret`. */
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Constant-time comparison to avoid leaking the signature via timing. */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
+  // Read the raw body first so the HMAC is computed over the exact bytes
+  // Chapa signed, before any JSON re-serialization.
+  const rawBody = await req.text();
+
+  const webhookSecret = Deno.env.get("CHAPA_WEBHOOK_SECRET");
+  if (!webhookSecret) return new Response("Webhook secret not configured", { status: 500 });
+
+  // Chapa sends two signature headers. `x-chapa-signature` is the HMAC of
+  // the raw request body; `Chapa-Signature` is the HMAC of the secret hash
+  // itself. Accept either so we tolerate Chapa's documented variations.
+  const bodyHmac = await hmacSha256Hex(webhookSecret, rawBody);
+  const secretHmac = await hmacSha256Hex(webhookSecret, webhookSecret);
+  const provided =
+    req.headers.get("x-chapa-signature") ?? req.headers.get("Chapa-Signature") ?? "";
+  if (!timingSafeEqual(provided, bodyHmac) && !timingSafeEqual(provided, secretHmac)) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
   let payload: Record<string, unknown>;
   try {
-    payload = await req.json();
+    payload = JSON.parse(rawBody);
   } catch {
     return new Response("Invalid payload", { status: 400 });
   }

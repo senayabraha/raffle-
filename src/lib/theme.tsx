@@ -10,7 +10,7 @@ import {
 
 export type Theme = "light" | "dark";
 
-const STORAGE_KEY = "raffall.theme";
+const STORAGE_KEY = "edl44.theme";
 
 interface ThemeState {
   theme: Theme;

@@ -31,7 +31,7 @@ export function AuthLayout({
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
             <Sparkles strokeWidth={2} className="h-[18px] w-[18px] text-white" />
           </div>
-          <span className="text-[15px] font-bold tracking-tight text-ink">Raffall</span>
+          <span className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></span>
         </Link>
 
         <div>
@@ -62,7 +62,7 @@ export function AuthLayout({
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent-gradient shadow-accent-glow">
               <Sparkles strokeWidth={2} className="h-[18px] w-[18px] text-white" />
             </div>
-            <span className="text-[15px] font-bold tracking-tight text-ink">Raffall</span>
+            <span className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></span>
           </Link>
 
           <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">

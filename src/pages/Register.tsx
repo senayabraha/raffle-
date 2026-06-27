@@ -19,7 +19,7 @@ import { Field, Input, Segmented } from "@/components/ui/Form";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
+const LOGIN_CONTEXT_STORAGE_KEY = "edl44.loginContext";
 
 /** Mirrors the DB check constraint: profiles.date_of_birth must be 18+ years ago. */
 function isAdult(dateOfBirth: string) {

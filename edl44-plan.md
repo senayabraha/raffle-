@@ -1,4 +1,4 @@
-# Raffall Clone — Full Platform Planning Document
+# እድል44 — Full Platform Planning Document
 
 *Reverse-engineered from raffall.com for build reference*
 

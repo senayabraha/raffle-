@@ -92,7 +92,7 @@ export function Sidebar() {
           <Sparkles strokeWidth={2} className="h-[18px] w-[18px]" />
         </span>
         <div className="leading-tight">
-          <p className="text-[15px] font-bold tracking-tight text-ink">Raffall</p>
+          <p className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></p>
           <p className="text-[11px] text-ink-subtle">Host Studio</p>
         </div>
       </Link>

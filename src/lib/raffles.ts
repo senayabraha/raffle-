@@ -64,7 +64,7 @@ type RaffleRowWithHost = {
 export function mapRaffleRow(row: RaffleRowWithHost): MarketplaceRaffle {
   const style = (row.category && categoryStyle[row.category]) || fallbackStyle;
   const hostObj = Array.isArray(row.host) ? row.host[0] : row.host;
-  const hostName = hostObj?.full_name?.trim() || "A Raffall host";
+  const hostName = hostObj?.full_name?.trim() || "A እድል44 host";
   const initials = hostName
     .split(/\s+/)
     .slice(0, 2)
@@ -160,7 +160,7 @@ export async function fetchRaffleEntrants(raffleId: string): Promise<RaffleEntra
 
   return (data as unknown as TicketRowWithEntrant[]).map((row) => {
     const entrant = Array.isArray(row.entrant) ? row.entrant[0] : row.entrant;
-    const name = entrant?.full_name?.trim() || "A Raffall entrant";
+    const name = entrant?.full_name?.trim() || "A እድል44 entrant";
     const initials =
       name
         .split(/\s+/)
@@ -685,7 +685,7 @@ export async function fetchPublicWinners(): Promise<PublicWinner[]> {
       const ticket = Array.isArray(row.ticket) ? row.ticket[0] : row.ticket;
       if (!raffle || raffle.visibility !== "public" || raffle.status !== "ended") return null;
 
-      const name = winner?.full_name?.trim() || "A Raffall entrant";
+      const name = winner?.full_name?.trim() || "A እድል44 entrant";
       const initials =
         name
           .split(/\s+/)

@@ -247,7 +247,7 @@ export default function Dashboard() {
                 <ShieldCheck strokeWidth={1.75} className="h-5 w-5 text-white" />
               </div>
               <h3 className="mt-4 text-[15px] font-semibold tracking-tight text-ink">
-                Raffall Guarantee
+                እድል<span className="text-accent">44</span> Guarantee
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
                 You have 7 days after a draw to confirm prize delivery. Miss

@@ -117,7 +117,7 @@ export default function AdminLayout() {
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-5 backdrop-blur-md lg:flex">
         <div className="px-2 pb-6">
-          <p className="text-[15px] font-bold tracking-tight text-ink">Raffall</p>
+          <p className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></p>
           <p className="text-[11px] text-ink-subtle">Admin panel</p>
         </div>
         <SidebarNav />
@@ -139,7 +139,7 @@ export default function AdminLayout() {
       >
         <div className="flex items-center justify-between px-2 pb-6">
           <div>
-            <p className="text-[15px] font-bold tracking-tight text-ink">Raffall</p>
+            <p className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></p>
             <p className="text-[11px] text-ink-subtle">Admin panel</p>
           </div>
           <button

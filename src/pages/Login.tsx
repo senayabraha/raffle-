@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { safeRedirectPath } from "@/lib/utils";
 
 const ENTRANT_HOME = "/en/public-raffles/live";
-const LOGIN_CONTEXT_STORAGE_KEY = "raffall.loginContext";
+const LOGIN_CONTEXT_STORAGE_KEY = "edl44.loginContext";
 
 /**
  * Public Entrant login. Logging in here always keeps the session in the
@@ -194,7 +194,7 @@ export default function Login() {
       </form>
 
       <p className="mt-6 text-center text-sm text-ink-muted">
-        New to Raffall?{" "}
+        New to እድል<span className="text-accent">44</span>?{" "}
         <Link to="/en/register" className="font-medium text-accent-soft transition-colors hover:text-ink">
           Create an account
         </Link>

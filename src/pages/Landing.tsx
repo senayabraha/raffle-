@@ -65,7 +65,7 @@ export default function Landing() {
             <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient">
               <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="font-semibold text-ink">Raffall</span>
+            <span className="font-semibold text-ink">እድል<span className="text-accent">44</span></span>
             <span>© 2026</span>
           </div>
           <div className="flex gap-5">

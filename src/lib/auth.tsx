@@ -21,7 +21,7 @@ export type LoginContext = "host" | "entrant";
  * may land a session on the Host dashboard. Persisted so it survives reloads
  * for the lifetime of the session, and cleared on sign-out.
  */
-const LOGIN_CONTEXT_KEY = "raffall.loginContext";
+const LOGIN_CONTEXT_KEY = "edl44.loginContext";
 
 interface AuthState {
   session: Session | null;

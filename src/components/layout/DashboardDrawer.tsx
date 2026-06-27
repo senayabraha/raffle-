@@ -43,7 +43,7 @@ export function DashboardDrawer() {
           >
             <div className="flex items-center justify-between px-2 pb-4">
               <div className="leading-tight">
-                <p className="text-[15px] font-bold tracking-tight text-ink">Raffall</p>
+                <p className="text-[15px] font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></p>
                 <p className="text-[11px] text-ink-subtle">Host Studio</p>
               </div>
               <button

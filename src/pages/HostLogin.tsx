@@ -224,7 +224,7 @@ export default function HostLogin() {
           <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent-gradient shadow-accent-glow">
             <Sparkles strokeWidth={2} className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-sm font-bold tracking-tight text-ink">Raffall</span>
+          <span className="text-sm font-bold tracking-tight text-ink">እድል<span className="text-accent">44</span></span>
         </Link>
 
         {checkEmail ? (

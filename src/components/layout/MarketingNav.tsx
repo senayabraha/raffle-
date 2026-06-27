@@ -39,7 +39,7 @@ export function MarketingNav() {
             <Menu strokeWidth={2} className="h-4 w-4" />
           </button>
           <Link to="/en" className="text-[15px] font-bold tracking-tight text-ink">
-            Raffall
+            እድል<span className="text-accent">44</span>
           </Link>
         </div>
 

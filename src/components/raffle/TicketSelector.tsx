@@ -320,7 +320,7 @@ export function TicketSelector({ raffle }: { raffle: MarketplaceRaffle }) {
 
       <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-ink-subtle">
         <ShieldCheck strokeWidth={1.5} className="h-3.5 w-3.5 text-emerald-400" />
-        Protected by the Raffall Guarantee · Free postal entry available
+        Protected by the እድል<span className="text-accent">44</span> Guarantee · Free postal entry available
       </p>
     </div>
   );

@@ -52,11 +52,11 @@ is already mostly enforced by the schema, not just convention:
   an admin "force draw now" button would be a deliberate new capability, not just
   exposing something hidden; recommend **not** adding it, to keep the "platform can't
   influence who wins" guarantee airtight (this is also called out as the core fairness
-  selling point in `raffall-clone-plan.md`).
+  selling point in `edl44-plan.md`).
 - **`private.run_due_winner_claim_expirations()`** and
   **`private.run_due_guarantee_compensations()`** — also cron-only, auto-accept a win
   21 days after draw, auto-revoke + 75%-compensate a host who doesn't confirm prize
-  delivery within 7 days. These encode a business policy (the "Raffall Guarantee");
+  delivery within 7 days. These encode a business policy (the "እድል44 Guarantee");
   admin's role here is **observability**, not override.
 - **`draw_audit`** — one append-only row per draw with the seed, entry count, and
   drawn index, specifically so a disputed result can be independently re-verified.

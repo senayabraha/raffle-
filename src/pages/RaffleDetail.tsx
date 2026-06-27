@@ -41,7 +41,7 @@ export default function RaffleDetail() {
     typeof window !== "undefined" ? window.location.href : "";
 
   function shareTo(network: "x" | "facebook" | "telegram") {
-    const text = raffle ? `Check out "${raffle.title}" on Raffall` : "Check out this raffle on Raffall";
+    const text = raffle ? `Check out "${raffle.title}" on እድል44` : "Check out this raffle on እድል44";
     const urls: Record<typeof network, string> = {
       x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
@@ -169,7 +169,7 @@ export default function RaffleDetail() {
                 <p className="font-semibold text-ink">{raffle.host}</p>
                 <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
                   <ShieldAlert strokeWidth={1.5} className="h-3 w-3" />
-                  Identity not verified by Raffall
+                  Identity not verified by እድል44
                 </p>
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function RaffleDetail() {
             <div className="glass flex items-start gap-3 p-4">
               <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
               <p className="text-xs leading-relaxed text-ink-muted">
-                <span className="font-semibold text-ink">Raffall Guarantee:</span>{" "}
+                <span className="font-semibold text-ink">እድል<span className="text-accent">44</span> Guarantee:</span>{" "}
                 the host has 7 days after the draw to confirm delivery. If they
                 don't, you receive 75% of ticket revenue back, paid by the
                 platform — automatically.

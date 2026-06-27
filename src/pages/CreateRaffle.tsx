@@ -742,7 +742,7 @@ function StepBody({
           </Field>
           <p className="flex items-start gap-2 rounded-xl border border-line bg-surface p-3 text-xs leading-relaxed text-ink-muted">
             <Check strokeWidth={1.5} className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-            The draw uses an automated, auditable RNG. Neither you nor Raffall can
+            The draw uses an automated, auditable RNG. Neither you nor እድል<span className="text-accent">44</span> can
             influence the outcome.
           </p>
         </>
@@ -759,7 +759,7 @@ function StepBody({
                 value: "public",
                 label: "Public marketplace",
                 icon: Globe,
-                hint: "Discoverable by everyone browsing Raffall",
+                hint: "Discoverable by everyone browsing እድል44",
               },
               {
                 value: "private",

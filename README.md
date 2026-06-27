@@ -1,9 +1,9 @@
-# Raffall — Premium Raffle Marketplace (UI)
+# እድል44 — Premium Raffle Marketplace (UI)
 
 A two-sided prize-competition marketplace, built with a deliberately
 **ultra-modern, premium, glassmorphic** visual identity (Linear / Apple
 inspired). This phase delivers the **global layout** and the **primary host
-dashboard view** described in `raffall-clone-plan.md`.
+dashboard view** described in `edl44-plan.md`.
 
 ## Stack
 
@@ -56,5 +56,5 @@ src/
   lib/utils.ts     cn(), currency & compact formatters
 ```
 
-See `raffall-clone-plan.md` for the full platform plan (data model, state
+See `edl44-plan.md` for the full platform plan (data model, state
 machine, money flow, build phases).

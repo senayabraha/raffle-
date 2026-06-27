@@ -236,7 +236,7 @@ export function FeaturedRafflesCarousel() {
     if (track) track.style.animationPlayState = "paused";
     if (container) {
       container.style.overflowX = "auto";
-      container.style.scrollSnapType = "x mandatory";
+      container.style.scrollSnapType = "x proximity";
     }
     setPaused(true);
   }, []);
@@ -279,7 +279,10 @@ export function FeaturedRafflesCarousel() {
         onMouseDown={pause}
         onMouseUp={resume}
         onMouseLeave={resume}
-        className={cn("mt-5", paused ? "snap-x snap-mandatory overflow-x-auto" : "overflow-x-hidden")}
+        className={cn(
+          "mt-5 touch-pan-x [-webkit-overflow-scrolling:touch]",
+          paused ? "snap-x snap-proximity overflow-x-auto" : "overflow-x-hidden",
+        )}
       >
         <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} snap={paused} />
       </div>

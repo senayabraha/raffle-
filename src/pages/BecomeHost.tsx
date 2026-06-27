@@ -47,7 +47,7 @@ function Card({ children }: { children: React.ReactNode }) {
 export default function BecomeHost() {
   const navigate = useNavigate();
   const { session, profile, refreshProfile, setLoginContext } = useAuth();
-  const { canHost } = useMode();
+  const { canHost, setMode } = useMode();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,12 +117,15 @@ export default function BecomeHost() {
             create or manage a raffle.
           </p>
           <div className="mt-6">
-            <Link to="/en/dashboard">
-              <Button variant="primary" size="lg" className="w-full">
-                Go to host dashboard
-                <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
-              </Button>
-            </Link>
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
+              onClick={() => setMode("host")}
+            >
+              Go to host dashboard
+              <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+            </Button>
           </div>
         </Card>
       </PublicShell>

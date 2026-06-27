@@ -24,11 +24,14 @@ import {
 const MAX_FEATURED = 12;
 const MOBILE_OPTIONS = [1, 1.5, 2, 2.5, 3];
 const DESKTOP_OPTIONS = [1, 1.5, 2, 2.5, 3, 4, 5];
+const SCROLL_DURATION_MIN = 5;
+const SCROLL_DURATION_MAX = 60;
 
 function DisplaySettings({ onSaved }: { onSaved: () => void }) {
   const [settings, setSettings] = useState<FeaturedSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [savedField, setSavedField] = useState<"mobile" | "desktop" | null>(null);
+  const [savedField, setSavedField] = useState<"mobile" | "desktop" | "speed" | null>(null);
+  const [speedDraft, setSpeedDraft] = useState<number | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -39,7 +42,7 @@ function DisplaySettings({ onSaved }: { onSaved: () => void }) {
       });
   }, []);
 
-  function flashSaved(field: "mobile" | "desktop") {
+  function flashSaved(field: "mobile" | "desktop" | "speed") {
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     setSavedField(field);
     savedTimerRef.current = setTimeout(() => setSavedField(null), 1500);
@@ -52,6 +55,21 @@ function DisplaySettings({ onSaved }: { onSaved: () => void }) {
     try {
       await updateFeaturedSettings({ [field]: value });
       flashSaved(field === "cards_per_screen_mobile" ? "mobile" : "desktop");
+      onSaved();
+    } catch (err) {
+      setSettings(previous);
+      setError(err instanceof Error ? err.message : "Failed to update display settings.");
+    }
+  }
+
+  async function commitScrollDuration(value: number) {
+    if (!settings) return;
+    const previous = settings;
+    setSettings({ ...settings, scroll_duration_seconds: value });
+    setSpeedDraft(null);
+    try {
+      await updateFeaturedSettings({ scroll_duration_seconds: value });
+      flashSaved("speed");
       onSaved();
     } catch (err) {
       setSettings(previous);
@@ -119,6 +137,28 @@ function DisplaySettings({ onSaved }: { onSaved: () => void }) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-ink">
+                Scroll speed <span className="text-ink-subtle">({speedDraft ?? settings.scroll_duration_seconds}s)</span>
+              </p>
+              {savedField === "speed" && <span className="text-xs text-emerald-400">Saved</span>}
+            </div>
+            <input
+              type="range"
+              min={SCROLL_DURATION_MIN}
+              max={SCROLL_DURATION_MAX}
+              step={1}
+              value={speedDraft ?? settings.scroll_duration_seconds}
+              onChange={(e) => setSpeedDraft(Number(e.target.value))}
+              onMouseUp={(e) => commitScrollDuration(Number(e.currentTarget.value))}
+              onTouchEnd={(e) => commitScrollDuration(Number(e.currentTarget.value))}
+              onKeyUp={(e) => commitScrollDuration(Number(e.currentTarget.value))}
+              className="mt-2 w-full accent-accent"
+            />
+            <p className="mt-1 text-xs text-ink-subtle">Higher = slower scroll</p>
           </div>
         </div>
       )}

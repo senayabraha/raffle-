@@ -175,16 +175,19 @@ export type Database = {
           cards_per_screen_desktop: number
           cards_per_screen_mobile: number
           id: number
+          scroll_duration_seconds: number
         }
         Insert: {
           cards_per_screen_desktop?: number
           cards_per_screen_mobile?: number
           id?: number
+          scroll_duration_seconds?: number
         }
         Update: {
           cards_per_screen_desktop?: number
           cards_per_screen_mobile?: number
           id?: number
+          scroll_duration_seconds?: number
         }
         Relationships: []
       }

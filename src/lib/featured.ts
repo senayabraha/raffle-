@@ -35,6 +35,7 @@ export interface RaffleSearchResult {
 export interface FeaturedSettings {
   cards_per_screen_mobile: number;
   cards_per_screen_desktop: number;
+  scroll_duration_seconds: number;
 }
 
 type RaffleJoinRow = {
@@ -205,7 +206,7 @@ export async function reorderFeaturedRaffles(orderedIds: string[]): Promise<void
 export async function getFeaturedSettings(): Promise<FeaturedSettings> {
   const { data, error } = await supabase
     .from("featured_settings")
-    .select("cards_per_screen_mobile, cards_per_screen_desktop")
+    .select("cards_per_screen_mobile, cards_per_screen_desktop, scroll_duration_seconds")
     .eq("id", 1)
     .single();
   if (error) throw error;

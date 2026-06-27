@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useFeaturedRaffles } from "@/hooks/useFeaturedRaffles";
@@ -15,6 +15,27 @@ const MD_BREAKPOINT_PX = 768;
 const CARD_GAP_PX = 12;
 
 const CARD_BASE_CLASS = "shrink-0";
+
+const DEFAULT_SCROLL_DURATION_SECONDS = 20;
+
+// Rendered once, outside the animated track, so the keyframes and the
+// track's animation-name/timing-function/iteration-count never change
+// across re-renders — only `animation-play-state` (pause/resume) and
+// `animation-duration` (admin speed setting) are ever touched, and both
+// are applied imperatively via refs rather than through React state, so a
+// parent re-render can never restart the animation from 0%.
+const FEATURED_TRACK_KEYFRAMES = `
+@keyframes featured-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.featured-track-anim {
+  animation-name: featured-slide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: ${DEFAULT_SCROLL_DURATION_SECONDS}s;
+}
+`;
 
 function formatDrawDate(iso: string | null): string {
   if (!iso) return "TBD";
@@ -94,6 +115,31 @@ function RaffleCard({
   );
 }
 
+interface FeaturedTrackProps {
+  cards: FeaturedRaffleCard[];
+  cardWidth: number;
+  snap: boolean;
+}
+
+// Isolated from the parent's state changes (resize, settings load, etc.) via
+// React.memo so that re-renders of FeaturedRafflesCarousel don't remount or
+// otherwise touch this element — the only thing that ever mutates the DOM
+// node directly is the pause/resume/speed logic in the parent, via `ref`.
+const FeaturedTrack = memo(
+  forwardRef<HTMLDivElement, FeaturedTrackProps>(function FeaturedTrack(
+    { cards, cardWidth, snap },
+    ref,
+  ) {
+    return (
+      <div ref={ref} className="featured-track-anim flex w-max">
+        {cards.map((raffle, i) => (
+          <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={snap} cardWidth={cardWidth} />
+        ))}
+      </div>
+    );
+  }),
+);
+
 function FeaturedRafflesSkeleton() {
   return (
     <section className="mx-auto max-w-5xl px-5 py-10">
@@ -126,6 +172,18 @@ export function FeaturedRafflesCarousel() {
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  const cards = useMemo(() => [...raffles, ...raffles], [raffles]);
+
+  // Settings load after mount (or change via the admin panel's preview), so
+  // the duration is applied imperatively to the track's `style` rather than
+  // through a prop — that keeps `animation-name` stable on the memoized
+  // track and only ever updates the duration, never resetting the loop.
+  const scrollDuration = settings?.scroll_duration_seconds ?? DEFAULT_SCROLL_DURATION_SECONDS;
+  useEffect(() => {
+    const track = trackRef.current;
+    if (track) track.style.animationDuration = `${scrollDuration}s`;
+  }, [scrollDuration]);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= MD_BREAKPOINT_PX);
@@ -163,7 +221,13 @@ export function FeaturedRafflesCarousel() {
     const container = containerRef.current;
     const track = trackRef.current;
     if (container) container.scrollLeft = 0;
-    if (track) track.style.animationPlayState = "running";
+    if (track) {
+      // Force a synchronous layout recalculation before flipping back to
+      // "running" — without this the browser doesn't always kick a
+      // paused CSS animation back into motion on release.
+      track.getBoundingClientRect();
+      track.style.animationPlayState = "running";
+    }
     setPaused(false);
   }, []);
 
@@ -174,10 +238,10 @@ export function FeaturedRafflesCarousel() {
     ? settings?.cards_per_screen_desktop ?? 4
     : settings?.cards_per_screen_mobile ?? 2.5;
   const cardWidth = containerWidth > 0 ? containerWidth / cardsPerScreen - CARD_GAP_PX : 0;
-  const cards = [...raffles, ...raffles];
 
   return (
     <section className="mx-auto max-w-5xl px-5 py-10">
+      <style>{FEATURED_TRACK_KEYFRAMES}</style>
       <h2 className="text-2xl font-bold tracking-tightest text-ink sm:text-3xl">Featured Raffles</h2>
 
       <div
@@ -189,11 +253,7 @@ export function FeaturedRafflesCarousel() {
         onMouseLeave={resume}
         className={cn("mt-5", paused ? "snap-x snap-mandatory overflow-x-auto" : "overflow-x-hidden")}
       >
-        <div ref={trackRef} className="flex w-max animate-featured-slide">
-          {cards.map((raffle, i) => (
-            <RaffleCard key={`${raffle.id}-${i}`} raffle={raffle} snap={paused} cardWidth={cardWidth} />
-          ))}
-        </div>
+        <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} snap={paused} />
       </div>
     </section>
   );

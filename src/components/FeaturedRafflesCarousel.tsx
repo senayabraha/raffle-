@@ -1,4 +1,13 @@
-import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useFeaturedRaffles } from "@/hooks/useFeaturedRaffles";
@@ -198,7 +207,11 @@ export function FeaturedRafflesCarousel() {
   // which means percentage-based card widths can no longer resolve against
   // the visible viewport. Re-runs once `loading` flips to false, since the
   // container only mounts once the skeleton is replaced by the real markup.
-  useEffect(() => {
+  // Uses `useLayoutEffect` (not `useEffect`) so the real `clientWidth` is
+  // measured and applied before the browser paints — otherwise `cardWidth`
+  // briefly resolves to 0 (from the initial `containerWidth` state) and the
+  // cards flash in at zero width for a frame on every mount.
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const updateWidth = () => setContainerWidth(container.clientWidth);
@@ -208,19 +221,34 @@ export function FeaturedRafflesCarousel() {
     return () => observer.disconnect();
   }, [loading]);
 
-  // Pausing/resuming only ever toggles `animation-play-state` — the
-  // carousel always keeps auto-scrolling once the user lets go, no matter
-  // how they interacted with it while held.
+  // Pausing/resuming toggles `animation-play-state` AND the container's
+  // scrollability, both applied imperatively via refs in the same tick as
+  // the touch/mouse event — not via the `paused` state's re-render. Native
+  // touch-scrolling only works while `overflow-x` is `auto`; if that switch
+  // waited on a React re-render (as it used to, driven purely by the
+  // `paused` class below), the container was still `overflow-x: hidden` for
+  // the first render cycle after `touchstart`, so the browser dropped the
+  // opening part of every swipe — felt like the carousel lagging behind the
+  // finger and getting stuck before suddenly catching up.
   const pause = useCallback(() => {
     const track = trackRef.current;
+    const container = containerRef.current;
     if (track) track.style.animationPlayState = "paused";
+    if (container) {
+      container.style.overflowX = "auto";
+      container.style.scrollSnapType = "x proximity";
+    }
     setPaused(true);
   }, []);
 
   const resume = useCallback(() => {
     const container = containerRef.current;
     const track = trackRef.current;
-    if (container) container.scrollLeft = 0;
+    if (container) {
+      container.scrollLeft = 0;
+      container.style.overflowX = "hidden";
+      container.style.scrollSnapType = "";
+    }
     if (track) {
       // Force a synchronous layout recalculation before flipping back to
       // "running" — without this the browser doesn't always kick a
@@ -251,7 +279,10 @@ export function FeaturedRafflesCarousel() {
         onMouseDown={pause}
         onMouseUp={resume}
         onMouseLeave={resume}
-        className={cn("mt-5", paused ? "snap-x snap-mandatory overflow-x-auto" : "overflow-x-hidden")}
+        className={cn(
+          "mt-5 touch-pan-x [-webkit-overflow-scrolling:touch]",
+          paused ? "snap-x snap-proximity overflow-x-auto" : "overflow-x-hidden",
+        )}
       >
         <FeaturedTrack ref={trackRef} cards={cards} cardWidth={cardWidth} snap={paused} />
       </div>

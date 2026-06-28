@@ -224,41 +224,37 @@ export default function RaffleDetail() {
             <h1 className="mt-1.5 text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
               {raffle.title}
             </h1>
-            <div className="mt-4 flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-gradient text-xs font-bold text-white">
-                {raffle.hostInitials}
-              </span>
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-ink">{raffle.host}</p>
-                {raffle.hostVerified && (
-                  <div
-                    title="Identity verified by እድል44"
-                    className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5"
-                  >
-                    <Check strokeWidth={2.5} className="h-3 w-3 text-blue-400" />
-                    <span className="text-[11px] font-semibold text-blue-400">Verified</span>
-                  </div>
-                )}
-              </div>
-            </div>
 
             <hr className="my-5 border-line" />
             <p className="text-sm leading-relaxed text-ink-muted">
               {raffle.description}
             </p>
-            {raffle.bundles.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {raffle.bundles.map((b) => (
-                  <span
-                    key={b.qty}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink"
-                  >
-                    <Gift className="h-3.5 w-3.5 text-accent-soft" />
-                    Buy {b.qty}, get {b.free} free
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-gradient text-[9px] font-bold text-white">
+                  {raffle.hostInitials}
+                </span>
+                {raffle.host}
+              </span>
+              {raffle.hostVerified && (
+                <div
+                  title="Identity verified by እድል44"
+                  className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5"
+                >
+                  <Check strokeWidth={2.5} className="h-3 w-3 text-blue-400" />
+                  <span className="text-[11px] font-semibold text-blue-400">Verified</span>
+                </div>
+              )}
+              {raffle.bundles.map((b) => (
+                <span
+                  key={b.qty}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+                >
+                  <Gift className="h-3.5 w-3.5 text-accent-soft" />
+                  Buy {b.qty}, get {b.free} free
+                </span>
+              ))}
+            </div>
           </SpotlightCard>
 
           {/* Recent entries */}

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { GradientBorder, AmbientGlow } from "@/components/ui/GradientBorder";
 import { CountdownPills } from "@/components/ui/Countdown";
 import { Button } from "@/components/ui/Button";
 import { TicketSelector } from "@/components/raffle/TicketSelector";
@@ -179,6 +180,12 @@ export default function RaffleDetail() {
 
   return (
     <PublicShell>
+      {/* Premium tactile dot-matrix texture across the page (dark only) */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 hidden bg-dot-matrix opacity-[0.03] dark:block"
+      />
+
       <Link
         to="/en/public-raffles/live"
         className="mb-5 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
@@ -216,17 +223,22 @@ export default function RaffleDetail() {
             )}
           </div>
 
-          {/* Prize info */}
-          <SpotlightCard className="p-6" lift={false}>
-            <span className="text-xs uppercase tracking-wider text-ink-subtle">
+          {/* Prize info — text sits on a dark isolation panel, lifted clear of
+              any background mesh/imagery, with an ambient glow behind the title. */}
+          <SpotlightCard
+            className="p-6 dark:border-white/10 dark:bg-zinc-950/60 dark:backdrop-blur-md"
+            lift={false}
+          >
+            <AmbientGlow className="-left-10 -top-16 h-56 w-72" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
               {raffle.category}
             </span>
-            <h1 className="mt-1.5 text-3xl font-bold tracking-tightest text-ink sm:text-4xl">
+            <h1 className="mt-1.5 text-3xl font-bold tracking-tightest text-ink dark:text-zinc-50 sm:text-4xl">
               {raffle.title}
             </h1>
 
-            <hr className="my-5 border-line" />
-            <p className="text-base leading-relaxed text-ink">
+            <hr className="my-5 border-line dark:border-white/10" />
+            <p className="text-base leading-relaxed text-ink dark:text-zinc-300">
               {raffle.description}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -248,7 +260,7 @@ export default function RaffleDetail() {
               {raffle.bundles.map((b) => (
                 <span
                   key={b.qty}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200"
                 >
                   <Gift className="h-3.5 w-3.5 text-accent-soft" />
                   Buy {b.qty}, get {b.free} free
@@ -272,51 +284,55 @@ export default function RaffleDetail() {
         >
           <div className="space-y-4 lg:sticky lg:top-28">
             {/* Countdown + progress */}
-            <div className="glass-strong p-5">
-              <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
-                <Trophy strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
-                Draw {raffle.status === "ended" ? "closed" : "in"}
-              </p>
-              <CountdownPills drawDate={raffle.drawDate} />
+            <GradientBorder>
+              <div className="glass-strong p-5 dark:border-transparent dark:bg-zinc-950/70">
+                <p className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                  <Trophy strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+                  Draw {raffle.status === "ended" ? "closed" : "in"}
+                </p>
+                <CountdownPills drawDate={raffle.drawDate} />
 
-              <div className="mt-5">
-                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                    className="h-full rounded-full bg-accent-gradient"
-                  />
-                </div>
-                <div className="mt-2 flex justify-between text-xs text-ink-muted">
-                  <span>
-                    <span className="font-semibold text-ink tabular-nums">
-                      {formatCompact(raffle.sold)}
-                    </span>{" "}
-                    sold
-                  </span>
-                  <span className="tabular-nums">
-                    {formatCompact(raffle.cap - raffle.sold)} remaining
-                  </span>
+                <div className="mt-5">
+                  <div className="h-2 overflow-hidden rounded-full bg-surface-2 dark:bg-white/10">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                      className="h-full rounded-full bg-accent-gradient shadow-[0_0_12px_-2px_rgba(139,92,246,0.8)]"
+                    />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-ink-muted">
+                    <span>
+                      <span className="font-semibold text-ink tabular-nums dark:text-white">
+                        {formatCompact(raffle.sold)}
+                      </span>{" "}
+                      sold
+                    </span>
+                    <span className="tabular-nums">
+                      {formatCompact(raffle.cap - raffle.sold)} remaining
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </GradientBorder>
 
             {/* Ticket selector */}
             {raffle.suspensionStatus === "active" ? (
-              <div ref={ticketSectionRef}>
-                <TicketSelector raffle={raffle} qty={qty} onQtyChange={setQty} />
-              </div>
+              <GradientBorder>
+                <div ref={ticketSectionRef}>
+                  <TicketSelector raffle={raffle} qty={qty} onQtyChange={setQty} />
+                </div>
+              </GradientBorder>
             ) : (
-              <div className="glass-strong flex items-start gap-3 p-5">
+              <div className="glass-strong flex items-start gap-3 p-5 dark:border-amber-400/25 dark:bg-amber-500/[0.06]">
                 <ShieldAlert strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
                 <div>
-                  <p className="text-sm font-semibold text-ink">
+                  <p className="text-sm font-semibold text-ink dark:text-white">
                     {raffle.suspensionStatus === "permanent"
                       ? "This raffle has been closed."
                       : "This raffle has been temporarily paused."}
                   </p>
-                  <p className="mt-1 text-xs text-ink-subtle">
+                  <p className="mt-1 text-xs text-ink-muted">
                     {raffle.suspensionStatus === "permanent"
                       ? "Ticket sales are no longer available for this raffle."
                       : "Check back later — ticket sales will resume once the pause is lifted."}
@@ -326,60 +342,65 @@ export default function RaffleDetail() {
             )}
 
             {/* Share */}
-            <div className="glass p-5">
-              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-ink">
-                <Share2 strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
-                Share this raffle
-              </p>
-              <p className="mt-1 text-xs text-ink-subtle">
-                Send your link or scan the QR code to enter from any device.
-              </p>
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {shareLinks.map((s) => (
-                  <button
-                    key={s.label}
-                    type="button"
-                    title={s.label}
-                    onClick={s.onClick}
-                    className="focus-ring grid h-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:text-accent-soft active:scale-95"
-                  >
-                    <s.icon strokeWidth={1.5} className="h-[18px] w-[18px]" />
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowQr((v) => !v)}
-                className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2.5 text-xs font-medium text-ink transition-all duration-300 hover:border-accent/40 hover:text-accent-soft"
-              >
-                <QrCode strokeWidth={1.5} className="h-4 w-4" />
-                {showQr ? "Hide QR code" : "Show QR code"}
-              </button>
-
-              {showQr && (
-                <div
-                  ref={qrRef}
-                  className="mt-3 flex flex-col items-center gap-3 rounded-xl border border-line bg-white p-4"
-                >
-                  <QRCodeCanvas value={shareUrl} size={160} includeMargin />
-                  <button
-                    type="button"
-                    onClick={downloadQr}
-                    className="focus-ring inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 transition-colors hover:text-obsidian"
-                  >
-                    <Download strokeWidth={1.5} className="h-3.5 w-3.5" />
-                    Download
-                  </button>
+            <GradientBorder>
+              <div className="glass p-5 dark:border-transparent dark:bg-zinc-950/70">
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink dark:text-white">
+                  <Share2 strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+                  Share this raffle
+                </p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Send your link or scan the QR code to enter from any device.
+                </p>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {shareLinks.map((s) => (
+                    <button
+                      key={s.label}
+                      type="button"
+                      title={s.label}
+                      onClick={s.onClick}
+                      className="focus-ring grid h-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:text-accent-soft active:scale-95 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200"
+                    >
+                      <s.icon strokeWidth={1.5} className="h-[18px] w-[18px]" />
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
 
-            {/* Guarantee */}
-            <div className="glass flex items-start gap-3 p-4">
-              <ShieldCheck strokeWidth={1.5} className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-              <p className="text-xs leading-relaxed text-ink-muted">
-                <span className="font-semibold text-ink">እድል<span className="text-accent">44</span> Guarantee:</span>{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowQr((v) => !v)}
+                  className="focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2.5 text-xs font-medium text-ink transition-all duration-300 hover:border-accent/40 hover:text-accent-soft dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-200"
+                >
+                  <QrCode strokeWidth={1.5} className="h-4 w-4" />
+                  {showQr ? "Hide QR code" : "Show QR code"}
+                </button>
+
+                {showQr && (
+                  <div
+                    ref={qrRef}
+                    className="mt-3 flex flex-col items-center gap-3 rounded-xl border border-line bg-white p-4"
+                  >
+                    <QRCodeCanvas value={shareUrl} size={160} includeMargin />
+                    <button
+                      type="button"
+                      onClick={downloadQr}
+                      className="focus-ring inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 transition-colors hover:text-obsidian"
+                    >
+                      <Download strokeWidth={1.5} className="h-3.5 w-3.5" />
+                      Download
+                    </button>
+                  </div>
+                )}
+              </div>
+            </GradientBorder>
+
+            {/* Platform trust panel — separated, solid outline card with a
+                dedicated security icon to elevate user trust. */}
+            <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-4 shadow-soft-lift dark:border-emerald-400/25 dark:bg-emerald-500/[0.06]">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 dark:bg-emerald-500/15">
+                <ShieldCheck strokeWidth={1.75} className="h-5 w-5 text-emerald-400" />
+              </span>
+              <p className="text-xs leading-relaxed text-ink-muted dark:text-zinc-300">
+                <span className="font-semibold text-ink dark:text-white">እድል<span className="text-accent">44</span> Guarantee:</span>{" "}
                 the host has 7 days after the draw to confirm delivery. If they
                 don't, you receive 75% of ticket revenue back, paid by the
                 platform — automatically.
@@ -399,13 +420,13 @@ export default function RaffleDetail() {
         )}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] text-ink-subtle">
+          <p className="text-[11px] text-ink-muted">
             {totalTickets} ticket{totalTickets !== 1 ? "s" : ""}
             {free > 0 && (
               <span className="text-emerald-400"> (+{free} free)</span>
             )}
           </p>
-          <p className="text-base font-bold tabular-nums text-ink">
+          <p className="text-base font-bold tabular-nums text-ink dark:text-white">
             {formatCurrency(total)}
           </p>
         </div>

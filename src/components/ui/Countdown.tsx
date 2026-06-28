@@ -24,12 +24,17 @@ export function CountdownPills({ drawDate }: { drawDate: string }) {
       {units.map((u) => (
         <div
           key={u.label}
-          className="glass flex flex-col items-center justify-center py-3"
+          className="relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-line bg-surface py-3 dark:border-white/10 dark:bg-white/[0.05] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] dark:backdrop-blur-sm"
         >
-          <span className="text-2xl font-bold tabular-nums tracking-tight text-ink sm:text-3xl">
+          {/* subtle top sheen on the lifted glass block */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 hidden h-px bg-gradient-to-r from-transparent via-white/25 to-transparent dark:block"
+          />
+          <span className="text-2xl font-bold tabular-nums tracking-tight text-ink dark:text-white sm:text-3xl">
             {String(u.value).padStart(2, "0")}
           </span>
-          <span className="mt-0.5 text-[10px] uppercase tracking-wider text-ink-subtle">
+          <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-ink-muted">
             {u.label}
           </span>
         </div>

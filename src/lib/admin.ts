@@ -490,6 +490,67 @@ export async function fetchAdminDisputes(): Promise<AdminDisputeRow[]> {
   }));
 }
 
+export interface AdminCancellationRow {
+  id: string;
+  raffleId: string;
+  raffleTitle: string;
+  raffleSlug: string;
+  hostName: string;
+  hostEmail: string | null;
+  ticketsSold: number;
+  reason: string;
+  createdAt: string;
+}
+
+/** Pending host-filed cancellation requests — the admin review queue. */
+export async function fetchCancellationRequests(): Promise<AdminCancellationRow[]> {
+  const { data, error } = await supabase
+    .from("cancellation_requests")
+    .select(
+      "id, raffle_id, reason, created_at, raffle:raffles!cancellation_requests_raffle_id_fkey(title, slug, tickets_sold_count), host:profiles!cancellation_requests_host_id_fkey(full_name, email)",
+    )
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+
+  return (
+    data as unknown as Array<{
+      id: string;
+      raffle_id: string;
+      reason: string;
+      created_at: string;
+      raffle: { title: string; slug: string; tickets_sold_count: number } | null;
+      host: { full_name: string | null; email: string | null } | null;
+    }>
+  ).map((r) => ({
+    id: r.id,
+    raffleId: r.raffle_id,
+    raffleTitle: r.raffle?.title ?? "Raffle",
+    raffleSlug: r.raffle?.slug ?? "",
+    hostName: r.host?.full_name?.trim() || "Unknown host",
+    hostEmail: r.host?.email ?? null,
+    ticketsSold: r.raffle?.tickets_sold_count ?? 0,
+    reason: r.reason,
+    createdAt: r.created_at,
+  }));
+}
+
+/** Admin approves a cancellation (cancels the raffle, refunds held payments
+ * and notifies the host) or rejects it. Always logged. */
+export async function resolveCancellationRequest(
+  requestId: string,
+  decision: "approve" | "reject",
+  note: string,
+): Promise<{ status: string }> {
+  const { data, error } = await supabase.rpc("admin_resolve_cancellation", {
+    p_request_id: requestId,
+    p_decision: decision,
+    p_note: note,
+  });
+  if (error) throw error;
+  return { status: (data as { status: string }).status };
+}
+
 /** Admin resolves a disputed prize, either upholding the entrant's dispute
  * (compensation, mirroring the automated guarantee path) or the host's
  * delivery (accepted, mirroring confirm_prize). Always logged. */

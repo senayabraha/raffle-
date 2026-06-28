@@ -681,6 +681,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      admin_resolve_cancellation: {
+        Args: { p_decision: string; p_note?: string | null; p_request_id: string }
+        Returns: Json
+      }
       admin_resolve_dispute: {
         Args: { p_decision: string; p_reason: string; p_winner_id: string }
         Returns: Json

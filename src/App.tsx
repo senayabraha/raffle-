@@ -45,6 +45,7 @@ const AdminRaffles = lazy(() => import("@/pages/admin/Raffles"));
 const AdminPayments = lazy(() => import("@/pages/admin/Payments"));
 const AdminUsers = lazy(() => import("@/pages/admin/Users"));
 const AdminDisputes = lazy(() => import("@/pages/admin/Disputes"));
+const AdminCancellations = lazy(() => import("@/pages/admin/Cancellations"));
 const AdminHosts = lazy(() => import("@/pages/admin/Hosts"));
 const AdminHero = lazy(() => import("@/pages/admin/HeroCarouselAdmin"));
 const AdminFeatured = lazy(() => import("@/pages/admin/FeaturedRafflesAdmin"));
@@ -274,6 +275,7 @@ export default function App() {
               <Route path="payments" element={<AdminPayments />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="disputes" element={<AdminDisputes />} />
+              <Route path="cancellations" element={<AdminCancellations />} />
               <Route path="hosts" element={<AdminHosts />} />
               <Route path="hero" element={<AdminHero />} />
               <Route path="featured" element={<AdminFeatured />} />

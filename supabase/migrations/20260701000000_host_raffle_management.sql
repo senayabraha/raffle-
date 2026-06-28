@@ -156,3 +156,87 @@ $$;
 
 revoke execute on function public.host_request_cancellation(uuid, text) from public, anon;
 grant execute on function public.host_request_cancellation(uuid, text) to authenticated;
+
+-- ---------- E. Admin resolution of cancellation requests ----------
+-- Closes the loop on the host request above: an admin approves (which
+-- cancels the raffle and refunds held payments, mirroring
+-- admin_set_raffle_status and the min-target auto-cancellation path) or
+-- rejects it. Either way the host is notified and the action is logged.
+create function public.admin_resolve_cancellation(
+  p_request_id uuid,
+  p_decision text,
+  p_note text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_request public.cancellation_requests;
+  v_raffle public.raffles;
+begin
+  if not private.is_admin() then
+    raise exception 'Admin access required.' using errcode = '42501';
+  end if;
+  if p_decision not in ('approve', 'reject') then
+    raise exception 'Unknown decision: %', p_decision;
+  end if;
+
+  select * into v_request from public.cancellation_requests
+    where id = p_request_id for update;
+  if not found then
+    raise exception 'Cancellation request not found.';
+  end if;
+  if v_request.status <> 'pending' then
+    raise exception 'This cancellation request has already been resolved.';
+  end if;
+
+  select * into v_raffle from public.raffles where id = v_request.raffle_id for update;
+  if not found then
+    raise exception 'Raffle not found.';
+  end if;
+
+  if p_decision = 'approve' then
+    update public.raffles set status = 'cancelled' where id = v_raffle.id;
+    update public.payments set status = 'refunded'
+      where raffle_id = v_raffle.id and status = 'held';
+
+    update public.cancellation_requests set
+      status = 'approved', admin_note = p_note, resolved_at = now()
+    where id = p_request_id;
+
+    insert into public.notifications (user_id, type, title, body, raffle_id)
+    values (
+      v_request.host_id, 'cancellation_approved', 'Cancellation approved',
+      'Your request to cancel "' || v_raffle.title ||
+        '" was approved. The raffle has been cancelled and entrants refunded.',
+      v_raffle.id
+    );
+  else
+    update public.cancellation_requests set
+      status = 'rejected', admin_note = p_note, resolved_at = now()
+    where id = p_request_id;
+
+    insert into public.notifications (user_id, type, title, body, raffle_id)
+    values (
+      v_request.host_id, 'cancellation_rejected', 'Cancellation declined',
+      'Your request to cancel "' || v_raffle.title || '" was declined.' ||
+        coalesce(' Note: ' || nullif(trim(p_note), ''), ''),
+      v_raffle.id
+    );
+  end if;
+
+  perform private.log_admin_action(
+    'resolve_cancellation', 'cancellation_requests', p_request_id, p_note,
+    jsonb_build_object('decision', p_decision, 'raffle_id', v_raffle.id)
+  );
+
+  return jsonb_build_object(
+    'status', case when p_decision = 'approve' then 'approved' else 'rejected' end
+  );
+end;
+$$;
+
+revoke execute on function public.admin_resolve_cancellation(uuid, text, text) from public, anon;
+grant execute on function public.admin_resolve_cancellation(uuid, text, text) to authenticated;

@@ -163,4 +163,25 @@
     -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 80%);
     mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 80%);
   }
+
+  /* Premium tactile dot-matrix texture — sits at very low opacity behind page
+     content to add depth without competing with foreground copy. */
+  .bg-dot-matrix {
+    background-image: radial-gradient(rgb(var(--ink) / 1) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: -1px -1px;
+  }
+
+  /* Razor-thin accent gradient border. Apply to a wrapper with `rounded-*`
+     and `p-px`; the inner child supplies its own rounded background so the
+     gradient shows only as a hairline frame. */
+  .gradient-ring {
+    background-image: linear-gradient(
+      135deg,
+      rgba(139, 92, 246, 0.45) 0%,
+      rgba(139, 92, 246, 0.06) 40%,
+      transparent 55%,
+      rgba(139, 92, 246, 0.18) 100%
+    );
+  }
 }

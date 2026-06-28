@@ -115,11 +115,13 @@ export function TicketSelector({
   const closed = raffle.status !== "live";
 
   return (
-    <div className="glass-strong p-5">
+    <div className="glass-strong p-5 dark:border-transparent dark:bg-zinc-950/70">
       <div className="flex items-baseline justify-between">
         <div>
-          <p className="text-xs text-ink-subtle">Ticket price</p>
-          <p className="text-2xl font-bold tracking-tight text-ink">
+          <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">
+            Ticket price
+          </p>
+          <p className="text-2xl font-bold tracking-tight text-ink dark:text-white">
             {formatCurrency(raffle.ticketPrice)}
           </p>
         </div>
@@ -142,28 +144,30 @@ export function TicketSelector({
           >
             {/* Quantity stepper */}
             <div className="mt-5">
-              <label className="text-xs font-medium text-ink-muted">Quantity</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Quantity
+              </label>
               <div className="mt-2 flex items-center gap-3">
                 <button
                   onClick={() => onQtyChange(Math.max(1, qty - 1))}
                   disabled={closed}
-                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
+                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:hover:border-accent/40"
                 >
                   <Minus strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 </button>
-                <div className="flex h-11 flex-1 items-center justify-center rounded-xl border border-line bg-surface text-lg font-bold tabular-nums text-ink">
+                <div className="flex h-11 flex-1 items-center justify-center rounded-xl border border-line bg-surface text-lg font-bold tabular-nums text-ink dark:border-white/10 dark:bg-white/[0.05] dark:text-white">
                   {qty}
                 </div>
                 <button
                   onClick={() => onQtyChange(qty + 1)}
                   disabled={closed}
-                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40"
+                  className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-line bg-surface text-ink transition-all duration-300 hover:border-line hover:bg-surface-2 active:scale-95 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.05] dark:text-white dark:hover:border-accent/40"
                 >
                   <Plus strokeWidth={1.5} className="h-[18px] w-[18px]" />
                 </button>
               </div>
 
-              {/* Quick picks */}
+              {/* Quick picks — vibrant glowing active state */}
               <div className="mt-2.5 grid grid-cols-4 gap-2">
                 {quickPicks.map((n) => (
                   <button
@@ -171,10 +175,10 @@ export function TicketSelector({
                     onClick={() => onQtyChange(n)}
                     disabled={closed}
                     className={cn(
-                      "focus-ring rounded-lg border py-1.5 text-sm font-medium transition-all duration-300 disabled:opacity-40",
+                      "focus-ring rounded-lg border py-1.5 text-sm font-bold transition-all duration-300 disabled:opacity-40",
                       qty === n
-                        ? "border-accent/50 bg-accent/15 text-ink"
-                        : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
+                        ? "border-accent bg-accent/20 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.55),0_6px_22px_-6px_rgba(139,92,246,0.8)] dark:bg-accent/25"
+                        : "border-line bg-surface font-medium text-ink-muted hover:border-accent/40 hover:text-ink dark:border-white/10 dark:bg-white/[0.04] dark:hover:text-white",
                     )}
                   >
                     {n}
@@ -191,29 +195,36 @@ export function TicketSelector({
             </div>
 
             {/* Totals */}
-            <div className="mt-5 space-y-1.5 border-t border-line pt-4 text-sm">
+            <div className="mt-5 space-y-1.5 border-t border-line pt-4 text-sm dark:border-white/10">
               <div className="flex justify-between text-ink-muted">
                 <span>
                   {qty} {qty === 1 ? "ticket" : "tickets"}
                 </span>
                 <span className="tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
-              <div className="flex items-center justify-between pt-1 text-base font-bold text-ink">
+              <div className="flex items-center justify-between pt-1 text-base font-bold text-ink dark:text-white">
                 <span>Total</span>
                 <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>
             </div>
 
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => setStep("contact")}
-              disabled={closed}
-              className="mt-4 w-full"
-            >
-              <Ticket strokeWidth={1.5} className="h-5 w-5" />
-              {closed ? "Entries closed" : `Enter raffle · ${formatCurrency(total)}`}
-            </Button>
+            {/* Dominant CTA with ambient neon glow */}
+            <div className="relative mt-4">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-2 -z-10 hidden rounded-2xl bg-accent/30 opacity-60 blur-2xl dark:block"
+              />
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => setStep("contact")}
+                disabled={closed}
+                className="w-full text-base shadow-[0_8px_30px_-6px_rgba(139,92,246,0.6)] hover:shadow-[0_14px_50px_-6px_rgba(139,92,246,0.8)]"
+              >
+                <Ticket strokeWidth={1.5} className="h-5 w-5" />
+                {closed ? "Entries closed" : `Enter raffle · ${formatCurrency(total)}`}
+              </Button>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -233,12 +244,12 @@ export function TicketSelector({
               Back
             </button>
 
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm">
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm dark:border-white/10 dark:bg-white/[0.05]">
               <span className="text-ink-muted">
                 {qty} {qty === 1 ? "ticket" : "tickets"}
                 {free > 0 ? ` + ${free} free` : ""}
               </span>
-              <span className="font-bold tabular-nums text-ink">
+              <span className="font-bold tabular-nums text-ink dark:text-white">
                 {formatCurrency(total)}
               </span>
             </div>
@@ -269,8 +280,8 @@ export function TicketSelector({
                     className={cn(
                       "focus-ring relative rounded-xl border py-3 text-sm font-semibold transition-all duration-300 disabled:opacity-40",
                       provider === p.id
-                        ? "border-accent/50 bg-accent/15 text-ink"
-                        : "border-line bg-surface text-ink-muted hover:border-line hover:text-ink",
+                        ? "border-accent bg-accent/20 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.5),0_6px_22px_-8px_rgba(139,92,246,0.8)] dark:bg-accent/25"
+                        : "border-line bg-surface text-ink-muted hover:border-accent/40 hover:text-ink dark:border-white/10 dark:bg-white/[0.04] dark:hover:text-white",
                     )}
                   >
                     {p.label}

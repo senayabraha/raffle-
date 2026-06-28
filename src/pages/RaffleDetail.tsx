@@ -226,7 +226,7 @@ export default function RaffleDetail() {
             </h1>
 
             <hr className="my-5 border-line" />
-            <p className="text-base leading-relaxed text-ink-muted">
+            <p className="text-base leading-relaxed text-ink">
               {raffle.description}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2">

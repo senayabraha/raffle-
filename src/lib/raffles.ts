@@ -864,6 +864,14 @@ export interface RaffleManageDetail {
   prizeValue: number | null;
   imageUrls: string[];
   drawDate: string | null;
+  drawType: "date" | "soldout" | "hybrid";
+  minTicketTarget: number | null;
+  bundleRules: unknown;
+  visibility: "public" | "private";
+  condition: "new" | "used" | "refurbished" | null;
+  deliveryMethod: "shipping" | "pickup" | "digital" | "cash_equivalent" | null;
+  drawDateExtensionCount: number;
+  hasPendingCancelRequest: boolean;
 }
 
 /** Loads a single raffle the host owns, for the raffle management page. */
@@ -874,13 +882,21 @@ export async function fetchRaffleForManage(
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, title, description, category, status, ticket_price, ticket_cap, tickets_sold_count, prize_value, image_urls, draw_date",
+      "id, title, description, category, status, ticket_price, ticket_cap, tickets_sold_count, prize_value, image_urls, draw_date, draw_type, min_ticket_target, bundle_rules, visibility, condition, delivery_method, draw_date_extension_count",
     )
     .eq("id", raffleId)
     .eq("host_id", hostId)
     .maybeSingle();
 
   if (error || !data) return null;
+
+  const { data: pendingRequest } = await supabase
+    .from("cancellation_requests")
+    .select("id")
+    .eq("raffle_id", raffleId)
+    .eq("status", "pending")
+    .maybeSingle();
+
   return {
     id: data.id,
     title: data.title,
@@ -893,27 +909,86 @@ export async function fetchRaffleForManage(
     prizeValue: data.prize_value != null ? Number(data.prize_value) : null,
     imageUrls: data.image_urls ?? [],
     drawDate: data.draw_date,
+    drawType: data.draw_type,
+    minTicketTarget: data.min_ticket_target,
+    bundleRules: data.bundle_rules,
+    visibility: data.visibility,
+    condition: data.condition,
+    deliveryMethod: data.delivery_method,
+    drawDateExtensionCount: data.draw_date_extension_count,
+    hasPendingCancelRequest: pendingRequest != null,
   };
 }
 
-/** Edits description/images/prize value; ticket price & cap are rejected server-side once any ticket has sold. */
+/**
+ * Full wizard-field edit for a raffle with no entries yet. The UI gates this
+ * to `ticketsSoldCount === 0`; the `update_raffle_details` RPC still guards the
+ * post-sale price/cap subset server-side as a safety net via its own checks
+ * and RLS, so this direct update is only ever issued for editable raffles.
+ */
 export async function updateRaffleDetails(
   raffleId: string,
   patch: {
+    title: string;
     description: string | null;
-    imageUrls: string[];
+    category: string | null;
     prizeValue: number | null;
     ticketPrice: number;
     ticketCap: number | null;
+    bundleRules: unknown;
+    drawType: "date" | "soldout" | "hybrid";
+    drawDate: string | null;
+    minTicketTarget: number | null;
+    visibility: "public" | "private";
+    condition: "new" | "used" | "refurbished" | null;
+    deliveryMethod: "shipping" | "pickup" | "digital" | "cash_equivalent" | null;
+    imageUrls: string[];
   },
 ): Promise<void> {
-  const { error } = await supabase.rpc("update_raffle_details", {
+  const { error } = await supabase
+    .from("raffles")
+    .update({
+      title: patch.title,
+      description: patch.description,
+      category: patch.category,
+      prize_value: patch.prizeValue,
+      ticket_price: patch.ticketPrice,
+      ticket_cap: patch.ticketCap,
+      bundle_rules: patch.bundleRules as never,
+      draw_type: patch.drawType,
+      draw_date: patch.drawDate,
+      min_ticket_target: patch.minTicketTarget,
+      visibility: patch.visibility,
+      condition: patch.condition,
+      delivery_method: patch.deliveryMethod,
+      image_urls: patch.imageUrls,
+    })
+    .eq("id", raffleId);
+  if (error) throw error;
+}
+
+/** Host requests a draw-date extension (capped at twice, +15 days each). */
+export async function extendDrawDate(
+  raffleId: string,
+  newDrawDate: string,
+): Promise<{ drawDate: string; extensionCount: number }> {
+  const { data, error } = await supabase.rpc("host_extend_draw_date", {
     p_raffle_id: raffleId,
-    p_description: patch.description,
-    p_image_urls: patch.imageUrls,
-    p_prize_value: patch.prizeValue,
-    p_ticket_price: patch.ticketPrice,
-    p_ticket_cap: patch.ticketCap,
+    p_new_draw_date: new Date(newDrawDate).toISOString(),
+  });
+  if (error) throw error;
+  const result = data as { draw_date: string; extension_count: number };
+  return { drawDate: result.draw_date, extensionCount: result.extension_count };
+}
+
+/** Host files a cancellation request for a live raffle that already has entries. */
+export async function requestCancellation(
+  raffleId: string,
+  reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("host_request_cancellation", {
+    p_raffle_id: raffleId,
+    p_reason: reason,
   });
   if (error) throw error;
 }

@@ -55,6 +55,54 @@ export type Database = {
           },
         ]
       }
+      cancellation_requests: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          host_id: string
+          id: string
+          raffle_id: string
+          reason: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          host_id: string
+          id?: string
+          raffle_id: string
+          reason: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          host_id?: string
+          id?: string
+          raffle_id?: string
+          reason?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_requests_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancellation_requests_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkout_contacts: {
         Row: {
           city: string
@@ -413,6 +461,8 @@ export type Database = {
           delivery_method: Database["public"]["Enums"]["delivery_method"] | null
           description: string | null
           draw_date: string | null
+          draw_date_extension_count: number
+          draw_date_last_extended_at: string | null
           draw_type: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id: string
@@ -442,6 +492,8 @@ export type Database = {
           delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
+          draw_date_extension_count?: number
+          draw_date_last_extended_at?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id: string
           id?: string
@@ -471,6 +523,8 @@ export type Database = {
           delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
+          draw_date_extension_count?: number
+          draw_date_last_extended_at?: string | null
           draw_type?: Database["public"]["Enums"]["draw_type"]
           host_id?: string
           id?: string
@@ -627,6 +681,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      admin_resolve_cancellation: {
+        Args: { p_decision: string; p_note?: string | null; p_request_id: string }
+        Returns: Json
+      }
       admin_resolve_dispute: {
         Args: { p_decision: string; p_reason: string; p_winner_id: string }
         Returns: Json
@@ -713,6 +771,14 @@ export type Database = {
         Returns: Json
       }
       get_checkout_status: { Args: { p_payment_id: string }; Returns: Json }
+      host_extend_draw_date: {
+        Args: { p_new_draw_date: string; p_raffle_id: string }
+        Returns: Json
+      }
+      host_request_cancellation: {
+        Args: { p_raffle_id: string; p_reason: string }
+        Returns: Json
+      }
       purchase_tickets: {
         Args: { p_qty: number; p_raffle_id: string }
         Returns: Json

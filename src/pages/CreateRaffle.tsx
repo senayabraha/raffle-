@@ -1028,11 +1028,13 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
   const price = draft.ticketPrice || 0;
   const cap = draft.unlimited ? 0 : draft.ticketCap;
   const gross = price * cap;
+  const prize = draft.prizeValue ?? 0;
   const lottery = gross * COSTS.lottery_tax;
-  const winner = gross * COSTS.winner_tax;
+  // Winner prize tax is a fixed 20% of the prize value — not a cut of gross
+  // revenue. This mirrors the Step 2 Revenue Planner cost model exactly.
+  const winner = prize * PLANNER_WINNER_TAX;
   const social = gross * COSTS.social_contribution;
   const platform = gross * COSTS.platform_fee;
-  const prize = draft.prizeValue ?? 0;
   const profit = gross - lottery - winner - social - platform - prize;
 
   const conditionLabels: Record<RaffleDraft["condition"], string> = {
@@ -1111,7 +1113,7 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
           <div className="space-y-1.5 text-sm">
             <Row label="Gross revenue" value={formatCurrency(gross)} />
             <Row label="Lottery Association Tax (15%)" value={`−${formatCurrency(lottery)}`} negative />
-            <Row label="Winner Prize Tax (15%)" value={`−${formatCurrency(winner)}`} negative />
+            <Row label="Winner Prize Tax (20% of prize)" value={`−${formatCurrency(winner)}`} negative />
             <Row label="Social Contribution (0.5%)" value={`−${formatCurrency(social)}`} negative />
             <Row label="Platform Fee (10%)" value={`−${formatCurrency(platform)}`} negative />
             <Row label="Prize value" value={`−${formatCurrency(prize)}`} negative />

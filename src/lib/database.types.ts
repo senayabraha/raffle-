@@ -458,6 +458,7 @@ export type Database = {
           category: string | null
           condition: Database["public"]["Enums"]["prize_condition"] | null
           created_at: string
+          current_step: number | null
           delivery_method: Database["public"]["Enums"]["delivery_method"] | null
           description: string | null
           draw_date: string | null
@@ -490,6 +491,7 @@ export type Database = {
           category?: string | null
           condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          current_step?: number | null
           delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           category?: string | null
           condition?: Database["public"]["Enums"]["prize_condition"] | null
           created_at?: string
+          current_step?: number | null
           delivery_method?: Database["public"]["Enums"]["delivery_method"] | null
           description?: string | null
           draw_date?: string | null

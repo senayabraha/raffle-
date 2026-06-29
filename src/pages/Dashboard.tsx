@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ShieldCheck,
   Sparkles,
@@ -9,6 +9,9 @@ import {
   Ticket,
   Zap,
   Percent,
+  FileText,
+  ArrowRight,
+  X,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -20,7 +23,11 @@ import { LiveRaffles } from "@/components/dashboard/LiveRaffles";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CardHeader } from "@/components/dashboard/CardHeader";
 import { useAuth } from "@/lib/auth";
-import { fetchHostOverview, type HostOverview } from "@/lib/raffles";
+import {
+  fetchHostOverview,
+  type HostOverview,
+  type HostRaffleSummary,
+} from "@/lib/raffles";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -60,6 +67,7 @@ export default function Dashboard() {
     user?.email?.split("@")[0] ??
     "there";
 
+  const drafts = (data?.raffles ?? []).filter((r) => r.status === "draft");
   const totals = data?.totals;
   const salesSeries = data?.salesSeries ?? new Array(14).fill(0);
   const hasSales = salesSeries.some((v) => v > 0);
@@ -102,6 +110,9 @@ export default function Dashboard() {
 
   return (
     <AppShell>
+      {/* Resume unfinished drafts */}
+      {!loading && drafts.length > 0 && <ResumeDraftsBanner drafts={drafts} />}
+
       {/* Greeting header */}
       <motion.div
         custom={0}
@@ -305,5 +316,99 @@ export default function Dashboard() {
       </div>
       )}
     </AppShell>
+  );
+}
+
+/**
+ * Top-of-dashboard nudge to finish draft raffles. With a single draft, "Resume"
+ * jumps straight back into the wizard at the saved step; with several, it expands
+ * an inline picker. Dismissal is session-only — it reappears next visit if drafts
+ * remain.
+ */
+function ResumeDraftsBanner({ drafts }: { drafts: HostRaffleSummary[] }) {
+  const navigate = useNavigate();
+  const [dismissed, setDismissed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  if (dismissed) return null;
+
+  const count = drafts.length;
+  const resumePath = (d: HostRaffleSummary) =>
+    `/en/dashboard/create/${d.id}?step=${d.currentStep}`;
+
+  function handleResume() {
+    if (count === 1) {
+      navigate(resumePath(drafts[0]));
+    } else {
+      setExpanded((v) => !v);
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="mb-6 overflow-hidden rounded-2xl border border-accent/30 bg-accent/[0.08]"
+    >
+      <div className="flex items-center gap-4 p-4 sm:p-5">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-accent/30 bg-accent/15 text-accent-soft">
+          <FileText strokeWidth={1.75} className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-ink">
+            You have {count} unfinished {count === 1 ? "raffle" : "raffles"}
+          </p>
+          <p className="text-xs text-ink-muted">Pick up where you left off.</p>
+        </div>
+        <Button variant="primary" size="md" onClick={handleResume} className="shrink-0">
+          Resume
+          <ArrowRight strokeWidth={1.5} className="h-[18px] w-[18px]" />
+        </Button>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss"
+          className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-subtle transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <X strokeWidth={1.75} className="h-4 w-4" />
+        </button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {count > 1 && expanded && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="border-t border-accent/20"
+          >
+            {drafts.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center gap-3 px-4 py-3 sm:px-5 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-accent/10"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">
+                    {d.title?.trim() || "Untitled raffle"}
+                  </p>
+                  <p className="text-xs text-ink-subtle">Step {d.currentStep} of 5</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(resumePath(d))}
+                  className="shrink-0"
+                >
+                  Resume this one
+                  <ArrowRight strokeWidth={1.5} className="h-4 w-4" />
+                </Button>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

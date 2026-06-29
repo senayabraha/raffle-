@@ -16,6 +16,10 @@ import {
   Loader2,
   AlertCircle,
   X,
+  Calculator,
+  BarChart3,
+  Coins,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import {
@@ -24,6 +28,7 @@ import {
   uploadRaffleImages,
   fetchHostDraft,
   parseBundles,
+  parsePlannerState,
   type RaffleDraftRow,
 } from "@/lib/raffles";
 import { AppShell } from "@/components/layout/AppShell";
@@ -47,13 +52,96 @@ import { useConfirmOnLeave } from "@/lib/useConfirmOnLeave";
 
 const steps: WizardStep[] = [
   { id: 1, title: "Prize details", desc: "What you're giving away" },
-  { id: 2, title: "Ticket settings", desc: "Price, cap & bundles" },
-  { id: 3, title: "Draw settings", desc: "When the winner is picked" },
-  { id: 4, title: "Visibility", desc: "Public or private" },
+  { id: 2, title: "Revenue planner", desc: "Plan your raffle economics" },
+  { id: 3, title: "Ticket settings", desc: "Price, cap & bundles" },
+  { id: 4, title: "Schedule & visibility", desc: "Draw date & who can see it" },
   { id: 5, title: "Review", desc: "Check & publish" },
 ];
 
 const prizeCategories = categories.filter((c) => c !== "All");
+
+/**
+ * Cost model for running a raffle on the platform. Hosts keep 59.5% of gross
+ * revenue after these deductions. Used by the Revenue Planner (Step 2) and the
+ * full-sellout projection in Review (Step 5).
+ */
+const COSTS = {
+  lottery_tax: 0.15, // 15% — Lottery Association Tax
+  winner_tax: 0.15, // 15% — Paid Winning Tax
+  social_contribution: 0.005, // 0.5% — Good Social Cause Tax
+  platform_fee: 0.1, // 10% — Platform Fee (incl. 2.5% processing)
+};
+/**
+ * Revenue-based cost rate — the share of GROSS revenue lost to costs that scale
+ * with sales: lottery (15%) + social contribution (0.5%) + platform fee (10%).
+ * The winner prize tax is deliberately excluded here: it is a fixed 20% of the
+ * prize value, not a cut of revenue.
+ */
+const REVENUE_COST_RATE =
+  COSTS.lottery_tax + COSTS.social_contribution + COSTS.platform_fee; // 0.255
+/** Share of gross revenue left after the revenue-based costs (74.5%). */
+const REVENUE_KEEP_RATE = 1 - REVENUE_COST_RATE; // 0.745
+/** Winner prize tax: a fixed 20% of the prize value, independent of revenue. */
+const PLANNER_WINNER_TAX = 0.2;
+
+/**
+ * Break-even gross revenue — leaves zero profit after every cost:
+ *   gross × (1 - REVENUE_COST_RATE) = prize × (1 + PLANNER_WINNER_TAX)
+ *   gross × 0.745                   = prize × 1.20
+ */
+function plannerBreakeven(draft: RaffleDraft) {
+  const prize = draft.prizeValue ?? 0;
+  return (prize * (1 + PLANNER_WINNER_TAX)) / REVENUE_KEEP_RATE;
+}
+/**
+ * Gross revenue needed to reach the host's desired profit, worked backwards so
+ * the profit they enter is the profit they actually keep:
+ *   target × (1 - REVENUE_COST_RATE) = prize × (1 + PLANNER_WINNER_TAX) + profit
+ */
+function plannerTargetRevenue(draft: RaffleDraft) {
+  const prize = draft.prizeValue ?? 0;
+  return (
+    (prize * (1 + PLANNER_WINNER_TAX) + draft.plannerProfitTargetEtb) / REVENUE_KEEP_RATE
+  );
+}
+/** Tickets that must sell at the chosen price to hit the target revenue. */
+function plannerTicketCap(draft: RaffleDraft) {
+  const price = draft.plannerTicketPrice;
+  if (price <= 0) return 0;
+  return Math.ceil(plannerTargetRevenue(draft) / price);
+}
+
+/** Rounds a raw price up to the nearest "nice" increment for the chip suggestions. */
+function roundToNearestNice(price: number): number {
+  if (price < 50) return Math.ceil(price / 10) * 10;
+  if (price < 200) return Math.ceil(price / 50) * 50;
+  if (price < 1000) return Math.ceil(price / 100) * 100;
+  if (price < 5000) return Math.ceil(price / 500) * 500;
+  return Math.ceil(price / 1000) * 1000;
+}
+
+interface PriceChip {
+  price: number;
+  tickets: number;
+}
+
+/**
+ * Four suggested ticket prices derived from the target revenue, aiming for a
+ * spread of ticket counts (many cheap tickets → fewer expensive ones).
+ * De-duplicates by price in case two targets round to the same nice value.
+ */
+function generateChips(target: number): PriceChip[] {
+  if (target <= 0) return [];
+  const targetCounts = [5000, 2000, 1000, 500];
+  return targetCounts
+    .map((count) => {
+      const rawPrice = target / count;
+      const rounded = roundToNearestNice(rawPrice);
+      const actualCount = Math.ceil(target / rounded);
+      return { price: rounded, tickets: actualCount };
+    })
+    .filter((chip, index, arr) => arr.findIndex((c) => c.price === chip.price) === index);
+}
 
 /** Field-level validation errors for the active step. Empty object = step can advance. */
 function stepErrors(step: number, draft: RaffleDraft): Record<string, string> {
@@ -65,6 +153,16 @@ function stepErrors(step: number, draft: RaffleDraft): Record<string, string> {
       }
       break;
     case 1:
+      if (!draft.prizeValue || draft.prizeValue <= 0) {
+        errors.plannerPrize = "Enter your prize value to plan your raffle.";
+      }
+      if (draft.plannerTicketPrice <= 0) {
+        errors.plannerTicketPrice = "Set a ticket price to continue.";
+      } else if (plannerTicketCap(draft) <= 0) {
+        errors.plannerTicketCap = "We couldn't work out how many tickets to sell.";
+      }
+      break;
+    case 2:
       if (!draft.unlimited && draft.ticketCap < 1) {
         errors.ticketCap = "Set a ticket cap of at least 1.";
       }
@@ -73,7 +171,7 @@ function stepErrors(step: number, draft: RaffleDraft): Record<string, string> {
           "Free tickets must be fewer than the buy quantity, or every ticket ends up free.";
       }
       break;
-    case 2:
+    case 3:
       if (draft.drawType === "date") {
         if (!draft.drawDate) {
           errors.drawDate = "Pick a draw date.";
@@ -101,6 +199,7 @@ function effectivePricePerTicket(draft: RaffleDraft) {
 /** Rehydrates a saved draft row from the DB into wizard form state. */
 function draftFromRow(row: RaffleDraftRow): RaffleDraft {
   const bundle = parseBundles(row.bundle_rules)[0];
+  const planner = parsePlannerState(row.planner_state);
   return {
     title: row.title,
     description: row.description ?? "",
@@ -108,6 +207,11 @@ function draftFromRow(row: RaffleDraftRow): RaffleDraft {
     prizeValue: row.prize_value,
     condition: row.condition ?? initialDraft.condition,
     deliveryMethod: row.delivery_method ?? initialDraft.deliveryMethod,
+    plannerPrizeValue: planner?.prize_value ?? row.prize_value,
+    plannerProfitTargetPct: planner?.profit_target_pct ?? initialDraft.plannerProfitTargetPct,
+    plannerProfitTargetEtb: planner?.profit_target_etb ?? initialDraft.plannerProfitTargetEtb,
+    plannerTicketPrice: planner?.ticket_price ?? initialDraft.plannerTicketPrice,
+    plannerTicketCap: planner?.ticket_cap ?? initialDraft.plannerTicketCap,
     ticketPrice: Number(row.ticket_price),
     unlimited: row.ticket_cap == null,
     ticketCap: row.ticket_cap ?? initialDraft.ticketCap,
@@ -268,6 +372,16 @@ export default function CreateRaffle() {
     if (isLast) {
       void publish();
       return;
+    }
+    // Leaving the Revenue Planner: lock its output into the ticket-settings step.
+    if (step === 1) {
+      const cap = plannerTicketCap(draft);
+      set({
+        ticketPrice: draft.plannerTicketPrice,
+        ticketCap: cap,
+        plannerTicketCap: cap,
+        unlimited: false,
+      });
     }
     setDir(1);
     setStep((s) => Math.min(s + 1, steps.length - 1));
@@ -450,9 +564,15 @@ function StepHeader({ index }: { index: number }) {
 
 const headings = [
   { title: "Tell us about the prize", sub: "A clear title and great description sell tickets." },
-  { title: "Set your ticket pricing", sub: "Choose a price, a cap, and optional bundle deals." },
-  { title: "Decide how the draw ends", sub: "On a fixed date or automatically when sold out." },
-  { title: "Choose who can see it", sub: "List on the public marketplace or share privately." },
+  {
+    title: "Plan your revenue",
+    sub: "See the full economics before you set your ticket price and cap.",
+  },
+  { title: "Set your ticket pricing", sub: "Pre-filled from your plan — tweak anything you like." },
+  {
+    title: "Schedule & visibility",
+    sub: "Pick when the draw ends and who can see your raffle.",
+  },
   { title: "Review & publish", sub: "Everything look good? Send it live." },
 ];
 
@@ -578,9 +698,10 @@ function StepBody({
               min={0}
               step={1}
               value={draft.prizeValue ?? ""}
-              onChange={(e) =>
-                set({ prizeValue: e.target.value === "" ? null : Number(e.target.value) })
-              }
+              onChange={(e) => {
+                const v = e.target.value === "" ? null : Number(e.target.value);
+                set({ prizeValue: v, plannerPrizeValue: v });
+              }}
               placeholder="Retail value entrants can verify"
             />
           </Field>
@@ -617,6 +738,9 @@ function StepBody({
       );
 
     case 1:
+      return <RevenuePlannerStep draft={draft} set={set} errors={errors} />;
+
+    case 2:
       return (
         <>
           <Field label="Ticket price" hint="ETB">
@@ -628,6 +752,9 @@ function StepBody({
               value={draft.ticketPrice}
               onChange={(e) => set({ ticketPrice: Number(e.target.value) })}
             />
+            {draft.plannerTicketPrice > 0 && (
+              <PlanBadge>{formatCurrency(draft.plannerTicketPrice)} · from your plan</PlanBadge>
+            )}
           </Field>
 
           <div className="flex items-center justify-between rounded-xl border border-line bg-surface p-4">
@@ -646,6 +773,11 @@ function StepBody({
                 value={draft.ticketCap}
                 onChange={(e) => set({ ticketCap: Number(e.target.value) })}
               />
+              {draft.plannerTicketCap > 0 && (
+                <PlanBadge>
+                  {draft.plannerTicketCap.toLocaleString()} tickets · from your plan
+                </PlanBadge>
+              )}
             </Field>
           )}
 
@@ -661,39 +793,29 @@ function StepBody({
           </div>
 
           {draft.bundlesEnabled && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Buy quantity">
-                  <Input
-                    type="number"
-                    min={2}
-                    value={draft.bundleQty}
-                    onChange={(e) => set({ bundleQty: Number(e.target.value) })}
-                  />
-                </Field>
-                <Field label="Free tickets" error={errors.bundle}>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.bundleFree}
-                    onChange={(e) => set({ bundleFree: Number(e.target.value) })}
-                  />
-                </Field>
-              </div>
-              {!errors.bundle && (
-                <p className="text-xs text-ink-subtle">
-                  Effective price per ticket with this bundle:{" "}
-                  <span className="font-medium text-ink">
-                    {formatCurrency(effectivePricePerTicket(draft))}
-                  </span>
-                </p>
-              )}
-            </>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Buy quantity">
+                <Input
+                  type="number"
+                  min={2}
+                  value={draft.bundleQty}
+                  onChange={(e) => set({ bundleQty: Number(e.target.value) })}
+                />
+              </Field>
+              <Field label="Free tickets" error={errors.bundle}>
+                <Input
+                  type="number"
+                  min={1}
+                  value={draft.bundleFree}
+                  onChange={(e) => set({ bundleFree: Number(e.target.value) })}
+                />
+              </Field>
+            </div>
           )}
         </>
       );
 
-    case 2:
+    case 3:
       return (
         <>
           <Field label="Draw type">
@@ -745,31 +867,30 @@ function StepBody({
             The draw uses an automated, auditable RNG. Neither you nor እድል<span className="text-accent">44</span> can
             influence the outcome.
           </p>
-        </>
-      );
 
-    case 3:
-      return (
-        <Field label="Visibility">
-          <Segmented
-            value={draft.visibility}
-            onChange={(v) => set({ visibility: v })}
-            options={[
-              {
-                value: "public",
-                label: "Public marketplace",
-                icon: Globe,
-                hint: "Discoverable by everyone browsing እድል44",
-              },
-              {
-                value: "private",
-                label: "Private link only",
-                icon: Lock,
-                hint: "Only people with your link can enter",
-              },
-            ]}
-          />
-        </Field>
+          <div className="border-t border-line pt-6">
+            <Field label="Visibility">
+              <Segmented
+                value={draft.visibility}
+                onChange={(v) => set({ visibility: v })}
+                options={[
+                  {
+                    value: "public",
+                    label: "Public marketplace",
+                    icon: Globe,
+                    hint: "Discoverable by everyone browsing እድል44",
+                  },
+                  {
+                    value: "private",
+                    label: "Private link only",
+                    icon: Lock,
+                    hint: "Only people with your link can enter",
+                  },
+                ]}
+              />
+            </Field>
+          </div>
+        </>
       );
 
     case 4:
@@ -782,11 +903,15 @@ function StepBody({
 
 /* ---------------- Review ---------------- */
 function ReviewStep({ draft }: { draft: RaffleDraft }) {
-  // Premium tier: 10% platform commission
-  const commission = 0.1;
   const price = draft.ticketPrice || 0;
-  const platformCut = price * commission;
-  const hostNet = Math.max(price - platformCut, 0);
+  const cap = draft.unlimited ? 0 : draft.ticketCap;
+  const gross = price * cap;
+  const lottery = gross * COSTS.lottery_tax;
+  const winner = gross * COSTS.winner_tax;
+  const social = gross * COSTS.social_contribution;
+  const platform = gross * COSTS.platform_fee;
+  const prize = draft.prizeValue ?? 0;
+  const profit = gross - lottery - winner - social - platform - prize;
 
   const conditionLabels: Record<RaffleDraft["condition"], string> = {
     new: "New",
@@ -848,22 +973,460 @@ function ReviewStep({ draft }: { draft: RaffleDraft }) {
               muted
             />
           )}
-          <Row label="Platform commission (10%)" value={`−${formatCurrency(platformCut)}`} muted />
-          <div className="mt-1 flex items-center justify-between border-t border-line pt-2 font-bold text-ink">
-            <span>You earn (held in escrow)</span>
-            <span className="tabular-nums text-emerald-300">{formatCurrency(hostNet)}</span>
-          </div>
         </div>
+      </div>
+
+      {/* Full sellout projection */}
+      <div className="rounded-xl border border-accent/20 bg-accent/[0.06] p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-accent-soft">
+          Full sellout projection
+        </p>
+        {draft.unlimited ? (
+          <p className="text-sm text-ink-muted">
+            Set a ticket cap to see your projected profit.
+          </p>
+        ) : (
+          <div className="space-y-1.5 text-sm">
+            <Row label="Gross revenue" value={formatCurrency(gross)} />
+            <Row label="Lottery Association Tax (15%)" value={`−${formatCurrency(lottery)}`} negative />
+            <Row label="Winner Prize Tax (15%)" value={`−${formatCurrency(winner)}`} negative />
+            <Row label="Social Contribution (0.5%)" value={`−${formatCurrency(social)}`} negative />
+            <Row label="Platform Fee (10%)" value={`−${formatCurrency(platform)}`} negative />
+            <Row label="Prize value" value={`−${formatCurrency(prize)}`} negative />
+            <div className="mt-1 flex items-center justify-between border-t border-line pt-2 font-bold text-ink">
+              <span>Your estimated profit</span>
+              <span className="tabular-nums text-emerald-300">{formatCurrency(profit)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function Row({
+  label,
+  value,
+  muted,
+  negative,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+  negative?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between">
-      <span className={muted ? "text-ink-muted" : "text-ink"}>{label}</span>
-      <span className={cn("tabular-nums", muted ? "text-ink-muted" : "text-ink")}>{value}</span>
+      <span className={muted || negative ? "text-ink-muted" : "text-ink"}>{label}</span>
+      <span
+        className={cn(
+          "tabular-nums",
+          negative ? "text-rose-300" : muted ? "text-ink-muted" : "text-ink",
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/** Read-only "from your plan" context chip shown under pre-filled Step 3 fields. */
+function PlanBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent-soft">
+      <Sparkles strokeWidth={1.5} className="h-3 w-3" />
+      {children}
+    </span>
+  );
+}
+
+/* ---------------- Revenue planner (Step 2) ---------------- */
+/** Animated wrapper that fades + slides a planner stage in once its data is ready. */
+function PlannerStage({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="space-y-3"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function PlannerLine({
+  label,
+  sub,
+  pct,
+  value,
+  strong,
+  negative,
+  profit,
+}: {
+  label: string;
+  sub?: string;
+  pct?: string;
+  value: string;
+  strong?: boolean;
+  negative?: boolean;
+  profit?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="flex-1">
+        <span className={cn(strong ? "font-semibold text-ink" : "text-ink-muted")}>{label}</span>
+        {sub && <span className="block text-[11px] text-ink-subtle">{sub}</span>}
+      </span>
+      {pct && <span className="w-14 text-right text-xs text-ink-subtle tabular-nums">{pct}</span>}
+      <span
+        className={cn(
+          "w-28 text-right tabular-nums",
+          profit
+            ? "font-bold text-emerald-300"
+            : negative
+              ? "text-rose-300"
+              : strong
+                ? "font-semibold text-ink"
+                : "text-ink",
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Numeric input for the planner with a left currency/unit adornment that sits
+ * outside the value area (so "ETB" never overlaps the typed number) and clean
+ * empty-state handling: an empty field reports `null` and a `null`/empty value
+ * renders as a blank field, so Backspace/Delete can fully clear it. The value
+ * stored in state is always a clean number — the prefix is never part of it.
+ */
+function PlannerNumberInput({
+  prefix,
+  value,
+  onValueChange,
+  large,
+  placeholder,
+  max,
+}: {
+  prefix: string;
+  value: number | null;
+  onValueChange: (v: number | null) => void;
+  large?: boolean;
+  placeholder?: string;
+  max?: number;
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 select-none text-sm font-medium text-ink-subtle">
+        {prefix}
+      </span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        max={max}
+        value={value === null ? "" : value}
+        onChange={(e) => onValueChange(e.target.value === "" ? null : Number(e.target.value))}
+        placeholder={placeholder}
+        className={cn(
+          "focus-ring w-full rounded-xl border border-line bg-surface pr-3.5 text-ink placeholder:text-ink-subtle transition-colors duration-300 hover:border-line focus:border-accent/50",
+          prefix.length > 1 ? "pl-12" : "pl-9",
+          large ? "h-14 text-lg" : "h-11 text-sm",
+        )}
+      />
+    </div>
+  );
+}
+
+function RevenuePlannerStep({
+  draft,
+  set,
+  errors,
+}: {
+  draft: RaffleDraft;
+  set: (p: Partial<RaffleDraft>) => void;
+  errors: Record<string, string>;
+}) {
+  const prizeValue = draft.prizeValue ?? 0;
+  const hasPrize = prizeValue > 0;
+  const breakeven = plannerBreakeven(draft);
+  const targetRevenue = plannerTargetRevenue(draft);
+  const ticketPrice = draft.plannerTicketPrice;
+  const ticketCap = plannerTicketCap(draft);
+
+  // Winner prize tax is a fixed 20% of the prize — it does not scale with sales.
+  const winnerTaxEtb = prizeValue * PLANNER_WINNER_TAX;
+  // Revenue-based costs scale with gross revenue; total costs add the fixed tax.
+  const totalCostsAtTarget = targetRevenue * REVENUE_COST_RATE + winnerTaxEtb;
+
+  // Stage 4 unlocks once the host engages with profit (a value, an explicit 0%,
+  // or a resumed draft that already had a price).
+  const [profitTouched, setProfitTouched] = useState(
+    draft.plannerProfitTargetEtb > 0 || draft.plannerTicketPrice > 0,
+  );
+  const showPricing = hasPrize && (draft.plannerProfitTargetEtb > 0 || profitTouched);
+
+  const setPrize = (v: number | null) => {
+    const pv = v ?? 0;
+    const be = (pv * (1 + PLANNER_WINNER_TAX)) / REVENUE_KEEP_RATE;
+    set({
+      prizeValue: v,
+      plannerPrizeValue: v,
+      // Keep the same profit % intent when the prize value changes.
+      plannerProfitTargetEtb: (be * draft.plannerProfitTargetPct) / 100,
+    });
+  };
+  const setProfitPct = (pct: number) => {
+    const clamped = Math.max(0, Math.min(500, pct));
+    setProfitTouched(true);
+    set({
+      plannerProfitTargetPct: clamped,
+      plannerProfitTargetEtb: (breakeven * clamped) / 100,
+    });
+  };
+  const setProfitEtb = (etb: number) => {
+    const v = Math.max(0, etb);
+    setProfitTouched(true);
+    set({
+      plannerProfitTargetEtb: v,
+      plannerProfitTargetPct: breakeven > 0 ? (v / breakeven) * 100 : 0,
+    });
+  };
+  const setTicketPrice = (price: number) => {
+    const cap = price > 0 ? Math.ceil(targetRevenue / price) : 0;
+    set({ plannerTicketPrice: price, plannerTicketCap: cap });
+  };
+
+  // Cost lines for the chosen gross revenue (target).
+  const costLine = (rate: number) => formatCurrency(targetRevenue * rate);
+
+  return (
+    <div className="space-y-6">
+      {/* STAGE 1 — Prize value */}
+      <Field label="What is your prize worth?" error={errors.plannerPrize}>
+        <PlannerNumberInput
+          prefix="ETB"
+          value={draft.prizeValue}
+          onValueChange={setPrize}
+          placeholder="e.g. 1,000,000"
+          large
+        />
+      </Field>
+
+      {!hasPrize && (
+        <div className="rounded-xl border border-dashed border-line bg-surface p-6 text-center text-sm text-ink-subtle">
+          Enter your prize value to see projections.
+        </div>
+      )}
+
+      {/* STAGE 2 — Cost breakdown */}
+      {hasPrize && (
+        <PlannerStage>
+          <div className="rounded-xl border border-line bg-surface p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
+              <Coins strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+              Here's what it costs to run this raffle
+            </p>
+            <div className="space-y-1.5">
+              <PlannerLine
+                label="Lottery Association Tax"
+                pct="15%"
+                value={formatCurrency(breakeven * COSTS.lottery_tax)}
+                negative
+              />
+              <PlannerLine
+                label="Winner Prize Tax"
+                sub="20% of prize value"
+                value={formatCurrency(winnerTaxEtb)}
+                negative
+              />
+              <PlannerLine
+                label="Social Contribution"
+                pct="0.5%"
+                value={formatCurrency(breakeven * COSTS.social_contribution)}
+                negative
+              />
+              <PlannerLine
+                label="Platform Fee"
+                pct="10%"
+                value={formatCurrency(breakeven * COSTS.platform_fee)}
+                negative
+              />
+              <div className="border-t border-line pt-1.5">
+                <PlannerLine
+                  label="Total costs"
+                  sub="at your break-even revenue"
+                  value={formatCurrency(breakeven * REVENUE_COST_RATE + winnerTaxEtb)}
+                  strong
+                  negative
+                />
+              </div>
+            </div>
+            <p className="mt-3 rounded-lg border border-line bg-app/40 p-3 text-xs leading-relaxed text-ink-muted">
+              The winner prize tax is a fixed 20% of the prize; the other costs are
+              25.5% of sales. To break even you need to generate at least{" "}
+              <span className="font-semibold text-ink">{formatCurrency(breakeven)}</span>.
+            </p>
+          </div>
+        </PlannerStage>
+      )}
+
+      {/* STAGE 3 — Profit target */}
+      {hasPrize && (
+        <PlannerStage>
+          <div className="rounded-xl border border-line bg-surface p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
+              <BarChart3 strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+              How much do you want to profit?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Profit %">
+                <PlannerNumberInput
+                  prefix="%"
+                  max={500}
+                  value={
+                    draft.plannerProfitTargetPct > 0
+                      ? Math.round(draft.plannerProfitTargetPct * 10) / 10
+                      : null
+                  }
+                  onValueChange={(v) => setProfitPct(v ?? 0)}
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Profit ETB">
+                <PlannerNumberInput
+                  prefix="ETB"
+                  value={
+                    draft.plannerProfitTargetEtb > 0
+                      ? Math.round(draft.plannerProfitTargetEtb)
+                      : null
+                  }
+                  onValueChange={(v) => setProfitEtb(v ?? 0)}
+                  placeholder="0"
+                />
+              </Field>
+            </div>
+            {!showPricing && (
+              <button
+                type="button"
+                onClick={() => setProfitPct(0)}
+                className="focus-ring mt-3 text-xs font-medium text-accent-soft hover:text-ink"
+              >
+                I just want to break even (0% profit) →
+              </button>
+            )}
+            <p className="mt-3 rounded-lg border border-line bg-app/40 p-3 text-xs leading-relaxed text-ink-muted">
+              You need to generate{" "}
+              <span className="font-semibold text-ink">{formatCurrency(targetRevenue)}</span>.
+            </p>
+          </div>
+        </PlannerStage>
+      )}
+
+      {/* STAGE 4 — Ticket price selector */}
+      {showPricing && (
+        <PlannerStage>
+          <div className="rounded-xl border border-line bg-surface p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
+              <Ticket strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+              Set your ticket price
+            </p>
+            <PlannerNumberInput
+              prefix="ETB"
+              value={ticketPrice > 0 ? ticketPrice : null}
+              onValueChange={(v) => setTicketPrice(v ?? 0)}
+              placeholder="Type a ticket price"
+              large
+            />
+            {errors.plannerTicketPrice && (
+              <p className="mt-1.5 text-xs text-rose-300">{errors.plannerTicketPrice}</p>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {generateChips(targetRevenue).map((chip) => {
+                const active = chip.price === ticketPrice;
+                return (
+                  <button
+                    key={chip.price}
+                    type="button"
+                    onClick={() => setTicketPrice(chip.price)}
+                    className={cn(
+                      "focus-ring rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300",
+                      active
+                        ? "border-accent/50 bg-accent/15 text-ink shadow-accent-glow"
+                        : "border-line bg-surface text-ink-muted hover:border-accent/40 hover:text-ink",
+                    )}
+                  >
+                    {formatCurrency(chip.price)} → {chip.tickets.toLocaleString()} tickets
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {ticketPrice > 0 && (
+            <div className="rounded-xl border border-accent/20 bg-accent/[0.06] p-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
+                <Calculator strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
+                Your raffle projection
+              </p>
+              <div className="space-y-1.5">
+                <PlannerLine label="Ticket price" value={formatCurrency(ticketPrice)} />
+                <PlannerLine
+                  label="Tickets to sell"
+                  value={`${ticketCap.toLocaleString()}`}
+                />
+                <PlannerLine label="Gross revenue" value={formatCurrency(targetRevenue)} strong />
+                <div className="space-y-1.5 border-t border-line pt-1.5">
+                  <PlannerLine
+                    label="Lottery Association Tax (15%)"
+                    value={`−${costLine(COSTS.lottery_tax)}`}
+                    negative
+                  />
+                  <PlannerLine
+                    label="Winner Prize Tax"
+                    sub="20% of prize value"
+                    value={`−${formatCurrency(winnerTaxEtb)}`}
+                    negative
+                  />
+                  <PlannerLine
+                    label="Social Contribution (0.5%)"
+                    value={`−${costLine(COSTS.social_contribution)}`}
+                    negative
+                  />
+                  <PlannerLine
+                    label="Platform Fee (10%)"
+                    value={`−${costLine(COSTS.platform_fee)}`}
+                    negative
+                  />
+                  <PlannerLine
+                    label="Total costs"
+                    value={`−${formatCurrency(totalCostsAtTarget)}`}
+                    negative
+                    strong
+                  />
+                </div>
+                <PlannerLine
+                  label="Prize value"
+                  value={`−${formatCurrency(prizeValue)}`}
+                  negative
+                />
+                <div className="border-t border-line pt-1.5">
+                  <PlannerLine
+                    label="Your profit"
+                    value={formatCurrency(draft.plannerProfitTargetEtb)}
+                    profit
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </PlannerStage>
+      )}
     </div>
   );
 }

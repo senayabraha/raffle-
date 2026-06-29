@@ -468,6 +468,7 @@ export type Database = {
           id: string
           image_urls: string[]
           min_ticket_target: number | null
+          planner_state: Json | null
           prize_confirmed_at: string | null
           prize_status: Database["public"]["Enums"]["prize_status"]
           prize_value: number | null
@@ -499,6 +500,7 @@ export type Database = {
           id?: string
           image_urls?: string[]
           min_ticket_target?: number | null
+          planner_state?: Json | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
           prize_value?: number | null
@@ -530,6 +532,7 @@ export type Database = {
           id?: string
           image_urls?: string[]
           min_ticket_target?: number | null
+          planner_state?: Json | null
           prize_confirmed_at?: string | null
           prize_status?: Database["public"]["Enums"]["prize_status"]
           prize_value?: number | null

@@ -28,6 +28,43 @@ function slugify(title: string) {
 
 type Bundle = { qty: number; free: number };
 
+/**
+ * Revenue Planner state persisted alongside a raffle as a jsonb column.
+ * Declared as a type alias (not an interface) so it carries an implicit index
+ * signature and stays assignable to the generated `Json` column type.
+ */
+export type PlannerState = {
+  prize_value: number | null;
+  profit_target_pct: number;
+  profit_target_etb: number;
+  ticket_price: number;
+  ticket_cap: number;
+};
+
+/** Serialises the wizard's planner fields into the jsonb planner_state column. */
+export function plannerStateFromDraft(draft: RaffleDraft): PlannerState {
+  return {
+    prize_value: draft.plannerPrizeValue ?? draft.prizeValue,
+    profit_target_pct: draft.plannerProfitTargetPct,
+    profit_target_etb: draft.plannerProfitTargetEtb,
+    ticket_price: draft.plannerTicketPrice,
+    ticket_cap: draft.plannerTicketCap,
+  };
+}
+
+/** Reads a stored planner_state jsonb value back into a typed object, or null. */
+export function parsePlannerState(raw: unknown): PlannerState | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    prize_value: o.prize_value == null ? null : Number(o.prize_value),
+    profit_target_pct: Number(o.profit_target_pct) || 0,
+    profit_target_etb: Number(o.profit_target_etb) || 0,
+    ticket_price: Number(o.ticket_price) || 0,
+    ticket_cap: Number(o.ticket_cap) || 0,
+  };
+}
+
 export function parseBundles(raw: unknown): Bundle[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -766,6 +803,7 @@ export async function createRaffle(
       prize_value: draft.prizeValue || null,
       condition: draft.condition,
       delivery_method: draft.deliveryMethod,
+      planner_state: plannerStateFromDraft(draft),
     })
     .select("id, slug")
     .single();
@@ -806,6 +844,7 @@ export async function updateRaffle(
       prize_value: draft.prizeValue || null,
       condition: draft.condition,
       delivery_method: draft.deliveryMethod,
+      planner_state: plannerStateFromDraft(draft),
     })
     .eq("id", raffleId)
     .select("id, slug")
@@ -831,6 +870,7 @@ export interface RaffleDraftRow {
   min_ticket_target: number | null;
   visibility: "public" | "private";
   image_urls: string[] | null;
+  planner_state: unknown;
 }
 
 /** Loads a host's saved draft raffle so the wizard can resume it. Returns null if it isn't a draft they own. */
@@ -841,7 +881,7 @@ export async function fetchHostDraft(
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, title, description, category, prize_value, condition, delivery_method, ticket_price, ticket_cap, bundle_rules, draw_type, draw_date, min_ticket_target, visibility, image_urls",
+      "id, title, description, category, prize_value, condition, delivery_method, ticket_price, ticket_cap, bundle_rules, draw_type, draw_date, min_ticket_target, visibility, image_urls, planner_state",
     )
     .eq("id", raffleId)
     .eq("host_id", hostId)

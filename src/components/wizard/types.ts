@@ -9,7 +9,13 @@ export interface RaffleDraft {
   prizeValue: number | null;
   condition: PrizeCondition;
   deliveryMethod: DeliveryMethod;
-  // 2 · Ticket settings
+  // 2 · Revenue planner
+  plannerPrizeValue: number | null;
+  plannerProfitTargetPct: number;
+  plannerProfitTargetEtb: number;
+  plannerTicketPrice: number;
+  plannerTicketCap: number;
+  // 3 · Ticket settings
   ticketPrice: number;
   unlimited: boolean;
   ticketCap: number;
@@ -31,6 +37,11 @@ export const initialDraft: RaffleDraft = {
   prizeValue: null,
   condition: "new",
   deliveryMethod: "shipping",
+  plannerPrizeValue: null,
+  plannerProfitTargetPct: 0,
+  plannerProfitTargetEtb: 0,
+  plannerTicketPrice: 0,
+  plannerTicketCap: 0,
   ticketPrice: 5,
   unlimited: false,
   ticketCap: 10000,

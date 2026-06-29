@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -237,13 +237,32 @@ type ImageItem =
   | { kind: "existing"; url: string }
   | { kind: "new"; file: File; preview: string };
 
+/** Parses a 1-indexed `?step=` param into a 0-indexed wizard index, clamped to range. */
+function resumeStepIndex(raw: string | null): number {
+  const n = parseInt(raw ?? "1", 10);
+  if (!Number.isFinite(n) || n < 1 || n > steps.length) return 0;
+  return n - 1;
+}
+
 export default function CreateRaffle() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { draftId } = useParams<{ draftId: string }>();
-  const [step, setStep] = useState(0);
+  const [searchParams] = useSearchParams();
+  // Resume position comes from the dashboard's "Resume" link (?step=). Out-of-range
+  // or missing values fall back to step 1.
+  const [step, setStep] = useState(() =>
+    draftId ? resumeStepIndex(searchParams.get("step")) : 0,
+  );
   const [draft, setDraft] = useState<RaffleDraft>(initialDraft);
   const [raffleId, setRaffleId] = useState<string | null>(null);
+  // Source-of-truth id for serialized saves: kept in sync with `raffleId` but
+  // readable synchronously so fire-and-forget autosaves never create duplicate
+  // draft rows before React commits the id from the first save.
+  const raffleIdRef = useRef<string | null>(null);
+  // Serialises saves into a single chain so concurrent autosaves don't race
+  // (double image uploads, duplicate inserts).
+  const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const [loadingDraft, setLoadingDraft] = useState(!!draftId);
   const [published, setPublished] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -253,6 +272,18 @@ export default function CreateRaffle() {
   const [dir, setDir] = useState(1);
   const [images, setImages] = useState<ImageItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Lightweight inline toast (no toast lib in the project).
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number>();
+  // "Resuming your draft" label, shown briefly after a draft loads from a link.
+  const [showResuming, setShowResuming] = useState(false);
+
+  function showToast(message: string, ms = 2000) {
+    setToast(message);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), ms);
+  }
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   useEffect(() => {
     if (!draftId || !user) return;
@@ -261,17 +292,32 @@ export default function CreateRaffle() {
       if (!active) return;
       if (row) {
         setRaffleId(row.id);
+        raffleIdRef.current = row.id;
         setDraft(draftFromRow(row));
         setImages((row.image_urls ?? []).map((url) => ({ kind: "existing", url })));
+        // Brief "Resuming your draft" affordance under the step indicator.
+        setShowResuming(true);
+        window.setTimeout(() => {
+          if (active) setShowResuming(false);
+        }, 3000);
       } else {
-        setError("That draft could not be found.");
+        // Draft deleted/expired — start fresh and tell the host why.
+        navigate("/en/dashboard/create", { replace: true });
+        showToast("Draft not found — starting fresh");
       }
       setLoadingDraft(false);
     });
     return () => {
       active = false;
     };
-  }, [draftId, user]);
+  }, [draftId, user, navigate]);
+
+  // Mirror of `images` readable synchronously inside the serialized save chain,
+  // so two queued saves never both try to upload the same staged files.
+  const imagesRef = useRef<ImageItem[]>([]);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   const set = (patch: Partial<RaffleDraft>) =>
     setDraft((d) => ({ ...d, ...patch }));
@@ -335,8 +381,9 @@ export default function CreateRaffle() {
     setPublishing(true);
     try {
       const imageUrls = await resolveImageUrls(user.id);
-      const { slug } = raffleId
-        ? await updateRaffle(raffleId, draft, imageUrls, "live")
+      const existingId = raffleIdRef.current ?? raffleId;
+      const { slug } = existingId
+        ? await updateRaffle(existingId, draft, imageUrls, "live")
         : await createRaffle(draft, user.id, imageUrls, "live");
       setPublishedSlug(slug);
       setPublished(true);
@@ -347,7 +394,43 @@ export default function CreateRaffle() {
     }
   }
 
-  async function saveDraft() {
+  /**
+   * Persists the current draft (create-or-update) at the given 0-indexed wizard
+   * step. Serialised through `saveChainRef` so overlapping calls — a manual save
+   * racing a background autosave — can't double-upload images or insert duplicate
+   * draft rows. The first create stores its id in `raffleIdRef` so every later
+   * save updates that same record. Returns the raffle id.
+   */
+  function saveDraft(stepIndex: number): Promise<string> {
+    const run = saveChainRef.current.then(async () => {
+      if (!user) throw new Error("Your session expired — please log in again.");
+      // Upload any staged photos using the synchronous mirror, then mark them
+      // stored so the next queued save sees "existing" and skips re-uploading.
+      const current = imagesRef.current;
+      const newFiles = current.filter((i) => i.kind === "new").map((i) => i.file);
+      const newUrls = newFiles.length ? await uploadRaffleImages(newFiles, user.id) : [];
+      let n = 0;
+      const imageUrls = current.map((i) => (i.kind === "existing" ? i.url : newUrls[n++]));
+      const storedImages: ImageItem[] = imageUrls.map((url) => ({ kind: "existing", url }));
+      imagesRef.current = storedImages;
+      setImages(storedImages);
+
+      const currentStep = Math.min(Math.max(stepIndex + 1, 1), steps.length);
+      const existingId = raffleIdRef.current;
+      const { id } = existingId
+        ? await updateRaffle(existingId, draft, imageUrls, "draft", currentStep)
+        : await createRaffle(draft, user.id, imageUrls, "draft", currentStep);
+      raffleIdRef.current = id;
+      setRaffleId(id);
+      return id;
+    });
+    // Keep the chain alive even if this link rejects, so later saves still run.
+    saveChainRef.current = run.catch(() => undefined);
+    return run;
+  }
+
+  /** "Save as draft" button. Toasts on steps 1–4; saves then exits on the last step. */
+  async function handleSaveDraftClick() {
     if (!user) {
       setError("Your session expired — please log in again.");
       return;
@@ -355,12 +438,12 @@ export default function CreateRaffle() {
     setError(null);
     setSavingDraft(true);
     try {
-      const imageUrls = await resolveImageUrls(user.id);
-      const { id } = raffleId
-        ? await updateRaffle(raffleId, draft, imageUrls, "draft")
-        : await createRaffle(draft, user.id, imageUrls, "draft");
-      setRaffleId(id);
-      navigate("/en/dashboard");
+      await saveDraft(step);
+      if (isLast) {
+        navigate("/en/dashboard");
+      } else {
+        showToast("Draft saved");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save your draft.");
     } finally {
@@ -373,6 +456,7 @@ export default function CreateRaffle() {
       void publish();
       return;
     }
+    const leavingStep = step;
     // Leaving the Revenue Planner: lock its output into the ticket-settings step.
     if (step === 1) {
       const cap = plannerTicketCap(draft);
@@ -383,8 +467,16 @@ export default function CreateRaffle() {
         unlimited: false,
       });
     }
+    // Advance immediately — the UI must never wait on the network.
     setDir(1);
     setStep((s) => Math.min(s + 1, steps.length - 1));
+    // Then autosave silently in the background. Fire-and-forget: no await, no
+    // toast, no UI block, and failures stay hidden from the host.
+    if (user) {
+      saveDraft(leavingStep).catch((err) => {
+        console.warn("Autosave failed silently:", err);
+      });
+    }
   }
   function back() {
     setDir(-1);
@@ -421,6 +513,20 @@ export default function CreateRaffle() {
           Set up your prize competition in a few steps — you can edit anything
           before it goes live.
         </p>
+        <AnimatePresence>
+          {showResuming && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft"
+            >
+              <Sparkles strokeWidth={1.5} className="h-3.5 w-3.5" />
+              Resuming your draft
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Mobile progress */}
@@ -494,25 +600,23 @@ export default function CreateRaffle() {
                 Step {step + 1} of {steps.length}
               </span>
               <div className="flex items-center gap-2">
-                {isLast && (
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={saveDraft}
-                    disabled={publishing || savingDraft}
-                  >
-                    {savingDraft ? (
-                      <Loader2 className="h-[18px] w-[18px] animate-spin" />
-                    ) : (
-                      "Save as draft"
-                    )}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={handleSaveDraftClick}
+                  disabled={publishing || savingDraft}
+                >
+                  {savingDraft ? (
+                    <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                  ) : (
+                    "Save as draft"
+                  )}
+                </Button>
                 <Button
                   variant="primary"
                   size="md"
                   onClick={next}
-                  disabled={!canAdvance || publishing || savingDraft}
+                  disabled={!canAdvance || publishing}
                 >
                   {publishing ? (
                     <>
@@ -543,6 +647,24 @@ export default function CreateRaffle() {
           </div>
         </aside>
       </div>
+
+      {/* Inline toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
+          >
+            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink shadow-lg backdrop-blur-md">
+              <Check strokeWidth={2} className="h-4 w-4 text-emerald-400" />
+              {toast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AppShell>
   );
 }

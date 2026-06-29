@@ -314,6 +314,8 @@ export interface HostRaffleSummary {
   cap: number;
   ticketPrice: number;
   revenue: number;
+  /** 1-indexed wizard step the host last reached on this draft (1..5). */
+  currentStep: number;
 }
 
 export interface HostActivityItem {
@@ -341,7 +343,7 @@ export async function fetchHostOverview(hostId: string): Promise<HostOverview> {
   const { data: raffleRows } = await supabase
     .from("raffles")
     .select(
-      "id, slug, title, category, status, ticket_price, ticket_cap, tickets_sold_count",
+      "id, slug, title, category, status, ticket_price, ticket_cap, tickets_sold_count, current_step",
     )
     .eq("host_id", hostId)
     .order("created_at", { ascending: false });
@@ -360,6 +362,7 @@ export async function fetchHostOverview(hostId: string): Promise<HostOverview> {
       cap: r.ticket_cap ?? Math.max(sold, 1),
       ticketPrice: price,
       revenue: sold * price,
+      currentStep: Math.min(Math.max(r.current_step ?? 1, 1), 5),
     };
   });
 
@@ -774,6 +777,7 @@ export async function createRaffle(
   hostId: string,
   imageUrls: string[] = [],
   status: "draft" | "live" = "live",
+  currentStep = 1,
 ) {
   const slug = slugify(draft.title);
   const bundle_rules = draft.bundlesEnabled
@@ -804,6 +808,7 @@ export async function createRaffle(
       condition: draft.condition,
       delivery_method: draft.deliveryMethod,
       planner_state: plannerStateFromDraft(draft),
+      current_step: currentStep,
     })
     .select("id, slug")
     .single();
@@ -818,6 +823,7 @@ export async function updateRaffle(
   draft: RaffleDraft,
   imageUrls: string[],
   status: "draft" | "live",
+  currentStep = 1,
 ) {
   const bundle_rules = draft.bundlesEnabled
     ? [{ buy: draft.bundleQty, free: draft.bundleFree }]
@@ -845,6 +851,7 @@ export async function updateRaffle(
       condition: draft.condition,
       delivery_method: draft.deliveryMethod,
       planner_state: plannerStateFromDraft(draft),
+      current_step: currentStep,
     })
     .eq("id", raffleId)
     .select("id, slug")
@@ -871,6 +878,7 @@ export interface RaffleDraftRow {
   visibility: "public" | "private";
   image_urls: string[] | null;
   planner_state: unknown;
+  current_step: number | null;
 }
 
 /** Loads a host's saved draft raffle so the wizard can resume it. Returns null if it isn't a draft they own. */
@@ -881,7 +889,7 @@ export async function fetchHostDraft(
   const { data, error } = await supabase
     .from("raffles")
     .select(
-      "id, title, description, category, prize_value, condition, delivery_method, ticket_price, ticket_cap, bundle_rules, draw_type, draw_date, min_ticket_target, visibility, image_urls, planner_state",
+      "id, title, description, category, prize_value, condition, delivery_method, ticket_price, ticket_cap, bundle_rules, draw_type, draw_date, min_ticket_target, visibility, image_urls, planner_state, current_step",
     )
     .eq("id", raffleId)
     .eq("host_id", hostId)

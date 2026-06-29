@@ -28,14 +28,18 @@ function slugify(title: string) {
 
 type Bundle = { qty: number; free: number };
 
-/** Revenue Planner state persisted alongside a raffle as a jsonb column. */
-export interface PlannerState {
+/**
+ * Revenue Planner state persisted alongside a raffle as a jsonb column.
+ * Declared as a type alias (not an interface) so it carries an implicit index
+ * signature and stays assignable to the generated `Json` column type.
+ */
+export type PlannerState = {
   prize_value: number | null;
   profit_target_pct: number;
   profit_target_etb: number;
   ticket_price: number;
   ticket_cap: number;
-}
+};
 
 /** Serialises the wizard's planner fields into the jsonb planner_state column. */
 export function plannerStateFromDraft(draft: RaffleDraft): PlannerState {

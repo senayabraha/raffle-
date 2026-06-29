@@ -92,21 +92,36 @@ function plannerTicketCap(draft: RaffleDraft) {
   return Math.ceil(plannerTargetRevenue(draft) / price);
 }
 
-/** Up to four suggested ticket prices, ascending, derived from target revenue. */
-function suggestedPrices(targetRevenue: number): number[] {
-  if (targetRevenue <= 0) return [];
-  const seed = targetRevenue / 1000; // baseline ~1,000 tickets
-  const raw = [
-    Math.floor(seed / 50) * 50,
-    Math.round(seed / 100) * 100,
-    Math.round(seed / 250) * 250,
-    Math.ceil(seed / 500) * 500,
-  ].map((p) => Math.max(50, p));
-  const out: number[] = [];
-  for (const p of raw.sort((a, b) => a - b)) {
-    if (!out.includes(p)) out.push(p);
-  }
-  return out;
+/** Rounds a raw price up to the nearest "nice" increment for the chip suggestions. */
+function roundToNearestNice(price: number): number {
+  if (price < 50) return Math.ceil(price / 10) * 10;
+  if (price < 200) return Math.ceil(price / 50) * 50;
+  if (price < 1000) return Math.ceil(price / 100) * 100;
+  if (price < 5000) return Math.ceil(price / 500) * 500;
+  return Math.ceil(price / 1000) * 1000;
+}
+
+interface PriceChip {
+  price: number;
+  tickets: number;
+}
+
+/**
+ * Four suggested ticket prices derived from the target revenue, aiming for a
+ * spread of ticket counts (many cheap tickets → fewer expensive ones).
+ * De-duplicates by price in case two targets round to the same nice value.
+ */
+function generateChips(target: number): PriceChip[] {
+  if (target <= 0) return [];
+  const targetCounts = [5000, 2000, 1000, 500];
+  return targetCounts
+    .map((count) => {
+      const rawPrice = target / count;
+      const rounded = roundToNearestNice(rawPrice);
+      const actualCount = Math.ceil(target / rounded);
+      return { price: rounded, tickets: actualCount };
+    })
+    .filter((chip, index, arr) => arr.findIndex((c) => c.price === chip.price) === index);
 }
 
 /** Field-level validation errors for the active step. Empty object = step can advance. */
@@ -1060,6 +1075,51 @@ function PlannerLine({
   );
 }
 
+/**
+ * Numeric input for the planner with a left currency/unit adornment that sits
+ * outside the value area (so "ETB" never overlaps the typed number) and clean
+ * empty-state handling: an empty field reports `null` and a `null`/empty value
+ * renders as a blank field, so Backspace/Delete can fully clear it. The value
+ * stored in state is always a clean number — the prefix is never part of it.
+ */
+function PlannerNumberInput({
+  prefix,
+  value,
+  onValueChange,
+  large,
+  placeholder,
+  max,
+}: {
+  prefix: string;
+  value: number | null;
+  onValueChange: (v: number | null) => void;
+  large?: boolean;
+  placeholder?: string;
+  max?: number;
+}) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 select-none text-sm font-medium text-ink-subtle">
+        {prefix}
+      </span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        max={max}
+        value={value === null ? "" : value}
+        onChange={(e) => onValueChange(e.target.value === "" ? null : Number(e.target.value))}
+        placeholder={placeholder}
+        className={cn(
+          "focus-ring w-full rounded-xl border border-line bg-surface pr-3.5 text-ink placeholder:text-ink-subtle transition-colors duration-300 hover:border-line focus:border-accent/50",
+          prefix.length > 1 ? "pl-12" : "pl-9",
+          large ? "h-14 text-lg" : "h-11 text-sm",
+        )}
+      />
+    </div>
+  );
+}
+
 function RevenuePlannerStep({
   draft,
   set,
@@ -1121,15 +1181,12 @@ function RevenuePlannerStep({
     <div className="space-y-6">
       {/* STAGE 1 — Prize value */}
       <Field label="What is your prize worth?" error={errors.plannerPrize}>
-        <PrefixInput
+        <PlannerNumberInput
           prefix="ETB"
-          type="number"
-          min={0}
-          step={1}
-          value={draft.prizeValue ?? ""}
-          onChange={(e) => setPrize(e.target.value === "" ? null : Number(e.target.value))}
+          value={draft.prizeValue}
+          onValueChange={setPrize}
           placeholder="e.g. 1,000,000"
-          className="h-14 text-lg"
+          large
         />
       </Field>
 
@@ -1206,33 +1263,27 @@ function RevenuePlannerStep({
             </p>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Profit %">
-                <PrefixInput
+                <PlannerNumberInput
                   prefix="%"
-                  type="number"
-                  min={0}
                   max={500}
-                  step={1}
                   value={
-                    draft.plannerProfitTargetPct
-                      ? Number(draft.plannerProfitTargetPct.toFixed(1))
-                      : draft.plannerProfitTargetPct
+                    draft.plannerProfitTargetPct > 0
+                      ? Math.round(draft.plannerProfitTargetPct * 10) / 10
+                      : null
                   }
-                  onChange={(e) => setProfitPct(Number(e.target.value))}
+                  onValueChange={(v) => setProfitPct(v ?? 0)}
                   placeholder="0"
                 />
               </Field>
               <Field label="Profit ETB">
-                <PrefixInput
+                <PlannerNumberInput
                   prefix="ETB"
-                  type="number"
-                  min={0}
-                  step={1}
                   value={
-                    draft.plannerProfitTargetEtb
+                    draft.plannerProfitTargetEtb > 0
                       ? Math.round(draft.plannerProfitTargetEtb)
-                      : draft.plannerProfitTargetEtb
+                      : null
                   }
-                  onChange={(e) => setProfitEtb(Number(e.target.value))}
+                  onValueChange={(v) => setProfitEtb(v ?? 0)}
                   placeholder="0"
                 />
               </Field>
@@ -1262,28 +1313,25 @@ function RevenuePlannerStep({
               <Ticket strokeWidth={1.5} className="h-4 w-4 text-accent-soft" />
               Set your ticket price
             </p>
-            <PrefixInput
+            <PlannerNumberInput
               prefix="ETB"
-              type="number"
-              min={0}
-              step={1}
-              value={ticketPrice || ""}
-              onChange={(e) => setTicketPrice(Number(e.target.value))}
+              value={ticketPrice > 0 ? ticketPrice : null}
+              onValueChange={(v) => setTicketPrice(v ?? 0)}
               placeholder="Type a ticket price"
-              className="h-14 text-lg"
+              large
             />
             {errors.plannerTicketPrice && (
               <p className="mt-1.5 text-xs text-rose-300">{errors.plannerTicketPrice}</p>
             )}
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {suggestedPrices(targetRevenue).map((p) => {
-                const active = p === ticketPrice;
+              {generateChips(targetRevenue).map((chip) => {
+                const active = chip.price === ticketPrice;
                 return (
                   <button
-                    key={p}
+                    key={chip.price}
                     type="button"
-                    onClick={() => setTicketPrice(p)}
+                    onClick={() => setTicketPrice(chip.price)}
                     className={cn(
                       "focus-ring rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300",
                       active
@@ -1291,7 +1339,7 @@ function RevenuePlannerStep({
                         : "border-line bg-surface text-ink-muted hover:border-accent/40 hover:text-ink",
                     )}
                   >
-                    {formatCurrency(p)} → {Math.ceil(targetRevenue / p).toLocaleString()} tickets
+                    {formatCurrency(chip.price)} → {chip.tickets.toLocaleString()} tickets
                   </button>
                 );
               })}

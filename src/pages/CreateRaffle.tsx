@@ -71,19 +71,38 @@ const COSTS = {
   social_contribution: 0.005, // 0.5% — Good Social Cause Tax
   platform_fee: 0.1, // 10% — Platform Fee (incl. 2.5% processing)
 };
-/** Total share of gross revenue lost to costs (40.5%). */
-const COST_RATE =
-  COSTS.lottery_tax + COSTS.winner_tax + COSTS.social_contribution + COSTS.platform_fee;
-/** Share of gross revenue the host keeps after costs (59.5%). */
-const KEEP_RATE = 1 - COST_RATE;
+/**
+ * Revenue-based cost rate — the share of GROSS revenue lost to costs that scale
+ * with sales: lottery (15%) + social contribution (0.5%) + platform fee (10%).
+ * The winner prize tax is deliberately excluded here: it is a fixed 20% of the
+ * prize value, not a cut of revenue.
+ */
+const REVENUE_COST_RATE =
+  COSTS.lottery_tax + COSTS.social_contribution + COSTS.platform_fee; // 0.255
+/** Share of gross revenue left after the revenue-based costs (74.5%). */
+const REVENUE_KEEP_RATE = 1 - REVENUE_COST_RATE; // 0.745
+/** Winner prize tax: a fixed 20% of the prize value, independent of revenue. */
+const PLANNER_WINNER_TAX = 0.2;
 
-/** Gross revenue needed just to recover the prize value after costs. */
+/**
+ * Break-even gross revenue — leaves zero profit after every cost:
+ *   gross × (1 - REVENUE_COST_RATE) = prize × (1 + PLANNER_WINNER_TAX)
+ *   gross × 0.745                   = prize × 1.20
+ */
 function plannerBreakeven(draft: RaffleDraft) {
-  return (draft.prizeValue ?? 0) / KEEP_RATE;
+  const prize = draft.prizeValue ?? 0;
+  return (prize * (1 + PLANNER_WINNER_TAX)) / REVENUE_KEEP_RATE;
 }
-/** Total gross revenue the host is aiming for: break-even plus desired profit. */
+/**
+ * Gross revenue needed to reach the host's desired profit, worked backwards so
+ * the profit they enter is the profit they actually keep:
+ *   target × (1 - REVENUE_COST_RATE) = prize × (1 + PLANNER_WINNER_TAX) + profit
+ */
 function plannerTargetRevenue(draft: RaffleDraft) {
-  return plannerBreakeven(draft) + draft.plannerProfitTargetEtb;
+  const prize = draft.prizeValue ?? 0;
+  return (
+    (prize * (1 + PLANNER_WINNER_TAX) + draft.plannerProfitTargetEtb) / REVENUE_KEEP_RATE
+  );
 }
 /** Tickets that must sell at the chosen price to hit the target revenue. */
 function plannerTicketCap(draft: RaffleDraft) {
@@ -1038,6 +1057,7 @@ function PlannerStage({ children }: { children: React.ReactNode }) {
 
 function PlannerLine({
   label,
+  sub,
   pct,
   value,
   strong,
@@ -1045,6 +1065,7 @@ function PlannerLine({
   profit,
 }: {
   label: string;
+  sub?: string;
   pct?: string;
   value: string;
   strong?: boolean;
@@ -1053,8 +1074,9 @@ function PlannerLine({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 text-sm">
-      <span className={cn("flex-1", strong ? "font-semibold text-ink" : "text-ink-muted")}>
-        {label}
+      <span className="flex-1">
+        <span className={cn(strong ? "font-semibold text-ink" : "text-ink-muted")}>{label}</span>
+        {sub && <span className="block text-[11px] text-ink-subtle">{sub}</span>}
       </span>
       {pct && <span className="w-14 text-right text-xs text-ink-subtle tabular-nums">{pct}</span>}
       <span
@@ -1136,6 +1158,11 @@ function RevenuePlannerStep({
   const ticketPrice = draft.plannerTicketPrice;
   const ticketCap = plannerTicketCap(draft);
 
+  // Winner prize tax is a fixed 20% of the prize — it does not scale with sales.
+  const winnerTaxEtb = prizeValue * PLANNER_WINNER_TAX;
+  // Revenue-based costs scale with gross revenue; total costs add the fixed tax.
+  const totalCostsAtTarget = targetRevenue * REVENUE_COST_RATE + winnerTaxEtb;
+
   // Stage 4 unlocks once the host engages with profit (a value, an explicit 0%,
   // or a resumed draft that already had a price).
   const [profitTouched, setProfitTouched] = useState(
@@ -1145,7 +1172,7 @@ function RevenuePlannerStep({
 
   const setPrize = (v: number | null) => {
     const pv = v ?? 0;
-    const be = pv / KEEP_RATE;
+    const be = (pv * (1 + PLANNER_WINNER_TAX)) / REVENUE_KEEP_RATE;
     set({
       prizeValue: v,
       plannerPrizeValue: v,
@@ -1208,45 +1235,40 @@ function RevenuePlannerStep({
               <PlannerLine
                 label="Lottery Association Tax"
                 pct="15%"
-                value={formatCurrency(prizeValue * COSTS.lottery_tax)}
+                value={formatCurrency(breakeven * COSTS.lottery_tax)}
                 negative
               />
               <PlannerLine
                 label="Winner Prize Tax"
-                pct="15%"
-                value={formatCurrency(prizeValue * COSTS.winner_tax)}
+                sub="20% of prize value"
+                value={formatCurrency(winnerTaxEtb)}
                 negative
               />
               <PlannerLine
                 label="Social Contribution"
                 pct="0.5%"
-                value={formatCurrency(prizeValue * COSTS.social_contribution)}
+                value={formatCurrency(breakeven * COSTS.social_contribution)}
                 negative
               />
               <PlannerLine
                 label="Platform Fee"
                 pct="10%"
-                value={formatCurrency(prizeValue * COSTS.platform_fee)}
+                value={formatCurrency(breakeven * COSTS.platform_fee)}
                 negative
               />
               <div className="border-t border-line pt-1.5">
                 <PlannerLine
-                  label="Total deducted"
-                  pct={`${(COST_RATE * 100).toFixed(1)}%`}
-                  value={formatCurrency(prizeValue * COST_RATE)}
+                  label="Total costs"
+                  sub="at your break-even revenue"
+                  value={formatCurrency(breakeven * REVENUE_COST_RATE + winnerTaxEtb)}
                   strong
                   negative
                 />
               </div>
-              <PlannerLine
-                label="You keep"
-                pct={`${(KEEP_RATE * 100).toFixed(1)}%`}
-                value="—"
-                strong
-              />
             </div>
             <p className="mt-3 rounded-lg border border-line bg-app/40 p-3 text-xs leading-relaxed text-ink-muted">
-              To break even you need to generate at least{" "}
+              The winner prize tax is a fixed 20% of the prize; the other costs are
+              25.5% of sales. To break even you need to generate at least{" "}
               <span className="font-semibold text-ink">{formatCurrency(breakeven)}</span>.
             </p>
           </div>
@@ -1361,28 +1383,29 @@ function RevenuePlannerStep({
                 <PlannerLine label="Gross revenue" value={formatCurrency(targetRevenue)} strong />
                 <div className="space-y-1.5 border-t border-line pt-1.5">
                   <PlannerLine
-                    label="Lottery Tax (15%)"
+                    label="Lottery Association Tax (15%)"
                     value={`−${costLine(COSTS.lottery_tax)}`}
                     negative
                   />
                   <PlannerLine
-                    label="Winner Tax (15%)"
-                    value={`−${costLine(COSTS.winner_tax)}`}
+                    label="Winner Prize Tax"
+                    sub="20% of prize value"
+                    value={`−${formatCurrency(winnerTaxEtb)}`}
                     negative
                   />
                   <PlannerLine
-                    label="Social (0.5%)"
+                    label="Social Contribution (0.5%)"
                     value={`−${costLine(COSTS.social_contribution)}`}
                     negative
                   />
                   <PlannerLine
-                    label="Platform (10%)"
+                    label="Platform Fee (10%)"
                     value={`−${costLine(COSTS.platform_fee)}`}
                     negative
                   />
                   <PlannerLine
-                    label="Total costs (40.5%)"
-                    value={`−${costLine(COST_RATE)}`}
+                    label="Total costs"
+                    value={`−${formatCurrency(totalCostsAtTarget)}`}
                     negative
                     strong
                   />

@@ -16,6 +16,51 @@ const categoryStyle: Record<string, { icon: LucideIcon; gradient: string }> = {
 
 const fallbackStyle = { icon: Gift, gradient: "from-fuchsia-500/30 via-accent/20 to-indigo-600/30" };
 
+/**
+ * Admin-controlled fee/tax rates that drive the Revenue Planner (Step 2) and
+ * Review (Step 5) cost model. Stored as a single row (id = 1) in
+ * platform_fee_settings; rates are decimals (0.15 = 15%).
+ */
+export type FeeSettings = {
+  id: number;
+  lottery_tax_rate: number;
+  winner_tax_rate: number;
+  social_contribution_rate: number;
+  platform_fee_rate: number;
+  payment_processing_rate: number;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+/** Reads the platform-wide fee/tax settings (readable by any authenticated user). */
+export async function fetchFeeSettings() {
+  const { data, error } = await supabase
+    .from("platform_fee_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Admin-only update of the fee/tax settings. Stamps updated_at/updated_by. */
+export async function updateFeeSettings(settings: Partial<FeeSettings>) {
+  const { data, error } = await supabase
+    .from("platform_fee_settings")
+    .update({
+      ...settings,
+      updated_at: new Date().toISOString(),
+      updated_by: (await supabase.auth.getUser()).data.user?.id,
+    })
+    .eq("id", 1)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 function slugify(title: string) {
   const base = title
     .toLowerCase()

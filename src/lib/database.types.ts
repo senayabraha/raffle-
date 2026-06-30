@@ -407,6 +407,47 @@ export type Database = {
           },
         ]
       }
+      platform_fee_settings: {
+        Row: {
+          id: number
+          lottery_tax_rate: number
+          payment_processing_rate: number
+          platform_fee_rate: number
+          social_contribution_rate: number
+          updated_at: string
+          updated_by: string | null
+          winner_tax_rate: number
+        }
+        Insert: {
+          id?: number
+          lottery_tax_rate?: number
+          payment_processing_rate?: number
+          platform_fee_rate?: number
+          social_contribution_rate?: number
+          updated_at?: string
+          updated_by?: string | null
+          winner_tax_rate?: number
+        }
+        Update: {
+          id?: number
+          lottery_tax_rate?: number
+          payment_processing_rate?: number
+          platform_fee_rate?: number
+          social_contribution_rate?: number
+          updated_at?: string
+          updated_by?: string | null
+          winner_tax_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_fee_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

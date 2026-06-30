@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Image,
   Star,
+  Percent,
   Menu,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const adminNav = [
   { to: "/en/admin/hosts", label: "Host risk", icon: TrendingUp },
   { to: "/en/admin/hero", label: "Hero Carousel", icon: Image },
   { to: "/en/admin/featured", label: "Featured Raffles", icon: Star },
+  { to: "/en/admin/fees", label: "Fees & Taxes", icon: Percent },
 ];
 
 function adminInitials(name: string | null, email: string | null): string {

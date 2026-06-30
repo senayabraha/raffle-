@@ -75,6 +75,11 @@ const DEFAULT_FEE_SETTINGS: FeeSettings = {
   social_contribution_rate: 0.005,
   platform_fee_rate: 0.1,
   payment_processing_rate: 0.025,
+  lottery_tax_enabled: true,
+  winner_tax_enabled: true,
+  social_contribution_enabled: true,
+  platform_fee_enabled: true,
+  payment_processing_enabled: true,
   updated_at: "",
   updated_by: null,
 };
@@ -87,11 +92,20 @@ const DEFAULT_FEE_SETTINGS: FeeSettings = {
  */
 function revenueCostRate(fee: FeeSettings) {
   return (
-    fee.lottery_tax_rate +
-    fee.social_contribution_rate +
-    fee.platform_fee_rate +
-    fee.payment_processing_rate
+    (fee.lottery_tax_enabled ? fee.lottery_tax_rate : 0) +
+    (fee.social_contribution_enabled ? fee.social_contribution_rate : 0) +
+    (fee.platform_fee_enabled ? fee.platform_fee_rate : 0) +
+    (fee.payment_processing_enabled ? fee.payment_processing_rate : 0)
   );
+}
+
+/**
+ * Winner prize tax in ETB — a fixed share of the prize value, not a cut of
+ * revenue. Returns 0 when the winner tax is disabled so it drops out of every
+ * fixed-cost calculation (break-even, target revenue, profit).
+ */
+function winnerTaxAmount(prizeValue: number, fee: FeeSettings) {
+  return fee.winner_tax_enabled ? prizeValue * fee.winner_tax_rate : 0;
 }
 
 /** Formats a decimal rate as a percent label, e.g. 0.005 → "0.5%", 0.28 → "28%". */
@@ -100,22 +114,23 @@ function fmtPct(rate: number) {
 }
 
 /**
- * Break-even gross revenue — leaves zero profit after every cost:
- *   gross × (1 - revenueCostRate) = prize × (1 + winner_tax_rate)
+ * Break-even gross revenue — leaves zero profit after every enabled cost:
+ *   gross × (1 - revenueCostRate) = prize + winnerTaxAmount
+ * Disabled fees drop out of both revenueCostRate and the winner tax term.
  */
 function plannerBreakeven(draft: RaffleDraft, fee: FeeSettings) {
   const prize = draft.prizeValue ?? 0;
-  return (prize * (1 + fee.winner_tax_rate)) / (1 - revenueCostRate(fee));
+  return (prize + winnerTaxAmount(prize, fee)) / (1 - revenueCostRate(fee));
 }
 /**
  * Gross revenue needed to reach the host's desired profit, worked backwards so
  * the profit they enter is the profit they actually keep:
- *   target × (1 - revenueCostRate) = prize × (1 + winner_tax_rate) + profit
+ *   target × (1 - revenueCostRate) = prize + winnerTaxAmount + profit
  */
 function plannerTargetRevenue(draft: RaffleDraft, fee: FeeSettings) {
   const prize = draft.prizeValue ?? 0;
   return (
-    (prize * (1 + fee.winner_tax_rate) + draft.plannerProfitTargetEtb) /
+    (prize + winnerTaxAmount(prize, fee) + draft.plannerProfitTargetEtb) /
     (1 - revenueCostRate(fee))
   );
 }
@@ -1079,13 +1094,15 @@ function ReviewStep({ draft, fee }: { draft: RaffleDraft; fee: FeeSettings }) {
   const cap = draft.unlimited ? 0 : draft.ticketCap;
   const gross = price * cap;
   const prize = draft.prizeValue ?? 0;
-  const lottery = gross * fee.lottery_tax_rate;
+  // Each cost is zeroed when its toggle is disabled, so it drops out of both the
+  // profit calculation and the breakdown rows below (which don't render at all).
+  const lottery = fee.lottery_tax_enabled ? gross * fee.lottery_tax_rate : 0;
   // Winner prize tax is a fixed share of the prize value — not a cut of gross
   // revenue. This mirrors the Step 2 Revenue Planner cost model exactly.
-  const winner = prize * fee.winner_tax_rate;
-  const social = gross * fee.social_contribution_rate;
-  const platform = gross * fee.platform_fee_rate;
-  const processing = gross * fee.payment_processing_rate;
+  const winner = winnerTaxAmount(prize, fee);
+  const social = fee.social_contribution_enabled ? gross * fee.social_contribution_rate : 0;
+  const platform = fee.platform_fee_enabled ? gross * fee.platform_fee_rate : 0;
+  const processing = fee.payment_processing_enabled ? gross * fee.payment_processing_rate : 0;
   const profit = gross - lottery - winner - social - platform - processing - prize;
 
   const conditionLabels: Record<RaffleDraft["condition"], string> = {
@@ -1163,31 +1180,41 @@ function ReviewStep({ draft, fee }: { draft: RaffleDraft; fee: FeeSettings }) {
         ) : (
           <div className="space-y-1.5 text-sm">
             <Row label="Gross revenue" value={formatCurrency(gross)} />
-            <Row
-              label={`Lottery Association Tax (${fmtPct(fee.lottery_tax_rate)})`}
-              value={`−${formatCurrency(lottery)}`}
-              negative
-            />
-            <Row
-              label={`Winner Prize Tax (${fmtPct(fee.winner_tax_rate)} of prize)`}
-              value={`−${formatCurrency(winner)}`}
-              negative
-            />
-            <Row
-              label={`Social Contribution (${fmtPct(fee.social_contribution_rate)})`}
-              value={`−${formatCurrency(social)}`}
-              negative
-            />
-            <Row
-              label={`Platform Fee (${fmtPct(fee.platform_fee_rate)})`}
-              value={`−${formatCurrency(platform)}`}
-              negative
-            />
-            <Row
-              label={`Payment Processing Fee (${fmtPct(fee.payment_processing_rate)})`}
-              value={`−${formatCurrency(processing)}`}
-              negative
-            />
+            {fee.lottery_tax_enabled && (
+              <Row
+                label={`Lottery Association Tax (${fmtPct(fee.lottery_tax_rate)})`}
+                value={`−${formatCurrency(lottery)}`}
+                negative
+              />
+            )}
+            {fee.winner_tax_enabled && (
+              <Row
+                label={`Winner Prize Tax (${fmtPct(fee.winner_tax_rate)} of prize)`}
+                value={`−${formatCurrency(winner)}`}
+                negative
+              />
+            )}
+            {fee.social_contribution_enabled && (
+              <Row
+                label={`Social Contribution (${fmtPct(fee.social_contribution_rate)})`}
+                value={`−${formatCurrency(social)}`}
+                negative
+              />
+            )}
+            {fee.platform_fee_enabled && (
+              <Row
+                label={`Platform Fee (${fmtPct(fee.platform_fee_rate)})`}
+                value={`−${formatCurrency(platform)}`}
+                negative
+              />
+            )}
+            {fee.payment_processing_enabled && (
+              <Row
+                label={`Payment Processing Fee (${fmtPct(fee.payment_processing_rate)})`}
+                value={`−${formatCurrency(processing)}`}
+                negative
+              />
+            )}
             <Row label="Prize value" value={`−${formatCurrency(prize)}`} negative />
             <div className="mt-1 flex items-center justify-between border-t border-line pt-2 font-bold text-ink">
               <span>Your estimated profit</span>
@@ -1359,8 +1386,9 @@ function RevenuePlannerStep({
   const ticketPrice = draft.plannerTicketPrice;
   const ticketCap = plannerTicketCap(draft, fee);
 
-  // Winner prize tax is a fixed share of the prize — it does not scale with sales.
-  const winnerTaxEtb = prizeValue * fee.winner_tax_rate;
+  // Winner prize tax is a fixed share of the prize — it does not scale with
+  // sales, and is 0 when the winner tax toggle is disabled.
+  const winnerTaxEtb = winnerTaxAmount(prizeValue, fee);
   // Revenue-based costs scale with gross revenue; total costs add the fixed tax.
   const totalCostsAtTarget = targetRevenue * costRate + winnerTaxEtb;
 
@@ -1373,7 +1401,7 @@ function RevenuePlannerStep({
 
   const setPrize = (v: number | null) => {
     const pv = v ?? 0;
-    const be = (pv * (1 + fee.winner_tax_rate)) / (1 - costRate);
+    const be = (pv + winnerTaxAmount(pv, fee)) / (1 - costRate);
     set({
       prizeValue: v,
       plannerPrizeValue: v,
@@ -1440,36 +1468,46 @@ function RevenuePlannerStep({
               </div>
             ) : (
               <div className="space-y-1.5">
-                <PlannerLine
-                  label="Lottery Association Tax"
-                  pct={fmtPct(fee.lottery_tax_rate)}
-                  value={formatCurrency(breakeven * fee.lottery_tax_rate)}
-                  negative
-                />
-                <PlannerLine
-                  label="Winner Prize Tax"
-                  sub={`${fmtPct(fee.winner_tax_rate)} of prize value`}
-                  value={formatCurrency(winnerTaxEtb)}
-                  negative
-                />
-                <PlannerLine
-                  label="Social Contribution"
-                  pct={fmtPct(fee.social_contribution_rate)}
-                  value={formatCurrency(breakeven * fee.social_contribution_rate)}
-                  negative
-                />
-                <PlannerLine
-                  label="Platform Fee"
-                  pct={fmtPct(fee.platform_fee_rate)}
-                  value={formatCurrency(breakeven * fee.platform_fee_rate)}
-                  negative
-                />
-                <PlannerLine
-                  label="Payment Processing Fee"
-                  pct={fmtPct(fee.payment_processing_rate)}
-                  value={formatCurrency(breakeven * fee.payment_processing_rate)}
-                  negative
-                />
+                {fee.lottery_tax_enabled && (
+                  <PlannerLine
+                    label="Lottery Association Tax"
+                    pct={fmtPct(fee.lottery_tax_rate)}
+                    value={formatCurrency(breakeven * fee.lottery_tax_rate)}
+                    negative
+                  />
+                )}
+                {fee.winner_tax_enabled && (
+                  <PlannerLine
+                    label="Winner Prize Tax"
+                    sub={`${fmtPct(fee.winner_tax_rate)} of prize value`}
+                    value={formatCurrency(winnerTaxEtb)}
+                    negative
+                  />
+                )}
+                {fee.social_contribution_enabled && (
+                  <PlannerLine
+                    label="Social Contribution"
+                    pct={fmtPct(fee.social_contribution_rate)}
+                    value={formatCurrency(breakeven * fee.social_contribution_rate)}
+                    negative
+                  />
+                )}
+                {fee.platform_fee_enabled && (
+                  <PlannerLine
+                    label="Platform Fee"
+                    pct={fmtPct(fee.platform_fee_rate)}
+                    value={formatCurrency(breakeven * fee.platform_fee_rate)}
+                    negative
+                  />
+                )}
+                {fee.payment_processing_enabled && (
+                  <PlannerLine
+                    label="Payment Processing Fee"
+                    pct={fmtPct(fee.payment_processing_rate)}
+                    value={formatCurrency(breakeven * fee.payment_processing_rate)}
+                    negative
+                  />
+                )}
                 <div className="border-t border-line pt-1.5">
                   <PlannerLine
                     label="Total costs"
@@ -1482,9 +1520,10 @@ function RevenuePlannerStep({
               </div>
             )}
             <p className="mt-3 rounded-lg border border-line bg-app/40 p-3 text-xs leading-relaxed text-ink-muted">
-              The winner prize tax is a fixed {fmtPct(fee.winner_tax_rate)} of the prize;
-              the other costs are {fmtPct(costRate)} of sales. To break even you need to
-              generate at least{" "}
+              {fee.winner_tax_enabled
+                ? `The winner prize tax is a fixed ${fmtPct(fee.winner_tax_rate)} of the prize; the other costs are ${fmtPct(costRate)} of sales. `
+                : `These costs are ${fmtPct(costRate)} of sales. `}
+              To break even you need to generate at least{" "}
               <span className="font-semibold text-ink">{formatCurrency(breakeven)}</span>.
             </p>
           </div>
@@ -1598,32 +1637,42 @@ function RevenuePlannerStep({
                 />
                 <PlannerLine label="Gross revenue" value={formatCurrency(targetRevenue)} strong />
                 <div className="space-y-1.5 border-t border-line pt-1.5">
-                  <PlannerLine
-                    label={`Lottery Association Tax (${fmtPct(fee.lottery_tax_rate)})`}
-                    value={`−${costLine(fee.lottery_tax_rate)}`}
-                    negative
-                  />
-                  <PlannerLine
-                    label="Winner Prize Tax"
-                    sub={`${fmtPct(fee.winner_tax_rate)} of prize value`}
-                    value={`−${formatCurrency(winnerTaxEtb)}`}
-                    negative
-                  />
-                  <PlannerLine
-                    label={`Social Contribution (${fmtPct(fee.social_contribution_rate)})`}
-                    value={`−${costLine(fee.social_contribution_rate)}`}
-                    negative
-                  />
-                  <PlannerLine
-                    label={`Platform Fee (${fmtPct(fee.platform_fee_rate)})`}
-                    value={`−${costLine(fee.platform_fee_rate)}`}
-                    negative
-                  />
-                  <PlannerLine
-                    label={`Payment Processing Fee (${fmtPct(fee.payment_processing_rate)})`}
-                    value={`−${costLine(fee.payment_processing_rate)}`}
-                    negative
-                  />
+                  {fee.lottery_tax_enabled && (
+                    <PlannerLine
+                      label={`Lottery Association Tax (${fmtPct(fee.lottery_tax_rate)})`}
+                      value={`−${costLine(fee.lottery_tax_rate)}`}
+                      negative
+                    />
+                  )}
+                  {fee.winner_tax_enabled && (
+                    <PlannerLine
+                      label="Winner Prize Tax"
+                      sub={`${fmtPct(fee.winner_tax_rate)} of prize value`}
+                      value={`−${formatCurrency(winnerTaxEtb)}`}
+                      negative
+                    />
+                  )}
+                  {fee.social_contribution_enabled && (
+                    <PlannerLine
+                      label={`Social Contribution (${fmtPct(fee.social_contribution_rate)})`}
+                      value={`−${costLine(fee.social_contribution_rate)}`}
+                      negative
+                    />
+                  )}
+                  {fee.platform_fee_enabled && (
+                    <PlannerLine
+                      label={`Platform Fee (${fmtPct(fee.platform_fee_rate)})`}
+                      value={`−${costLine(fee.platform_fee_rate)}`}
+                      negative
+                    />
+                  )}
+                  {fee.payment_processing_enabled && (
+                    <PlannerLine
+                      label={`Payment Processing Fee (${fmtPct(fee.payment_processing_rate)})`}
+                      value={`−${costLine(fee.payment_processing_rate)}`}
+                      negative
+                    />
+                  )}
                   <PlannerLine
                     label="Total costs"
                     value={`−${formatCurrency(totalCostsAtTarget)}`}

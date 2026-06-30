@@ -28,6 +28,16 @@ export type FeeSettings = {
   social_contribution_rate: number;
   platform_fee_rate: number;
   payment_processing_rate: number;
+  /**
+   * Per-fee enable flags. When a flag is false the matching cost is excluded
+   * from the planner/review breakdown and from every calculation (revenue cost
+   * rate, fixed costs, break-even, target revenue, profit). All default to true.
+   */
+  lottery_tax_enabled: boolean;
+  winner_tax_enabled: boolean;
+  social_contribution_enabled: boolean;
+  platform_fee_enabled: boolean;
+  payment_processing_enabled: boolean;
   updated_at: string;
   updated_by: string | null;
 };

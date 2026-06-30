@@ -356,12 +356,16 @@ export type Database = {
           created_at: string
           host_net: number
           id: string
+          lottery_tax_withheld: number
           meta: Json
           payer_id: string | null
+          payment_processing_withheld: number
           platform_commission: number
+          platform_fee_withheld: number
           provider: Database["public"]["Enums"]["payment_provider"] | null
           provider_ref: string | null
           raffle_id: string
+          social_contribution_withheld: number
           status: Database["public"]["Enums"]["payment_status"]
         }
         Insert: {
@@ -369,12 +373,16 @@ export type Database = {
           created_at?: string
           host_net?: number
           id?: string
+          lottery_tax_withheld?: number
           meta?: Json
           payer_id?: string | null
+          payment_processing_withheld?: number
           platform_commission?: number
+          platform_fee_withheld?: number
           provider?: Database["public"]["Enums"]["payment_provider"] | null
           provider_ref?: string | null
           raffle_id: string
+          social_contribution_withheld?: number
           status?: Database["public"]["Enums"]["payment_status"]
         }
         Update: {
@@ -382,12 +390,16 @@ export type Database = {
           created_at?: string
           host_net?: number
           id?: string
+          lottery_tax_withheld?: number
           meta?: Json
           payer_id?: string | null
+          payment_processing_withheld?: number
           platform_commission?: number
+          platform_fee_withheld?: number
           provider?: Database["public"]["Enums"]["payment_provider"] | null
           provider_ref?: string | null
           raffle_id?: string
+          social_contribution_withheld?: number
           status?: Database["public"]["Enums"]["payment_status"]
         }
         Relationships: [
@@ -734,6 +746,60 @@ export type Database = {
           },
         ]
       }
+      withheld_taxes: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          raffle_id: string
+          related_payment_id: string | null
+          remitted_at: string | null
+          remitted_by: string | null
+          source: string
+          status: string
+          tax_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          raffle_id: string
+          related_payment_id?: string | null
+          remitted_at?: string | null
+          remitted_by?: string | null
+          source: string
+          status?: string
+          tax_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          raffle_id?: string
+          related_payment_id?: string | null
+          remitted_at?: string | null
+          remitted_by?: string | null
+          source?: string
+          status?: string
+          tax_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withheld_taxes_raffle_id_fkey"
+            columns: ["raffle_id"]
+            isOneToOne: false
+            referencedRelation: "raffles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withheld_taxes_related_payment_id_fkey"
+            columns: ["related_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -741,6 +807,10 @@ export type Database = {
     Functions: {
       admin_export_user_data: {
         Args: { p_user_id: string }
+        Returns: Json
+      }
+      admin_mark_tax_remitted: {
+        Args: { p_tax_id: string }
         Returns: Json
       }
       admin_resolve_cancellation: {

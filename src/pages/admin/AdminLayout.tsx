@@ -12,6 +12,7 @@ import {
   Image,
   Star,
   Percent,
+  Landmark,
   Menu,
   X,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const adminNav = [
   { to: "/en/admin/hero", label: "Hero Carousel", icon: Image },
   { to: "/en/admin/featured", label: "Featured Raffles", icon: Star },
   { to: "/en/admin/fees", label: "Fees & Taxes", icon: Percent },
+  { to: "/en/admin/withheld-taxes", label: "Withheld Taxes", icon: Landmark },
 ];
 
 function adminInitials(name: string | null, email: string | null): string {

@@ -1,5 +1,6 @@
 import { Car, Plane, Gamepad2, Watch, Home, Banknote, Camera, Gift, type LucideIcon } from "lucide-react";
 import { supabase } from "./supabase";
+import type { Tables } from "./database.types";
 import type { RaffleDraft } from "@/components/wizard/types";
 import type { MarketplaceRaffle } from "@/data/marketplace";
 
@@ -646,6 +647,71 @@ export async function fetchHostEndedRaffleById(
     winner,
     audit,
   };
+}
+
+/**
+ * The real, settled fee breakdown for one raffle — read back from what was
+ * actually withheld at the time of each sale, not recomputed from current rates.
+ * Tax portions (lottery_tax, social_contribution) come from the withheld_taxes
+ * remittance ledger; platform_fee and payment_processing are read from the
+ * per-payment columns frozen at checkout. host_net is the sum of the per-payment
+ * net. This stays accurate even after an admin changes the rates afterwards.
+ */
+export interface RaffleSettlement {
+  gross: number;
+  lotteryTax: number;
+  socialContribution: number;
+  platformFee: number;
+  paymentProcessing: number;
+  hostNet: number;
+}
+
+/** Only confirmed/settled payments count toward a raffle's revenue breakdown. */
+const SETTLED_PAYMENT_STATUSES: Tables<"payments">["status"][] = [
+  "held",
+  "released",
+  "compensated",
+];
+
+export async function fetchRaffleSettlement(raffleId: string): Promise<RaffleSettlement> {
+  const [{ data: payRows }, { data: taxRows }] = await Promise.all([
+    supabase
+      .from("payments")
+      .select(
+        "amount_gross, host_net, platform_fee_withheld, payment_processing_withheld",
+      )
+      .eq("raffle_id", raffleId)
+      .in("status", SETTLED_PAYMENT_STATUSES),
+    supabase
+      .from("withheld_taxes")
+      .select("tax_type, amount")
+      .eq("raffle_id", raffleId),
+  ]);
+
+  const settlement: RaffleSettlement = {
+    gross: 0,
+    lotteryTax: 0,
+    socialContribution: 0,
+    platformFee: 0,
+    paymentProcessing: 0,
+    hostNet: 0,
+  };
+
+  for (const p of payRows ?? []) {
+    settlement.gross += Number(p.amount_gross ?? 0);
+    settlement.hostNet += Number(p.host_net ?? 0);
+    settlement.platformFee += Number(p.platform_fee_withheld ?? 0);
+    settlement.paymentProcessing += Number(p.payment_processing_withheld ?? 0);
+  }
+
+  // Tax totals come from the remittance ledger (checkout-sourced rows only).
+  for (const t of taxRows ?? []) {
+    const amount = Number(t.amount ?? 0);
+    if (t.tax_type === "lottery_tax") settlement.lotteryTax += amount;
+    else if (t.tax_type === "social_contribution") settlement.socialContribution += amount;
+  }
+
+  return settlement;
 }
 
 /** Host confirms the prize was delivered as advertised or with an agreed modification. */

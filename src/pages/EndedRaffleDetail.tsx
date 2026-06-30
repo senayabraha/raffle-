@@ -21,8 +21,10 @@ import { CountdownPills } from "@/components/ui/Countdown";
 import { useAuth } from "@/lib/auth";
 import {
   fetchHostEndedRaffleById,
+  fetchRaffleSettlement,
   confirmPrize,
   type EndedRaffleSummary,
+  type RaffleSettlement,
 } from "@/lib/raffles";
 import { formatCurrency, cn } from "@/lib/utils";
 
@@ -60,6 +62,7 @@ export default function EndedRaffleDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [raffle, setRaffle] = useState<EndedRaffleSummary | null>(null);
+  const [settlement, setSettlement] = useState<RaffleSettlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [flow, setFlow] = useState<Flow>("pending");
   const [choice, setChoice] = useState<Decision>("advertised");
@@ -81,6 +84,11 @@ export default function EndedRaffleDetail() {
       setRaffle(r);
       if (r) setFlow(flowFromRaffle(r));
       setLoading(false);
+      if (r) {
+        fetchRaffleSettlement(r.id).then((s) => {
+          if (active) setSettlement(s);
+        });
+      }
     });
     return () => {
       active = false;
@@ -134,9 +142,19 @@ export default function EndedRaffleDetail() {
     );
   }
 
-  const gross = raffle.sold * raffle.ticketPrice;
-  const commission = gross * 0.1;
-  const hostNet = gross - commission;
+  // Real settled figures from the withheld_taxes ledger + per-payment columns,
+  // not a live recalculation. Falls back to a plain gross estimate only while the
+  // settlement query is still loading.
+  const gross = settlement ? settlement.gross : raffle.sold * raffle.ticketPrice;
+  const hostNet = settlement ? settlement.hostNet : gross;
+  const deductions = settlement
+    ? [
+        { label: "Lottery tax", amount: settlement.lotteryTax },
+        { label: "Social contribution", amount: settlement.socialContribution },
+        { label: "Platform fee", amount: settlement.platformFee },
+        { label: "Payment processing", amount: settlement.paymentProcessing },
+      ].filter((d) => d.amount > 0)
+    : [];
   const winner = raffle.winner;
   const drawnAt = raffle.drawDate
     ? new Date(raffle.drawDate).toLocaleString("en-GB", {
@@ -267,10 +285,25 @@ export default function EndedRaffleDetail() {
                   <span>Gross sales</span>
                   <span className="tabular-nums">{formatCurrency(gross)}</span>
                 </div>
-                <div className="flex justify-between text-ink-muted">
-                  <span>Commission (10%)</span>
-                  <span className="tabular-nums">−{formatCurrency(commission)}</span>
-                </div>
+                {settlement ? (
+                  deductions.length > 0 ? (
+                    deductions.map((d) => (
+                      <div key={d.label} className="flex justify-between text-ink-muted">
+                        <span>{d.label}</span>
+                        <span className="tabular-nums">−{formatCurrency(d.amount)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex justify-between text-ink-muted">
+                      <span>Deductions</span>
+                      <span className="tabular-nums">{formatCurrency(0)}</span>
+                    </div>
+                  )
+                ) : (
+                  <div className="flex justify-between text-ink-subtle">
+                    <span>Loading breakdown…</span>
+                  </div>
+                )}
               </dl>
             </div>
 

@@ -50,6 +50,7 @@ const AdminHosts = lazy(() => import("@/pages/admin/Hosts"));
 const AdminHero = lazy(() => import("@/pages/admin/HeroCarouselAdmin"));
 const AdminFeatured = lazy(() => import("@/pages/admin/FeaturedRafflesAdmin"));
 const AdminFeeSettings = lazy(() => import("@/pages/admin/FeeSettingsAdmin"));
+const AdminWithheldTaxes = lazy(() => import("@/pages/admin/WithheldTaxes"));
 
 /**
  * Lazy because NavDrawer pulls in framer-motion. It used to be a static
@@ -281,6 +282,7 @@ export default function App() {
               <Route path="hero" element={<AdminHero />} />
               <Route path="featured" element={<AdminFeatured />} />
               <Route path="fees" element={<AdminFeeSettings />} />
+              <Route path="withheld-taxes" element={<AdminWithheldTaxes />} />
             </Route>
             {/* Checkout return pages (public — guests can check out without an account) */}
             <Route path="/en/checkout/success" element={<CheckoutSuccess />} />

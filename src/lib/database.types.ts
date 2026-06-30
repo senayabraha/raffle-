@@ -410,32 +410,47 @@ export type Database = {
       platform_fee_settings: {
         Row: {
           id: number
+          lottery_tax_enabled: boolean
           lottery_tax_rate: number
+          payment_processing_enabled: boolean
           payment_processing_rate: number
+          platform_fee_enabled: boolean
           platform_fee_rate: number
+          social_contribution_enabled: boolean
           social_contribution_rate: number
           updated_at: string
           updated_by: string | null
+          winner_tax_enabled: boolean
           winner_tax_rate: number
         }
         Insert: {
           id?: number
+          lottery_tax_enabled?: boolean
           lottery_tax_rate?: number
+          payment_processing_enabled?: boolean
           payment_processing_rate?: number
+          platform_fee_enabled?: boolean
           platform_fee_rate?: number
+          social_contribution_enabled?: boolean
           social_contribution_rate?: number
           updated_at?: string
           updated_by?: string | null
+          winner_tax_enabled?: boolean
           winner_tax_rate?: number
         }
         Update: {
           id?: number
+          lottery_tax_enabled?: boolean
           lottery_tax_rate?: number
+          payment_processing_enabled?: boolean
           payment_processing_rate?: number
+          platform_fee_enabled?: boolean
           platform_fee_rate?: number
+          social_contribution_enabled?: boolean
           social_contribution_rate?: number
           updated_at?: string
           updated_by?: string | null
+          winner_tax_enabled?: boolean
           winner_tax_rate?: number
         }
         Relationships: [

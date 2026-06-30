@@ -567,3 +567,67 @@ export async function resolveDispute(
   if (error) throw error;
   return { prizeStatus: (data as { prize_status: string }).prize_status };
 }
+
+export type WithheldTaxType = "lottery_tax" | "winner_tax" | "social_contribution";
+export type WithheldTaxStatus = "withheld" | "remitted";
+
+export interface WithheldTaxRow {
+  id: string;
+  raffleId: string;
+  raffleTitle: string;
+  taxType: WithheldTaxType;
+  amount: number;
+  source: "checkout" | "payout";
+  status: WithheldTaxStatus;
+  createdAt: string;
+  remittedAt: string | null;
+}
+
+/**
+ * The full withheld-tax remittance ledger, most recent first, with the raffle
+ * title joined for display. Admins read every row (RLS: private.is_admin()).
+ */
+export async function fetchWithheldTaxes(): Promise<WithheldTaxRow[]> {
+  const { data, error } = await supabase
+    .from("withheld_taxes")
+    .select(
+      "id, raffle_id, tax_type, amount, source, status, created_at, remitted_at, raffle:raffles!withheld_taxes_raffle_id_fkey(title)",
+    )
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+
+  return (
+    data as unknown as Array<{
+      id: string;
+      raffle_id: string;
+      tax_type: WithheldTaxType;
+      amount: number;
+      source: "checkout" | "payout";
+      status: WithheldTaxStatus;
+      created_at: string;
+      remitted_at: string | null;
+      raffle: { title: string | null } | { title: string | null }[] | null;
+    }>
+  ).map((r) => {
+    const raffle = Array.isArray(r.raffle) ? r.raffle[0] : r.raffle;
+    return {
+      id: r.id,
+      raffleId: r.raffle_id,
+      raffleTitle: raffle?.title?.trim() || "Untitled raffle",
+      taxType: r.tax_type,
+      amount: Number(r.amount),
+      source: r.source,
+      status: r.status,
+      createdAt: r.created_at,
+      remittedAt: r.remitted_at,
+    };
+  });
+}
+
+/** Admin marks a withheld tax as remitted to the authority. Always logged. */
+export async function markTaxRemitted(taxId: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_mark_tax_remitted", {
+    p_tax_id: taxId,
+  });
+  if (error) throw error;
+}
